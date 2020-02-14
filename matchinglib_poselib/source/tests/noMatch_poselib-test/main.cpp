@@ -849,6 +849,14 @@ int SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[])
                                    "nth frame: aggregation of matches from last 4 frames). "
                                    "This option is ignored if the option stereoRef is provided.>",
                      ArgvParser::OptionRequiresValue);
+    cmd.defineOption("use_ngransac", "<If provided, NGRANSAC is used instead of USAC, RANSAC, ... "
+                                     "The file name of the used trained model can be specified with option ngransacModel.>",
+                     ArgvParser::NoOptionAttribute);
+    cmd.defineOption("ngransacModel", "<Optional file name of the used trained model for NGRANSAC. "
+                                      "Model names must be provided without extension and the model must be located "
+                                      "inside the folder models of ngransac. "
+                                      "If no file name is provided, the model weights_e2e_E_r1.00_.net is used.>",
+                     ArgvParser::OptionRequiresValue);
 
     /// finally parse and handle return codes (display help etc...)
     int result = -1;
@@ -895,6 +903,8 @@ bool startEvaluation(ArgvParser& cmd)
 	double maxDist3DPtsZ = 50.0;
 	int accumCorrs = 0;
     calibPars cp = calibPars();
+    bool use_ngransac = false;
+    string ngransacModel;
 
     if(cmd.foundOption("addSequInfo")){
         addSequInfo = cmd.optionValue("addSequInfo");
@@ -903,6 +913,24 @@ bool startEvaluation(ArgvParser& cmd)
         accumCorrs = stoi(cmd.optionValue("accumCorrs"));
         if(accumCorrs > 1) {
             accumCorrs_enabled = true;
+        }
+    }
+
+    use_ngransac = cmd.foundOption("use_ngransac");
+    if(cmd.foundOption("ngransacModel")){
+        ngransacModel = cmd.optionValue("ngransacModel");
+        testing::internal::FilePath ngransac_main(NGRANSAC_DIR);
+        testing::internal::FilePath ngransacModel_path = testing::internal::FilePath::ConcatPaths(ngransac_main, testing::internal::FilePath("models"));
+        testing::internal::FilePath ngransacModel_file =
+                testing::internal::FilePath::MakeFileName(ngransacModel_path,
+                                                          testing::internal::FilePath(ngransacModel),
+                                                          0,
+                                                          "net");
+        if(!ngransacModel_file.FileOrDirectoryExists()){
+            cerr << "Given model file " << ngransacModel << " for NGRANSAC does not exist. Using default model." << endl;
+            ngransacModel = "";
+        }else{
+            ngransacModel = ngransacModel_file.string();
         }
     }
 
@@ -972,6 +1000,11 @@ bool startEvaluation(ArgvParser& cmd)
 	cp.stereoRef = cmd.foundOption("stereoRef");
     cp.useOnlyStablePose = cmd.foundOption("useOnlyStablePose");
     cp.useMostLikelyPose = cmd.foundOption("useMostLikelyPose");
+
+    if(use_ngransac && cp.stereoRef){
+        cerr << "NGRANSAC is currently not support to use within stereo refinement. Turning off NGRANSAC." << endl;
+        use_ngransac = false;
+    }
 
 	if (cmd.foundOption("evStepStereoStable"))
 	{
@@ -1613,6 +1646,21 @@ bool startEvaluation(ArgvParser& cmd)
         }
 	}
 
+    ngransacInterface py_interface;
+    if(use_ngransac){
+        string ngr_dir = NGRANSAC_DIR;
+        testing::internal::FilePath ngrFullDirG =
+                testing::internal::FilePath::MakeFileName(testing::internal::FilePath(ngr_dir),
+                                                          testing::internal::FilePath("concat_failed_autoc_cmds"),
+                                                          0,
+                                                          "py");
+        int ret = py_interface.initialize("compute", ngrFullDirG.string());
+        if(ret){
+            cerr << "Unable to initialize Python interface. Exiting." << endl;
+            exit(1);
+        }
+	}
+
     int failNr = 0;
 	const int evStepStereoStable_tmp = cp.evStepStereoStable + 1;
 	int evStepStereoStable_cnt = evStepStereoStable_tmp;
@@ -1874,6 +1922,37 @@ bool startEvaluation(ArgvParser& cmd)
 						exit(1);
 					}
 				}
+			}
+			else if(use_ngransac){
+			    int inliers = 0;
+                inliers = py_interface.call_ngransac(ngransacModel, th, points1, points2, E, mask);
+                if(inliers < 0){
+                    failNr++;
+                    if ((float)failNr / (float)filenamesRt.size() < 0.5f)
+                    {
+                        std::cout << "Estimation of essential matrix failed! Trying next pair." << endl;
+                        t_2 = chrono::high_resolution_clock::now();
+                        ar[i].tm.stereoRefine = chrono::duration_cast<chrono::microseconds>(t_2 - t_1).count();
+                        sm.actR.copyTo(ar[i].R_GT);
+                        sm.actT.copyTo(ar[i].t_GT);
+                        sm.K1.copyTo(ar[i].K1_GT);
+                        sm.K2.copyTo(ar[i].K2_GT);
+                        if(useGTCamMat){
+                            sm.K1.copyTo(ar[i].K1_degenerate);
+                            sm.K2.copyTo(ar[i].K2_degenerate);
+                        }else {
+                            sm.actKd1.copyTo(ar[i].K1_degenerate);
+                            sm.actKd2.copyTo(ar[i].K2_degenerate);
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        std::cout << "Estimation of essential matrix or undistortion or matching failed for "
+                                  << failNr << " image pairs. Something is wrong with your data! Exiting." << endl;
+                        exit(1);
+                    }
+                }
 			}
 			else
 			{

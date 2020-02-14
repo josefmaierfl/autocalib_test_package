@@ -27,6 +27,9 @@ find_package(PythonLibs REQUIRED)
 message("Include dirs of Python: " ${PYTHON_INCLUDE_DIRS} )
 message("Libs of Python: " ${PYTHON_LIBRARIES} )
 
+# set definition for the code where to find the python file for interfacing NGRANSAC
+SET(NGRANSAC "${PROJECT_SOURCE_DIR}/source/poselib/thirdparty/ngransac")
+add_definitions(-DNGRANSAC_DIR="${NGRANSAC}")
 #SET( Nanoflann_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/source/poselib/thirdparty/nanoflann-1.3.0/include")
 
 #

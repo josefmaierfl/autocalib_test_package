@@ -11,6 +11,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y softwa
 RUN export DEBIAN_FRONTEND=noninteractive && add-apt-repository -y ppa:deadsnakes/ppa
 RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y python3.7 && apt clean
 RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y nano && apt clean
+RUN cd /tmp && wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && chmod +x Miniconda3-latest-Linux-x86_64.sh && ./Miniconda3-latest-Linux-x86_64.sh && rm Miniconda3-latest-Linux-x86_64.sh
 
 ADD ci /ci
 RUN cd /ci && ./build_thirdparty.sh
@@ -19,6 +20,9 @@ RUN python3 -m pip install --upgrade pip setuptools wheel
 ADD py_test_scripts/requirements.txt .
 RUN python3 -m pip install -r requirements.txt && rm requirements.txt
 #RUN python3 -m pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 python3 -m pip install -U
+RUN python3 -m pip install pytorch==1.2.0
+COPY build_ngransac.sh /ci/tmp/
+RUN cd /ci/tmp && ./build_ngransac.sh
 
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/
 COPY build_generateVirtualSequence.sh /ci/tmp/
