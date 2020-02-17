@@ -41,13 +41,15 @@ bp::list std_vector_to_py_list(std::vector<T> vector) {
 template<typename T, typename T1>
 inline
 cv::Mat vecToMat(std::vector<T> &vec, int nr_rows, int nr_cols){
-    cv::Mat data = cv::Mat_<T>(nr_rows, nr_cols);
+    std::cout << "Converting vec with size " << vec.size() << " to mat(" << nr_rows << ", " << nr_cols << ")" << std::endl;
+    cv::Mat data = cv::Mat_<T1>(nr_rows, nr_cols);
     for(int i=0; i < nr_cols; i++){
         for(int j=0; j < nr_rows; j++){
             int idx = i * nr_rows + j;
-            data.at<T>(i, j) = (T1)vec[idx];
+            data.at<T>(j, i) = (T1)vec[idx];
         }
     }
+    std::cout << "Finished mat" << std::endl;
     return data;
 }
 
@@ -80,6 +82,7 @@ struct Py_input{
                 cv::InputArray &K2_ = cv::noArray()):
                 model_file_name(model_file_name_),
                 threshold(threshold_){
+            std::cout << "Converting Input" << std::endl;
             std::vector<bp::tuple> pts1__ = vecCvPoints2vecPyTuple(pts1_);
             std::vector<bp::tuple> pts2__ = vecCvPoints2vecPyTuple(pts2_);
             pts1 = std_vector_to_py_list(pts1__);
@@ -108,8 +111,11 @@ struct Py_output{
             nr_inliers(nr_inliers_),
             mask(mask_.clone()),
             model(model_.clone()){
+        std::cout << "Converting output" << std::endl;
         CV_Assert((mask.type() == CV_8UC1) && (mask.rows == 1) && (mask.cols > mask.rows));
+        std::cout << "Mask is ok" << std::endl;
         CV_Assert((model.type() == CV_64FC1) && (model.rows == 3) && (model.cols == model.rows));
+        std::cout << "Finished converting output" << std::endl;
     };
 
     Py_output(){
@@ -121,6 +127,9 @@ class ComputeInstance;
 
 class ComputeServer{
 public:
+    ComputeServer(){
+
+    }
     void transferModel(ComputeInstance&, bp::list model, bp::list inlier_mask, unsigned int nr_inliers);
     unsigned int get_parameters(cv::Mat &model_, cv::Mat &mask_);
 private:
@@ -129,9 +138,9 @@ private:
 
 class ngransacInterface{
 public:
-    ngransacInterface(const std::string& module, const std::string& path){
+    ngransacInterface(const std::string& module, const std::string& path, const std::string& workdir){
 
-        int res = initialize(module, path);
+        int res = initialize(module, path, workdir);
         if(res != 0){
             throw "Unable to initialize Python interface";
         }
@@ -141,7 +150,7 @@ public:
     ngransacInterface(){
         is_init = false;
     }
-    int initialize(const std::string& module, const std::string& path);
+    int initialize(const std::string& module, const std::string& path, const std::string& workdir);
     int call_ngransac(const std::string &model_file_name,
                       const double &threshold,
                       const std::vector<cv::Point2f> &points1,

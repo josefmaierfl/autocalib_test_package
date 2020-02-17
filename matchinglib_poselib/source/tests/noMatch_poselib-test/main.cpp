@@ -1651,10 +1651,10 @@ bool startEvaluation(ArgvParser& cmd)
         string ngr_dir = NGRANSAC_DIR;
         testing::internal::FilePath ngrFullDirG =
                 testing::internal::FilePath::MakeFileName(testing::internal::FilePath(ngr_dir),
-                                                          testing::internal::FilePath("concat_failed_autoc_cmds"),
+                                                          testing::internal::FilePath("cpp_compute_interface"),
                                                           0,
                                                           "py");
-        int ret = py_interface.initialize("compute", ngrFullDirG.string());
+        int ret = py_interface.initialize("compute", ngrFullDirG.string(), NGRANSAC_DIR);
         if(ret){
             cerr << "Unable to initialize Python interface. Exiting." << endl;
             exit(1);

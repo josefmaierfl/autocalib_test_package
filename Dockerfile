@@ -15,7 +15,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y nano &
 ADD ci /ci
 RUN cd /ci && ./build_thirdparty.sh
 RUN cd /ci && ./copy_thirdparty.sh
-#RUN python3 -m pip install --upgrade pip setuptools wheel
+RUN python3 -m pip install --upgrade pip setuptools wheel
 #ADD py_test_scripts/requirements.txt .
 #RUN python3 -m pip install -r requirements.txt && rm requirements.txt
 #RUN python3 -m pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 python3 -m pip install -U

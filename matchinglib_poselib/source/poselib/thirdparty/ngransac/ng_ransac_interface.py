@@ -16,6 +16,9 @@ import util
 
 def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     # pts1 & pts2 list of tuples with matching image locations
+    print('in start 1')
+    pyfilepath = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(pyfilepath)
     if len(model_file) == 0:
         fmat = False
         orb = True
@@ -28,6 +31,9 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
         print(model_file)
     resblocks = 12 # number of res blocks of the network
     hyps = 1000 # number of hypotheses, i.e. number of RANSAC iterations
+    print('in start 2')
+    print('len(pts1)= ', len(pts1))
+    print('len(pts1)= ', len(pts2))
 
     model = CNNet(resblocks)
     model.load_state_dict(torch.load(model_file))
@@ -37,6 +43,8 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
 
     ratios = np.array([[0] * len(pts1)])
     ratios = np.expand_dims(ratios, 2)
+    pts1 = np.array([pts1])
+    pts2 = np.array([pts2])
 
     # normalize key point coordinates when fitting the essential matrix
     if K1 or K2:
@@ -47,6 +55,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     correspondences = np.concatenate((pts1, pts2, ratios), axis=2)
     correspondences = np.transpose(correspondences)
     correspondences = torch.from_numpy(correspondences).float()
+    print('Converted to torch')
 
     # predict neural guidance, i.e. RANSAC sampling probabilities
     log_probs = model(correspondences.unsqueeze(0).cuda())[
@@ -57,13 +66,20 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     out_inliers = torch.zeros(log_probs.size())  # inlier mask of estimated model
     out_gradients = torch.zeros(log_probs.size())  # gradient tensor (only used during training)
     rand_seed = 0  # random seed to by used in C++
+    print('Just before estimation')
 
     # === CASE ESSENTIAL MATRIX =========================================
-
-    incount = ngransac.find_essential_mat(correspondences, probs, rand_seed, hyps, threshold, out_model,
-                                          out_inliers, out_gradients)
-
+    try:
+        incount = ngransac.find_essential_mat(correspondences, probs, rand_seed, hyps, threshold, out_model,
+                                              out_inliers, out_gradients)
+    except:
+        e = sys.exc_info()
+        print(str(e))
+        sys.stdout.flush()
+        raise
+    print('Finished')
     model = out_model.numpy()
     out_inliers = out_inliers.byte().numpy().ravel().tolist()
     output = {'model': model, 'inlier_mask': out_inliers, 'nr_inliers': incount}
+    print('At end')
     return output

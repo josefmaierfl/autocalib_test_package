@@ -11,7 +11,7 @@ public:
     virtual ~ComputeInstance() = default;
 
     virtual void compute(const Py_input& data) = 0;
-    void transferModel(bp::list model, bp::list inlier_mask, unsigned int nr_inliers);
+    void transferModel(bp::list model, bp::list inlier_mask, int nr_inliers);
 
 private:
     ComputeServer& _server;
@@ -64,16 +64,22 @@ ComputeInstance::ComputeInstance(ComputeServer& server)
         : _server(server)
 {}
 
-void ComputeInstance::transferModel(bp::list model, bp::list inlier_mask, unsigned int nr_inliers)
+void ComputeInstance::transferModel(bp::list model, bp::list inlier_mask, int nr_inliers)
 {
-    _server.transferModel(*this, model, inlier_mask, nr_inliers);
+    std::cout << "Transferring" << std::endl;
+    _server.transferModel(*this, model, inlier_mask, (unsigned int)nr_inliers);
 }
 
 void ComputeServer::transferModel(ComputeInstance&, bp::list model, bp::list inlier_mask, unsigned int nr_inliers)
 {
+    std::cout << "In server" << std::endl;
     std::vector<double> model_c = pyList2Vec<double>(model);
     std::vector<int> mask = pyList2Vec<int>(inlier_mask);
-    result = Py_output(nr_inliers, vecToMat<int, bool>(mask, 1, (int)mask.size()), vecToMat<double, double>(model_c, 3, 3));
+    std::cout << "After list convert" << std::endl;
+    result = Py_output(nr_inliers, vecToMat<int, unsigned char>(mask, 1, (int)mask.size()), vecToMat<double, double>(model_c, 3, 3));
+    if (result.mask.empty() || result.model.empty()){
+        std::cout << "It is empty!!!" << std::endl;
+    }
 }
 
 unsigned int ComputeServer::get_parameters(cv::Mat &model_, cv::Mat &mask_){
@@ -81,12 +87,13 @@ unsigned int ComputeServer::get_parameters(cv::Mat &model_, cv::Mat &mask_){
         std::cout << "No data from NGRANSAC available." << std::endl;
         return 0;
     }
+    std::cout << "Cloning final mats" << std::endl;
     result.mask.copyTo(mask_);
     result.model.copyTo(model_);
     return result.nr_inliers;
 }
 
-int ngransacInterface::initialize(const std::string& module_name, const std::string& path){
+int ngransacInterface::initialize(const std::string& module_name, const std::string& path, const std::string& workdir){
     try {
         // register the python module we created, so our script can import it
         PyImport_AppendInittab("ComputeFramework", &PyInit_ComputeFramework);
@@ -97,11 +104,15 @@ int ngransacInterface::initialize(const std::string& module_name, const std::str
         globals = main.attr("__dict__");
         // import our *.py file
 //        module = import("compute", "compute.py", globals);
+        PyObject* sysPath = PySys_GetObject("path");
+        PyList_Insert( sysPath, 0, PyUnicode_FromString(workdir.c_str()));
         module = import(module_name, path, globals);
         Compute = module.attr("Compute");//Python class name
         compute = Compute(server);
+        is_init = true;
     }catch(const bp::error_already_set&)
     {
+        is_init = false;
         std::cerr << ">>> Error! Exception when trying to initialize python interface:\n";
         PyErr_Print();
         return -1;
@@ -120,6 +131,7 @@ int ngransacInterface::call_ngransac(const std::string &model_file_name,
     if(!is_init){
         return -1;
     }
+    cout << "Calling" << endl;
     data = Py_input(model_file_name, threshold, points1, points2, K1, K2);
     compute.attr("compute")(data);
     return (int)server.get_parameters(model, mask);
