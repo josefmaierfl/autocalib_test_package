@@ -3,9 +3,12 @@ from ng_ransac_interface import start_ngransac
 import numpy as np
 import sys
 
+
+# class Compute(ComputeInstance):
 class Compute(ComputeInstance):
     def __init__(self, server):
         ComputeInstance.__init__(self, server)
+        print('init successful')
 
     def compute(self, o):
         try:

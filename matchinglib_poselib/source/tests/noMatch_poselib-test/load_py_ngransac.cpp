@@ -5,29 +5,11 @@
 
 using namespace std;
 
-class ComputeInstance{
-public:
-    explicit ComputeInstance(ComputeServer&);
-    virtual ~ComputeInstance() = default;
-
-    virtual void compute(const Py_input& data) = 0;
-    void transferModel(bp::list model, bp::list inlier_mask, int nr_inliers);
-
-private:
-    ComputeServer& _server;
-};
-
-class PyComputeInstance final
-        : public ComputeInstance
-                , public bp::wrapper<ComputeInstance>
+ComputeInstance::ComputeInstance(boost::shared_ptr<ComputeServer>& server)
+        : _server(server)
 {
-    using ComputeInstance::ComputeInstance;
-
-    void compute(const Py_input& data) override
-    {
-        get_override("compute")(data);
-    }
-};
+    std::cout << "In ComputeInstance constructor" << std::endl;
+}
 
 BOOST_PYTHON_MODULE(ComputeFramework)
 {
@@ -40,11 +22,13 @@ BOOST_PYTHON_MODULE(ComputeFramework)
             .def_readonly("K2", &Py_input::K2)
             ;
 
-    bp::class_<ComputeServer>("ComputeServer");
+    bp::class_<ComputeServer, boost::shared_ptr<ComputeServer>, boost::noncopyable>("ComputeServer", bp::no_init);
 
-    bp::class_<PyComputeInstance, boost::noncopyable>("ComputeInstance", bp::init<ComputeServer&>())
-            .def("transferModel", &ComputeInstance::transferModel)
-            ;
+//    bp::class_<PyComputeInstance, boost::noncopyable>("ComputeInstance", bp::init<ComputeServer&>())
+//            .def("transferModel", &ComputeInstance::transferModel)
+//            ;
+    bp::class_<PyComputeInstance, boost::noncopyable>("ComputeInstance", bp::init<boost::shared_ptr<ComputeServer>&>())
+            .def("transferModel", &ComputeInstance::transferModel);
 }
 
 bp::object import(const std::string& module, const std::string& path, bp::object& globals)
@@ -60,17 +44,13 @@ bp::object import(const std::string& module, const std::string& path, bp::object
     return locals["new_module"];
 }
 
-ComputeInstance::ComputeInstance(ComputeServer& server)
-        : _server(server)
-{}
-
 void ComputeInstance::transferModel(bp::list model, bp::list inlier_mask, int nr_inliers)
 {
     std::cout << "Transferring" << std::endl;
-    _server.transferModel(*this, model, inlier_mask, (unsigned int)nr_inliers);
+    _server->transferModel(model, inlier_mask, (unsigned int)nr_inliers);
 }
 
-void ComputeServer::transferModel(ComputeInstance&, bp::list model, bp::list inlier_mask, unsigned int nr_inliers)
+void ComputeServer::transferModel(bp::list &model, bp::list &inlier_mask, unsigned int nr_inliers)
 {
     std::cout << "In server" << std::endl;
     std::vector<double> model_c = pyList2Vec<double>(model);
@@ -81,6 +61,18 @@ void ComputeServer::transferModel(ComputeInstance&, bp::list model, bp::list inl
         std::cout << "It is empty!!!" << std::endl;
     }
 }
+
+//void ComputeInstance::transferModel(bp::list &model, bp::list &inlier_mask, int nr_inliers)
+//{
+//    std::cout << "In server" << std::endl;
+//    std::vector<double> model_c = pyList2Vec<double>(model);
+//    std::vector<int> mask = pyList2Vec<int>(inlier_mask);
+//    std::cout << "After list convert" << std::endl;
+//    result = Py_output((unsigned int)nr_inliers, vecToMat<int, unsigned char>(mask, 1, (int)mask.size()), vecToMat<double, double>(model_c, 3, 3));
+//    if (result.mask.empty() || result.model.empty()){
+//        std::cout << "It is empty!!!" << std::endl;
+//    }
+//}
 
 unsigned int ComputeServer::get_parameters(cv::Mat &model_, cv::Mat &mask_){
     if (result.mask.empty() || result.model.empty()){
@@ -93,8 +85,20 @@ unsigned int ComputeServer::get_parameters(cv::Mat &model_, cv::Mat &mask_){
     return result.nr_inliers;
 }
 
+//unsigned int ComputeInstance::get_parameters(cv::Mat &model_, cv::Mat &mask_){
+//    if (result.mask.empty() || result.model.empty()){
+//        std::cout << "No data from NGRANSAC available." << std::endl;
+//        return 0;
+//    }
+//    std::cout << "Cloning final mats" << std::endl;
+//    result.mask.copyTo(mask_);
+//    result.model.copyTo(model_);
+//    return result.nr_inliers;
+//}
+
 int ngransacInterface::initialize(const std::string& module_name, const std::string& path, const std::string& workdir){
     try {
+        server.reset(new ComputeServer);
         // register the python module we created, so our script can import it
         PyImport_AppendInittab("ComputeFramework", &PyInit_ComputeFramework);
         Py_Initialize();
@@ -103,12 +107,16 @@ int ngransacInterface::initialize(const std::string& module_name, const std::str
         main = bp::import("__main__");
         globals = main.attr("__dict__");
         // import our *.py file
-//        module = import("compute", "compute.py", globals);
         PyObject* sysPath = PySys_GetObject("path");
         PyList_Insert( sysPath, 0, PyUnicode_FromString(workdir.c_str()));
         module = import(module_name, path, globals);
-        Compute = module.attr("Compute");//Python class name
-        compute = Compute(server);
+        compute_module = module.attr("Compute");//Python class name
+        std::cout << "Before transferring server" << std::endl;
+        compute = compute_module(server);
+        std::cout << "After transferring server" << std::endl;
+//        compute_module = bp::object((bp::handle<>(PyImport_ImportModule("ComputeFramework"))));
+//        module["ComputeFramework"] = compute_module(server);
+//        bp::scope(compute_module).attr("Compute") = bp::ptr(&compute);
         is_init = true;
     }catch(const bp::error_already_set&)
     {
@@ -117,6 +125,7 @@ int ngransacInterface::initialize(const std::string& module_name, const std::str
         PyErr_Print();
         return -1;
     }
+    std::cout << "Init finished" << std::endl;
     return 0;
 }
 
@@ -134,5 +143,5 @@ int ngransacInterface::call_ngransac(const std::string &model_file_name,
     cout << "Calling" << endl;
     data = Py_input(model_file_name, threshold, points1, points2, K1, K2);
     compute.attr("compute")(data);
-    return (int)server.get_parameters(model, mask);
+    return (int)server->get_parameters(model, mask);
 }

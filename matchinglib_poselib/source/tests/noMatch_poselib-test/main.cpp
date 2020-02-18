@@ -1654,7 +1654,7 @@ bool startEvaluation(ArgvParser& cmd)
                                                           testing::internal::FilePath("cpp_compute_interface"),
                                                           0,
                                                           "py");
-        int ret = py_interface.initialize("compute", ngrFullDirG.string(), NGRANSAC_DIR);
+        int ret = py_interface.initialize("cpp_compute_interface", ngrFullDirG.string(), NGRANSAC_DIR);
         if(ret){
             cerr << "Unable to initialize Python interface. Exiting." << endl;
             exit(1);

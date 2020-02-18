@@ -15,6 +15,7 @@
 #include "boost/python/stl_iterator.hpp"
 
 #include "opencv2/core/core.hpp"
+//#include <boost/shared_ptr.hpp>
 
 namespace bp = boost::python;
 
@@ -107,7 +108,7 @@ struct Py_output{
     cv::Mat mask;
     cv::Mat model;
 
-    Py_output(unsigned int &nr_inliers_, cv::Mat mask_, cv::Mat model_):
+    Py_output(const unsigned int &nr_inliers_, cv::Mat mask_, cv::Mat model_):
             nr_inliers(nr_inliers_),
             mask(mask_.clone()),
             model(model_.clone()){
@@ -120,20 +121,69 @@ struct Py_output{
 
     Py_output(){
         nr_inliers = 0;
+//        mask = cv::Mat::zeros(1,1,CV_8UC1);
+//        model = cv::Mat::zeros(3,3,CV_64FC1);
+        std::cout << "In Py_output constructor" << std::endl;
     };
 };
 
 class ComputeInstance;
 
+//class ComputeInstance{
+//public:
+//    ~ComputeInstance(){
+//        std::cout << "In ComputeInstance destructor" << std::endl;
+//    }
+//    //explicit ComputeInstance(ComputeServer&);
+////    virtual ~ComputeInstance() = default;
+//
+//    virtual void compute(const Py_input& data) = 0;
+//    void transferModel(bp::list& model, bp::list& inlier_mask, int nr_inliers);
+//    unsigned int get_parameters(cv::Mat &model_, cv::Mat &mask_);
+//
+//private:
+////    ComputeServer& _server;
+//    Py_output result;
+//};
+
 class ComputeServer{
 public:
     ComputeServer(){
-
+        std::cout << "In ComputeServer constructor" << std::endl;
     }
-    void transferModel(ComputeInstance&, bp::list model, bp::list inlier_mask, unsigned int nr_inliers);
+    ~ComputeServer(){
+        std::cout << "In ComputeServer destructor" << std::endl;
+    }
+    void transferModel(bp::list &model, bp::list &inlier_mask, unsigned int nr_inliers);
     unsigned int get_parameters(cv::Mat &model_, cv::Mat &mask_);
 private:
     Py_output result;
+};
+
+class ComputeInstance{
+public:
+    virtual ~ComputeInstance(){
+        std::cout << "In ComputeInstance destructor" << std::endl;
+    }
+    explicit ComputeInstance(boost::shared_ptr<ComputeServer>&);
+//    virtual ~ComputeInstance() = default;
+
+    virtual void compute(const Py_input& data) = 0;
+    void transferModel(bp::list model, bp::list inlier_mask, int nr_inliers);
+
+private:
+    boost::shared_ptr<ComputeServer> _server;
+};
+
+class PyComputeInstance final
+        : public ComputeInstance,
+          public bp::wrapper<ComputeInstance>
+{
+    using ComputeInstance::ComputeInstance;
+    void compute(const Py_input& data) override
+    {
+        this->get_override("compute")(data);
+    }
 };
 
 class ngransacInterface{
@@ -162,7 +212,8 @@ public:
 private:
     bool is_init = false;
     Py_input data;
-    ComputeServer server;
-    bp::object main, globals, module, Compute, compute;
+    boost::shared_ptr<ComputeServer> server;
+//    PyComputeInstance compute;
+    bp::object main, globals, module, compute_module, compute;
 };
 #endif //MATCHING_LOAD_PY_NGRANSAC_HPP
