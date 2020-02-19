@@ -1647,6 +1647,7 @@ bool startEvaluation(ArgvParser& cmd)
 	}
 
     ngransacInterface py_interface;
+	string ngrFullDirG_str;
     if(use_ngransac){
         string ngr_dir = NGRANSAC_DIR;
         testing::internal::FilePath ngrFullDirG =
@@ -1654,7 +1655,8 @@ bool startEvaluation(ArgvParser& cmd)
                                                           testing::internal::FilePath("cpp_compute_interface"),
                                                           0,
                                                           "py");
-        int ret = py_interface.initialize("cpp_compute_interface", ngrFullDirG.string(), NGRANSAC_DIR);
+        ngrFullDirG_str = ngrFullDirG.string();
+        int ret = py_interface.initialize("cpp_compute_interface", ngrFullDirG_str, NGRANSAC_DIR);
         if(ret){
             cerr << "Unable to initialize Python interface. Exiting." << endl;
             exit(1);

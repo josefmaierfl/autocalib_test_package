@@ -23,8 +23,9 @@ template<typename T>
 inline
 std::vector< T > pyList2Vec( const bp::object& iterable )
 {
-    return std::vector< T >( bp::stl_input_iterator< T >( iterable ),
-                             bp::stl_input_iterator< T >( ) );
+    std::vector< T > tmp = std::vector< T >( bp::stl_input_iterator< T >( iterable ),
+                                             bp::stl_input_iterator< T >( ) );
+    return tmp;
 }
 
 
@@ -42,15 +43,13 @@ bp::list std_vector_to_py_list(std::vector<T> vector) {
 template<typename T, typename T1>
 inline
 cv::Mat vecToMat(std::vector<T> &vec, int nr_rows, int nr_cols){
-    std::cout << "Converting vec with size " << vec.size() << " to mat(" << nr_rows << ", " << nr_cols << ")" << std::endl;
     cv::Mat data = cv::Mat_<T1>(nr_rows, nr_cols);
     for(int i=0; i < nr_cols; i++){
         for(int j=0; j < nr_rows; j++){
             int idx = i * nr_rows + j;
-            data.at<T>(j, i) = (T1)vec[idx];
+            data.at<T1>(j, i) = static_cast<T1>(vec[idx]);
         }
     }
-    std::cout << "Finished mat" << std::endl;
     return data;
 }
 
@@ -66,7 +65,8 @@ std::vector<bp::tuple> vecCvPoints2vecPyTuple(const std::vector<cv::Point2f> &pt
 inline
 std::vector<double> mat2vec(const cv::Mat &data){
     CV_Assert(data.type() == CV_64FC1);
-    return std::vector<double>(data.begin<double>(), data.end<double>());
+    std::vector<double> tmp = std::vector<double>(data.begin<double>(), data.end<double>());
+    return tmp;
 }
 
 struct Py_input{
@@ -83,7 +83,6 @@ struct Py_input{
                 cv::InputArray &K2_ = cv::noArray()):
                 model_file_name(model_file_name_),
                 threshold(threshold_){
-            std::cout << "Converting Input" << std::endl;
             std::vector<bp::tuple> pts1__ = vecCvPoints2vecPyTuple(pts1_);
             std::vector<bp::tuple> pts2__ = vecCvPoints2vecPyTuple(pts2_);
             pts1 = std_vector_to_py_list(pts1__);
@@ -112,67 +111,21 @@ struct Py_output{
             nr_inliers(nr_inliers_),
             mask(mask_.clone()),
             model(model_.clone()){
-        std::cout << "Converting output" << std::endl;
         CV_Assert((mask.type() == CV_8UC1) && (mask.rows == 1) && (mask.cols > mask.rows));
-        std::cout << "Mask is ok" << std::endl;
         CV_Assert((model.type() == CV_64FC1) && (model.rows == 3) && (model.cols == model.rows));
-        std::cout << "Finished converting output" << std::endl;
     };
 
     Py_output(){
         nr_inliers = 0;
-//        mask = cv::Mat::zeros(1,1,CV_8UC1);
-//        model = cv::Mat::zeros(3,3,CV_64FC1);
-        std::cout << "In Py_output constructor" << std::endl;
     };
-};
-
-class ComputeInstance;
-
-//class ComputeInstance{
-//public:
-//    ~ComputeInstance(){
-//        std::cout << "In ComputeInstance destructor" << std::endl;
-//    }
-//    //explicit ComputeInstance(ComputeServer&);
-////    virtual ~ComputeInstance() = default;
-//
-//    virtual void compute(const Py_input& data) = 0;
-//    void transferModel(bp::list& model, bp::list& inlier_mask, int nr_inliers);
-//    unsigned int get_parameters(cv::Mat &model_, cv::Mat &mask_);
-//
-//private:
-////    ComputeServer& _server;
-//    Py_output result;
-//};
-
-class ComputeServer{
-public:
-    ComputeServer(){
-        std::cout << "In ComputeServer constructor" << std::endl;
-    }
-    ~ComputeServer(){
-        std::cout << "In ComputeServer destructor" << std::endl;
-    }
-    void transferModel(bp::list &model, bp::list &inlier_mask, unsigned int nr_inliers);
-    unsigned int get_parameters(cv::Mat &model_, cv::Mat &mask_);
-private:
-    Py_output result;
 };
 
 class ComputeInstance{
 public:
-    virtual ~ComputeInstance(){
-        std::cout << "In ComputeInstance destructor" << std::endl;
-    }
-    explicit ComputeInstance(boost::shared_ptr<ComputeServer>&);
-//    virtual ~ComputeInstance() = default;
+    virtual ~ComputeInstance(){}
+    explicit ComputeInstance() = default;
 
     virtual void compute(const Py_input& data) = 0;
-    void transferModel(bp::list model, bp::list inlier_mask, int nr_inliers);
-
-private:
-    boost::shared_ptr<ComputeServer> _server;
 };
 
 class PyComputeInstance final
@@ -180,6 +133,7 @@ class PyComputeInstance final
           public bp::wrapper<ComputeInstance>
 {
     using ComputeInstance::ComputeInstance;
+
     void compute(const Py_input& data) override
     {
         this->get_override("compute")(data);
@@ -209,11 +163,11 @@ public:
                       cv::Mat &mask,
                       cv::InputArray &K1 = cv::noArray(),
                       cv::InputArray &K2 = cv::noArray());
+    void transferModel(bp::list &model, bp::list &inlier_mask, int nr_inliers);
 private:
     bool is_init = false;
     Py_input data;
-    boost::shared_ptr<ComputeServer> server;
-//    PyComputeInstance compute;
-    bp::object main, globals, module, compute_module, compute;
+    Py_output result;
+    bp::object main, globals, module, compute_module;
 };
 #endif //MATCHING_LOAD_PY_NGRANSAC_HPP
