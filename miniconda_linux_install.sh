@@ -59,9 +59,9 @@ fi
 
 # Download and install Miniconda
 set +e
-curl "https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
+curl "https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
 if [ $? -ne 0 ]; then
-    curl "http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
+    curl "http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
 fi
 set -e
 
@@ -87,11 +87,12 @@ PATH="$(pwd)/$InstallDir/bin":$PATH
 # END
 
 # Install Conda Dependencies
+conda install pip -y
 if [[ $CondaDeps ]]; then
     conda install $CondaDeps -y
 fi
 if [[ $CondaDepsFile ]]; then
-    conda install --file="${CURR_DIR}/$CondaDepsFile" -y
+    while read requirement; do conda install --yes $requirement || sudo pip3 install $requirement; done < "${CURR_DIR}/$CondaDepsFile"
 fi
 
 # Install Package from PyPi

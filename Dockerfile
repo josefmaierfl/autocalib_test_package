@@ -24,6 +24,11 @@ COPY miniconda_linux_install.sh /ci/tmp/
 COPY build_ngransac.sh /ci/tmp/
 COPY py_test_scripts/requirements.txt /ci/tmp/
 
+USER conan
+RUN /ci/tmp/miniconda_linux_install.sh
+RUN cd /ci/tmp && ./build_ngransac.sh
+
+USER root
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/
 COPY build_generateVirtualSequence.sh /ci/tmp/
 RUN cd /ci/tmp && ./build_generateVirtualSequence.sh
@@ -42,6 +47,4 @@ RUN chown -R conan /app
 
 USER conan
 RUN echo 'alias python=python3' >> ~/.bashrc
-RUN /ci/tmp/miniconda_linux_install.sh
-#RUN cd /ci/tmp && ./build_ngransac.sh
 CMD [ "/bin/bash" ]
