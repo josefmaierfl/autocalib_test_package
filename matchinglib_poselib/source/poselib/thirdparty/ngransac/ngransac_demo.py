@@ -66,7 +66,7 @@ else:
 # loading neural guidence network
 model_file = opt.model
 if len(model_file) == 0:
-	model_file = util.create_session_string('e2e', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
+	model_file = util.create_session_string('e2e', opt.fmat, True, opt.rootsift, opt.ratio, opt.session)
 	model_file = 'models/weights_' + model_file + '.net'
 	print("No model file specified. Inferring pre-trained model from given parameters:")
 	print(model_file)

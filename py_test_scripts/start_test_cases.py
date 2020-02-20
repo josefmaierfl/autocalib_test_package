@@ -165,6 +165,11 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
         if pars['USACInlratFilt'] is None:
             raise ValueError('Enter best test result for USACInlratFilt of usac-testing')
         args += ['--USACInlratFilt', str(pars['USACInlratFilt'])]
+    elif test_name == 'ngransac':
+        args += ['--refineRT', '0', '0']
+        args += ['--RobMethod', 'NGRANSAC']
+        args += ['--th', '0.6', '2.0', '0.2']
+        args += ['--useGTCamMat']
     elif test_name == 'refinement_ba':
         args += ['--RobMethod', 'USAC']
         if not pars['usac56'] or not pars['usac123']:
@@ -860,7 +865,10 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
     else:
         raise ValueError('test_name ' + test_name + ' is not supported')
 
-    output_path = os.path.join(output_path, test_name)
+    if test_name == 'ngransac':
+        output_path = os.path.join(output_path, 'usac_vs_ransac')
+    else:
+        output_path = os.path.join(output_path, test_name)
     try:
         os.mkdir(output_path)
     except FileExistsError:

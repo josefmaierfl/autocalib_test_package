@@ -68,6 +68,7 @@ PyJWT==1.7.1
 pyparsing==2.4.0
 pyrsistent==0.14.11
 pytest==4.5.0
+pytorch==1.2.0
 python-dateutil==2.8.0
 pytz==2019.1
 PyWavelets==1.0.3

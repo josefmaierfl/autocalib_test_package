@@ -26,6 +26,8 @@ def start_testing(path, path_confs_out, skip_tests, skip_gen_sc_conf, skip_crt_s
         for i in skip_tests:
             use_cal_tests.pop(i, None)
             use_evals.pop(i, None)
+    if 'ngransac' in use_cal_tests.keys():
+        main_tests.append('ngransac')
     for mt in main_tests:
         # Make dir for messages
         message_path_new = os.path.join(message_path, mt)
@@ -743,6 +745,8 @@ def get_skip_use_cal_tests(strings):
                     use_tests[current_main] = None
                 else:
                     use_tests[current_main] = list(range(1, (sub_test_numbers[test_idx] + 1)))
+            elif current_main == 'ngransac':
+                use_tests[current_main] = None
             else:
                 raise ValueError('Specified main evaluation name ' + current_main + ' not found')
     else:
@@ -1071,7 +1075,10 @@ def log_sequ_folders(zip_new_folders, sequ_store_path, log_new_folders):
 
 
 def log_autoc_folders(test_name, test_nr, store_path_cal, log_new_folders, is_eval_only=False):
-    path_to_tests = os.path.join(store_path_cal, test_name)
+    if test_name == 'ngransac':
+        path_to_tests = os.path.join(store_path_cal, 'usac_vs_ransac')
+    else:
+        path_to_tests = os.path.join(store_path_cal, test_name)
     if test_nr:
         path_to_tests = os.path.join(path_to_tests, str(test_nr))
     if is_eval_only:
@@ -1129,7 +1136,9 @@ def main():
                              'the list equals \'skip+\', pairs of test names and multiple test numbers can be '
                              'specified which should be skipped, e.g.: skip+ correspondence_pool 2 robustness 3 5 6; '
                              'Possible tests: usac-testing, usac_vs_ransac, refinement_ba, vfc_gms_sof, '
-                             'refinement_ba_stereo, correspondence_pool, robustness, usac_vs_autocalib')
+                             'refinement_ba_stereo, correspondence_pool, robustness, usac_vs_autocalib; In addition, '
+                             'the main test name \'ngransac\' can be used only with the keyword \'use\' after '
+                             'the argument - In this case, only test on NGRANSAC are performed (no evaluation).')
     parser.add_argument('--skip_use_eval_name_nr', type=str, nargs='+', required=False,
                         help='List of evaluation names for which evaluating results '
                              'should be skipped as they were already performed. If the first element of the list '

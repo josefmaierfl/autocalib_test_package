@@ -69,6 +69,7 @@ def get_autocalib_sequence_config_ref(test_name, test_nr):
     data_from_test = {'usac-testing': {'1': ('usac-testing', 1),
                                        '2': ('usac-testing', 1)},
                       'usac_vs_ransac': ('usac-testing', 1),
+                      'ngransac': ('usac-testing', 1),
                       'refinement_ba': {'1': ('usac-testing', 1),
                                         '2': ('usac-testing', 1)},
                       'vfc_gms_sof': ('usac-testing', 1),

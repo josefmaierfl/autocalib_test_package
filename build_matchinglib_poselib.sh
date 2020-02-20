@@ -5,7 +5,8 @@ autocalib_dir=${root_dir}/matchinglib_poselib
 build_dir=${autocalib_dir}/build
 
 # Build project matchinglib_poselib
-conda activate NGRANSAC
+#eval "$(conda shell.bash hook)"
+#conda activate NGRANSAC
 mkdir ${build_dir}
 cd ${build_dir}
 cmake ../ -DCMAKE_BUILD_TYPE=Release

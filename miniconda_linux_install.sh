@@ -7,12 +7,12 @@ CURR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 AppName="NGRANSAC"
 
 # Set your project's install directory name here
-InstallDir="NGRANSAC"
+InstallDir="miniconda3"
 
 # Dependencies installed by Conda
 # Comment out the next line if no Conda dependencies
 #CondaDeps="numpy scipy scikit-learn pandas"
-CondaDepsFile="requirements.txt"
+CondaDepsFile="requirements_part_no_vers.txt"
 
 # Install the package from PyPi
 # Comment out next line if installing locally
@@ -32,8 +32,9 @@ EntryPoint="NGRANSAC"
 echo
 echo "Installing $AppName"
 
+FullInstallDir="$(pwd)/$InstallDir"
 echo
-echo "Installing into: $(pwd)/$InstallDir"
+echo "Installing into: $FullInstallDir"
 echo
 
 # Miniconda doesn't work for directory structures with spaces
@@ -46,10 +47,10 @@ then
 fi
 
 # Test if new directory is empty.  Exit if it's not
-if [ -d $(pwd)/$InstallDir ]; then
-    if [ "$(ls -A $(pwd)/$InstallDir)" ]; then
+if [ -d $FullInstallDir ]; then
+    if [ "$(ls -A $FullInstallDir)" ]; then
         echo "ERROR: Directory is not empty" >&2
-        echo "If you want to install into $(pwd)/$InstallDir, "
+        echo "If you want to install into $FullInstallDir, "
         echo "clear the directory first and run this script again."
         echo "Exiting..."
         echo
@@ -65,10 +66,10 @@ if [ $? -ne 0 ]; then
 fi
 set -e
 
-bash Miniconda_Install.sh -b -f -p $InstallDir
+bash Miniconda_Install.sh -b -f -p $FullInstallDir
 
 # Activate the new environment
-PATH="$(pwd)/$InstallDir/bin":$PATH
+PATH="$FullInstallDir/bin":$PATH
 
 # Make the new python environment completely independent
 # Modify the site.py file so that USER_SITE is not imported
@@ -86,13 +87,22 @@ PATH="$(pwd)/$InstallDir/bin":$PATH
 #     fout.writelines(lines)
 # END
 
+conda update -n base -c defaults conda
+#source ~/.bashrc
+#PATH="$(pwd)/$InstallDir/bin":$PATH
+eval "$(conda shell.bash hook)"
+conda init
+conda create -n $AppName python=3.6
+PATH="$FullInstallDir/bin":$PATH
+conda activate $AppName
+
 # Install Conda Dependencies
 conda install pip -y
 if [[ $CondaDeps ]]; then
     conda install $CondaDeps -y
 fi
 if [[ $CondaDepsFile ]]; then
-    while read requirement; do conda install --yes $requirement || sudo pip3 install $requirement; done < "${CURR_DIR}/$CondaDepsFile"
+    while read requirement; do conda install --yes -c defaults -c conda-forge -c anaconda $requirement || sudo pip install $requirement; done < "${CURR_DIR}/$CondaDepsFile"
 fi
 
 # Install Package from PyPi
@@ -107,32 +117,39 @@ fi
 
 # Cleanup
 rm Miniconda_Install.sh
-conda clean -iltp --yes
+#conda clean -itp --yes
+
+echo "export PATH=$FullInstallDir/bin:$PATH" >> ~/.bashrc
+sudo ln -s $FullInstallDir/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+echo ". $FullInstallDir/etc/profile.d/conda.sh" >> ~/.bashrc
+echo "conda activate $AppName" >> ~/.bashrc
 
 # Add Entry Point to the path
-if [[ $EntryPoint ]]; then
-
-    cd $InstallDir
-    mkdir Scripts
-    ln -s ../bin/$EntryPoint Scripts/$EntryPoint
-
-    echo "$EntryPoint script installed to $(pwd)/Scripts"
-    echo
-    # echo "Add folder to path by appending to .bashrc?"
-    # read -p "[y/n] >>> " -r
-    # echo
-    # if [[ ($REPLY == "yes") || ($REPLY == "Yes") || ($REPLY == "YES") ||
-    #     ($REPLY == "y") || ($REPLY == "Y")]]
-    # then
-        echo "export PATH=\"$(pwd)/Scripts\":\$PATH" >> ~/.bashrc
-        echo "Your PATH was updated."
-        echo "Restart the terminal for the change to take effect"
-    # else
-    #     echo "Your PATH was not modified."
-    # fi
-
-    cd ..
-fi
+# if [[ $EntryPoint ]]; then
+#
+#     cd $InstallDir
+#     mkdir Scripts
+#     ln -s ../bin/$EntryPoint Scripts/$EntryPoint
+#     sudo ln -s ../etc/profile.d/conda.sh /etc/profile.d/conda.sh
+#
+#     echo "$EntryPoint script installed to $(pwd)/Scripts"
+#     echo
+#     # echo "Add folder to path by appending to .bashrc?"
+#     # read -p "[y/n] >>> " -r
+#     # echo
+#     # if [[ ($REPLY == "yes") || ($REPLY == "Yes") || ($REPLY == "YES") ||
+#     #     ($REPLY == "y") || ($REPLY == "Y")]]
+#     # then
+#         echo "export PATH=\"$(pwd)/Scripts\":\$PATH" >> ~/.bashrc
+#         echo "conda activate $AppName" >> ~/.bashrc
+#         echo "Your PATH was updated."
+#         echo "Restart the terminal for the change to take effect"
+#     # else
+#     #     echo "Your PATH was not modified."
+#     # fi
+#
+#     cd ..
+# fi
 
 echo
 echo "$AppName Install Successfully"

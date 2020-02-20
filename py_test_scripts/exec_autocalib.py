@@ -741,7 +741,7 @@ def main():
                 cmds.append(it + it1)
 
     if len(args.RobMethod) == 1:
-        if args.RobMethod[0] != 'USAC' and args.RobMethod[0] != 'RANSAC':
+        if args.RobMethod[0] != 'USAC' and args.RobMethod[0] != 'RANSAC' and args.RobMethod[0] != 'NGRANSAC':
             raise ValueError('Wrong argument for RobMethod')
         for it in cmds:
             it.extend(['--RobMethod', args.RobMethod[0]])
@@ -750,7 +750,7 @@ def main():
         cmds = []
         for it in cmds_rob:
             for it1 in args.RobMethod:
-                if it1 != 'USAC' and it1 != 'RANSAC':
+                if it1 != 'USAC' and it1 != 'RANSAC' and it1 != 'NGRANSAC':
                     raise ValueError('Wrong arguments for RobMethod')
                 cmds.append(it + ['--RobMethod', it1])
 

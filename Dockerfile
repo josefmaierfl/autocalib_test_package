@@ -22,21 +22,30 @@ RUN python3 -m pip install --upgrade pip setuptools wheel
 #RUN python3 -m pip install pytorch==1.2.0
 COPY miniconda_linux_install.sh /ci/tmp/
 COPY build_ngransac.sh /ci/tmp/
-COPY py_test_scripts/requirements.txt /ci/tmp/
+COPY py_test_scripts/requirements_part_no_vers.txt /ci/tmp/
 
 USER conan
+SHELL ["/usr/bin/env", "bash", "--login", "-c"]
+ENV PATH /home/conan/miniconda3/bin:$PATH
 RUN /ci/tmp/miniconda_linux_install.sh
-RUN cd /ci/tmp && ./build_ngransac.sh
 
 USER root
+SHELL ["/bin/bash", "--login", "-c"]
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/
 COPY build_generateVirtualSequence.sh /ci/tmp/
 RUN cd /ci/tmp && ./build_generateVirtualSequence.sh
 
 COPY matchinglib_poselib /ci/tmp/matchinglib_poselib/
 COPY build_matchinglib_poselib.sh /ci/tmp/
+USER conan
+SHELL ["/usr/bin/env", "bash", "--login", "-c"]
+RUN conda init bash
+RUN conda activate NGRANSAC
+RUN cd /ci/tmp && ./build_ngransac.sh
 RUN cd /ci/tmp && ./build_matchinglib_poselib.sh
 
+USER root
+SHELL ["/bin/bash", "--login", "-c"]
 WORKDIR /app
 RUN cp -r /ci/tmp/thirdparty /app/
 RUN cp -r /ci/tmp/tmp/. /app/
@@ -46,5 +55,6 @@ COPY start_testing.sh /app/
 RUN chown -R conan /app
 
 USER conan
-RUN echo 'alias python=python3' >> ~/.bashrc
+SHELL ["/usr/bin/env", "bash", "--login", "-c"]
+#RUN echo 'alias python=python3' >> ~/.bashrc
 CMD [ "/bin/bash" ]

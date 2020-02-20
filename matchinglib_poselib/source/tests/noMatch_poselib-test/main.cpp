@@ -666,7 +666,8 @@ int SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[])
                              "(including structure)>", ArgvParser::OptionRequiresValue);
     cmd.defineOption("RobMethod", "<Specifies the method for the robust estimation of the essential "
                                   "matrix [Default=USAC]. The following options are available:\n "
-                                  "USAC\n ARRSAC\n RANSAC\n LMEDS>", ArgvParser::OptionRequiresValue);
+                                  "USAC\n ARRSAC\n RANSAC\n LMEDS\n NGRANSAC\n\n"
+                                  "If NGRANSAC: The file name of the used trained model can be specified with option ngransacModel.>", ArgvParser::OptionRequiresValue);
     cmd.defineOption("Halign", "<If provided, the pose is estimated using homography alignment. "
                                "Thus, multiple homographies are estimated using ARRSAC. The following options are "
                                "available:\n "
@@ -850,9 +851,6 @@ int SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[])
                                    "nth frame: aggregation of matches from last 4 frames). "
                                    "This option is ignored if the option stereoRef is provided.>",
                      ArgvParser::OptionRequiresValue);
-    cmd.defineOption("use_ngransac", "<If provided, NGRANSAC is used instead of USAC, RANSAC, ... "
-                                     "The file name of the used trained model can be specified with option ngransacModel.>",
-                     ArgvParser::NoOptionAttribute);
     cmd.defineOption("ngransacModel", "<Optional file name of the used trained model for NGRANSAC. "
                                       "Model names must be provided without extension and the model must be located "
                                       "inside the folder models of ngransac. "
@@ -904,7 +902,6 @@ bool startEvaluation(ArgvParser& cmd)
 	double maxDist3DPtsZ = 50.0;
 	int accumCorrs = 0;
     calibPars cp = calibPars();
-    bool use_ngransac = false;
     string ngransacModel;
 
     if(cmd.foundOption("addSequInfo")){
@@ -917,7 +914,6 @@ bool startEvaluation(ArgvParser& cmd)
         }
     }
 
-    use_ngransac = cmd.foundOption("use_ngransac");
     if(cmd.foundOption("ngransacModel")){
         ngransacModel = cmd.optionValue("ngransacModel");
         testing::internal::FilePath ngransac_main(NGRANSAC_DIR);
@@ -1002,11 +998,6 @@ bool startEvaluation(ArgvParser& cmd)
     cp.useOnlyStablePose = cmd.foundOption("useOnlyStablePose");
     cp.useMostLikelyPose = cmd.foundOption("useMostLikelyPose");
 
-    if(use_ngransac && cp.stereoRef){
-        cerr << "NGRANSAC is currently not support to use within stereo refinement. Turning off NGRANSAC." << endl;
-        use_ngransac = false;
-    }
-
 	if (cmd.foundOption("evStepStereoStable"))
 	{
 		cp.evStepStereoStable = stoi(cmd.optionValue("evStepStereoStable"));
@@ -1089,6 +1080,11 @@ bool startEvaluation(ArgvParser& cmd)
     if((cp.RobMethod != "ARRSAC") && cp.Halign)
     {
         std::cout << "With option 'Halign' only ARRSAC is supported. Using ARRSAC!" << endl;
+    }
+
+    if((cp.RobMethod == "NGRANSAC") && cp.stereoRef){
+        cerr << "NGRANSAC is currently not support to use within stereo refinement. Using USAC." << endl;
+        cp.RobMethod = "USAC";
     }
 
     if(cp.autoTH && cp.Halign)
@@ -1649,7 +1645,7 @@ bool startEvaluation(ArgvParser& cmd)
 
     ngransacInterface py_interface;
 	string ngrFullDirG_str;
-    if(use_ngransac){
+    if(cp.RobMethod == "NGRANSAC"){
         string ngr_dir = NGRANSAC_DIR;
         testing::internal::FilePath ngrFullDirG =
                 testing::internal::FilePath::MakeFileName(testing::internal::FilePath(ngr_dir),
@@ -1930,7 +1926,7 @@ bool startEvaluation(ArgvParser& cmd)
 					}
 				}
 			}
-			else if(use_ngransac){
+			else if(cp.RobMethod == "NGRANSAC"){
 			    int inliers = 0;
                 inliers = py_interface.call_ngransac(ngransacModel, th, points1, points2, E, mask);
                 if(inliers < 0){
