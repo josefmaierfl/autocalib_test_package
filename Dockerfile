@@ -1,4 +1,4 @@
-FROM conanio/gcc8
+FROM conanio/gcc8 as dependencies
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
@@ -24,11 +24,19 @@ COPY miniconda_linux_install.sh /ci/tmp/
 COPY build_ngransac.sh /ci/tmp/
 COPY py_test_scripts/requirements_part_no_vers.txt /ci/tmp/
 
+RUN export DEBIAN_FRONTEND=noninteractive && set -eux && \
+	apt-get update && \
+	apt-get install -y gosu && \
+	rm -rf /var/lib/apt/lists/* && \
+# verify that the binary works
+	gosu nobody true #&& chmod +s gosu
+
 USER conan
 SHELL ["/usr/bin/env", "bash", "--login", "-c"]
 ENV PATH /home/conan/miniconda3/bin:$PATH
 RUN /ci/tmp/miniconda_linux_install.sh
 
+FROM dependencies as usercode
 USER root
 SHELL ["/bin/bash", "--login", "-c"]
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/
@@ -37,8 +45,8 @@ RUN cd /ci/tmp && ./build_generateVirtualSequence.sh
 
 COPY matchinglib_poselib /ci/tmp/matchinglib_poselib/
 COPY build_matchinglib_poselib.sh /ci/tmp/
-USER conan
-SHELL ["/usr/bin/env", "bash", "--login", "-c"]
+#USER conan
+#SHELL ["/usr/bin/env", "bash", "--login", "-c"]
 RUN conda init bash
 RUN conda activate NGRANSAC
 RUN cd /ci/tmp && ./build_ngransac.sh

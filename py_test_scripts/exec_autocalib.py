@@ -614,6 +614,9 @@ def main():
     parser.add_argument('--accumCorrsCompare', type=bool, required=False, nargs='?', default=False, const=True,
                         help='If provided, Autocalibration and USAC with correspondence aggregation are both'
                              'executed on the same scenes.')
+    parser.add_argument('--ngransacModel', type=str, nargs='+', required=False,
+                        help='If only 1 file name is provided, this specific model is used but multiple model '
+                             'file names can be provided for testing.')
     args = parser.parse_args()
     if not os.path.exists(args.path):
         raise ValueError('Directory ' + args.path + ' does not exist')
@@ -1059,6 +1062,17 @@ def main():
     if args.useGTCamMat:
         for it in cmds:
             it.append('--useGTCamMat')
+
+    if args.ngransacModel:
+        if len(args.ngransacModel) == 1:
+            for it in cmds:
+                it.extend(['--ngransacModel', args.ngransacModel[0]])
+        else:
+            cmds_nm = deepcopy(cmds)
+            cmds = []
+            for it in cmds_nm:
+                for it1 in args.ngransacModel:
+                    cmds.append(it + ['--ngransacModel', it1])
 
 
     ret = autocalib_pre(args.path, args.executable, cpu_use, args.message_path, args.output_path, args.inlier_ratios,
