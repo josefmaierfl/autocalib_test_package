@@ -12,7 +12,7 @@ InstallDir="miniconda3"
 # Dependencies installed by Conda
 # Comment out the next line if no Conda dependencies
 #CondaDeps="numpy scipy scikit-learn pandas"
-CondaDepsFile="requirements_part_no_vers.txt"
+CondaDepsFile="requirements_necce_no_vers.txt"
 
 # Install the package from PyPi
 # Comment out next line if installing locally
@@ -103,6 +103,7 @@ if [[ $CondaDeps ]]; then
 fi
 if [[ $CondaDepsFile ]]; then
     while read requirement; do conda install --yes -c defaults -c conda-forge -c anaconda $requirement || sudo pip install $requirement; done < "${CURR_DIR}/$CondaDepsFile"
+    conda uninstall --yes libtiff
 fi
 
 # Install Package from PyPi

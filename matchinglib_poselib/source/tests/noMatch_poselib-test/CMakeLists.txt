@@ -19,6 +19,7 @@ set(sources
     load_py_ngransac.cpp)
 
 #find_package(Clapack REQUIRED)
+# SET(BOOST_LIBRARYDIRS "/usr/lib/x86_64-linux-gnu")
 find_package(Boost COMPONENTS filesystem system date_time python36 REQUIRED)
 message("Include dirs of boost: " ${Boost_INCLUDE_DIRS} )
 message("Libs of boost: " ${Boost_LIBRARIES} )
