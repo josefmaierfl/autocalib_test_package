@@ -307,7 +307,7 @@ int Arrsac<Datum, Model>::GenerateInitialHypothesisSet(
 			// Set parameters to force inner ransac to execute.
 			inner_ransac = true;
 			inner_ransac_its = 0;
-			random_sampler.setSampleSize(max(min(nonmin_sample_size_,
+			random_sampler.setSampleSize(std::max(std::min(nonmin_sample_size_,
 										 (int)floor((float)max_num_inliers/2.0f)),
 										 min_sample_size_));
 
@@ -356,7 +356,7 @@ bool Arrsac<Datum, Model>::Estimate(const std::vector<Datum>& data,
 
   // Generate Initial Hypothesis Test
   std::vector<ScoredData<Model>> hypotheses;
-  const std::vector<Datum> initial_data(data.begin(),data.begin()+min(data.size(),(size_t)block_size_));
+  const std::vector<Datum> initial_data(data.begin(),data.begin() + std::min(data.size(),(size_t)block_size_));
   int k = GenerateInitialHypothesisSet(initial_data, estimator, &hypotheses);
 
   if(k == 0)

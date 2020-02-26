@@ -15,7 +15,15 @@ tar --bzip2 -xf ${Boost_FILEN}
 rm -rf ${Boost_FILEN}
 
 cd ${Boost_ROOT}
-./bootstrap.sh --with-python="$(which python)" \
-  --with-python-root="$(python -c "from distutils.sysconfig import get_config_var; print(get_config_var('LIBDEST'))")" \
-  --with-python-version="$(python -c "from distutils.sysconfig import get_python_version; print(get_python_version())")"
+PYTHON_ROOT_PATH="$(python -c "from distutils.sysconfig import get_config_h_filename; from os.path import dirname; print(dirname(get_config_h_filename()))")"
+PYTHON_VERSION="$(python -c "from distutils.sysconfig import get_python_version; print(get_python_version())")"
+#  --with-libraries=python
+./bootstrap.sh --with-python="$(which python)" --with-python-root="${PYTHON_ROOT_PATH}" --with-python-version="${PYTHON_VERSION}"
+export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:${PYTHON_ROOT_PATH}"
 ./b2 install
+TO_BASH="export CPLUS_INCLUDE_PATH=\\\$CPLUS_INCLUDE_PATH:${PYTHON_ROOT_PATH}"
+id -u conan
+if [ $? -ne 1 ]; then
+  sudo -H -u conan bash -c "echo ${TO_BASH} >> ~/.profile"
+fi
+echo "export CPLUS_INCLUDE_PATH=\$CPLUS_INCLUDE_PATH:${PYTHON_ROOT_PATH}" >> ~/.bashrc
