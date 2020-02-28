@@ -1,0 +1,59 @@
+FROM conanio/gcc8 as dependencies
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+USER root
+SHELL ["/bin/bash", "-c"]
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y software-properties-common && apt-get clean
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && add-apt-repository -y 'deb http://security.ubuntu.com/ubuntu xenial-security main'
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y build-essential cmake pkg-config && apt-get clean
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y wget \
+	libtbb2 \
+	libtbb-dev \
+	libglew-dev \
+	qt5-default \
+	libxkbcommon-dev \
+	libflann-dev \
+	libpng-dev \
+	libgtk-3-dev \
+	libgtkglext1 \
+	libgtkglext1-dev \
+	libtiff-dev \
+	libtiff5-dev \
+	libtiffxx5 \
+	libjpeg-dev \
+	libjasper1 \
+	libjasper-dev \
+	libavcodec-dev \
+	libavformat-dev \
+	libswscale-dev \
+	libv4l-dev \
+	libxvidcore-dev \
+	libx264-dev \
+	libdc1394-22-dev \
+	openexr \
+	libatlas-base-dev \
+	gfortran && apt-get clean
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y python3-dev && apt-get clean
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libvtk7-dev && apt-get clean
+#RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libboost-all-dev && apt-get clean
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y texlive-latex-base texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra && apt-get clean
+#RUN export DEBIAN_FRONTEND=noninteractive && add-apt-repository -y ppa:deadsnakes/ppa
+#RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y python3.6 && apt-get clean
+#RUN python3 -m pip install --upgrade pip setuptools wheel
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y nano && apt-get clean
+
+COPY miniconda_linux_install.sh /tmp
+COPY py_test_scripts/requirements_necce_no_vers.txt /tmp
+COPY py_test_scripts/requirements_reinstall.txt /tmp
+COPY conda_package_reinstall.sh /tmp
+
+USER conan
+SHELL ["/usr/bin/env", "bash", "--login", "-c"]
+ENV PATH /home/conan/miniconda3/bin:$PATH
+RUN /tmp/miniconda_linux_install.sh
+
+USER root
+SHELL ["/bin/bash", "--login", "-c"]
+RUN conda init bash
+RUN conda activate NGRANSAC
