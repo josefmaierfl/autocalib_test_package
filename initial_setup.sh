@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd /data
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/work"
 mkdir ${WORK_DIR}
 cd ${WORK_DIR}
