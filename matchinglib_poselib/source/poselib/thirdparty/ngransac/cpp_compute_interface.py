@@ -1,6 +1,6 @@
+import numpy as np
 from ComputeFramework import *
 from ng_ransac_interface import start_ngransac
-import numpy as np
 import sys
 
 
