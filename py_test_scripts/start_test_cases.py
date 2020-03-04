@@ -68,6 +68,8 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
             pars_list = ['usac56']
         elif test_name == 'usac_vs_ransac':
             pars_list = ['usac56', 'usac123', 'USACInlratFilt']
+        elif test_name == 'ngransac':
+            pars_list = None
         elif test_name == 'refinement_ba':
             pars_list = ['usac56', 'usac123', 'USACInlratFilt', 'th']
         elif test_name == 'vfc_gms_sof':
@@ -123,9 +125,10 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
                          'useRANSAC_fewMatches']
         else:
             raise ValueError('Unknown test name ' + test_name)
-        pars_opt = read_pars(output_path, pars_list)
-        for i in pars_opt.keys():
-            pars[i] = pars_opt[i]
+        if pars_list is not None:
+            pars_opt = read_pars(output_path, pars_list)
+            for i in pars_opt.keys():
+                pars[i] = pars_opt[i]
     else:
         try:
             write_par_file_template(output_path)
