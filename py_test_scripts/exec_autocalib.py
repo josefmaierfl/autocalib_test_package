@@ -70,7 +70,7 @@ def init_child_lock(lock_, lock2_):
 
 
 def autocalib_pre(path_ov_file, executable, cpu_cnt, message_path, output_path, inlier_ratios, kp_accs, depths,
-                  kp_pos_distr, nr_keypoints, cmds):
+                  kp_pos_distr, nr_keypoints, cmds, eval_ngransac=False):
     dirs_f = os.path.join(path_ov_file, 'generated_dirs_config.txt')
     if not os.path.exists(dirs_f):
         raise ValueError("Unable to load " + dirs_f)
@@ -252,7 +252,14 @@ def autocalib_pre(path_ov_file, executable, cpu_cnt, message_path, output_path, 
                 sub_path += 1
 
     df1 = pandas.DataFrame(data=sequ_cmd)
-    ov_file = os.path.join(output_path, 'commands_and_parameters_full.csv')
+    nr_call = 0
+    while os.path.exists(os.path.join(output_path, 'commands_and_parameters_unsuccessful_' +
+                                                   str(int(nr_call)) + '.csv')):
+        nr_call += 1
+    if eval_ngransac:
+        ov_file = os.path.join(output_path, 'commands_and_parameters_ngransac_full.csv')
+    else:
+        ov_file = os.path.join(output_path, 'commands_and_parameters_full.csv')
     if os.path.exists(ov_file):
         raise ValueError('File ' + ov_file + ' already exists')
     df1.to_csv(index=True, sep=';', path_or_buf=ov_file)
@@ -263,7 +270,7 @@ def autocalib_pre(path_ov_file, executable, cpu_cnt, message_path, output_path, 
     except FileExistsError:
         print('Directory ' + pathnew + ' already exists')
 
-    return start_autocalib(ov_file, executable, cpu_cnt, message_path, pathnew, 0)
+    return start_autocalib(ov_file, executable, cpu_cnt, message_path, pathnew, nr_call)
 
 
 def start_autocalib(csv_cmd_file, executable, cpu_cnt, message_path, output_path, nr_call):
@@ -461,6 +468,7 @@ def autocalib(cmd, data, message_path, mess_base_name, nr_call):
         os.remove(stdmess)
 
     return 0
+
 
 def write_cmd_csv(file, data):
     data = pandas.DataFrame(data=data).T
@@ -743,9 +751,12 @@ def main():
             for it1 in ref_bart:
                 cmds.append(it + it1)
 
+    eval_ngransac = False
     if len(args.RobMethod) == 1:
         if args.RobMethod[0] != 'USAC' and args.RobMethod[0] != 'RANSAC' and args.RobMethod[0] != 'NGRANSAC':
             raise ValueError('Wrong argument for RobMethod')
+        elif args.RobMethod[0] == 'NGRANSAC':
+            eval_ngransac = True
         for it in cmds:
             it.extend(['--RobMethod', args.RobMethod[0]])
     else:
@@ -755,6 +766,8 @@ def main():
             for it1 in args.RobMethod:
                 if it1 != 'USAC' and it1 != 'RANSAC' and it1 != 'NGRANSAC':
                     raise ValueError('Wrong arguments for RobMethod')
+                elif it1 == 'NGRANSAC':
+                    eval_ngransac = True
                 cmds.append(it + ['--RobMethod', it1])
 
     if args.cfgUSAC:
@@ -1080,7 +1093,7 @@ def main():
 
 
     ret = autocalib_pre(args.path, args.executable, cpu_use, args.message_path, args.output_path, args.inlier_ratios,
-                        args.kp_accs, args.depths, args.kp_pos_distr, args.nr_keypoints, cmds)
+                        args.kp_accs, args.depths, args.kp_pos_distr, args.nr_keypoints, cmds, eval_ngransac)
     sys.exit(ret)
 
 
