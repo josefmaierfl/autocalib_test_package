@@ -854,7 +854,7 @@ int SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[])
     cmd.defineOption("ngransacModel", "<Optional file name of the used trained model for NGRANSAC. "
                                       "Model names must be provided without extension and the model must be located "
                                       "inside the folder models of ngransac. "
-                                      "If no file name is provided, the model weights_e2e_E_r1.00_.net is used.>",
+                                      "If no file name is provided, the model weights_e2e_E_orb_r1.00_.net is used.>",
                      ArgvParser::OptionRequiresValue);
 
     /// finally parse and handle return codes (display help etc...)
