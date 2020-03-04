@@ -1,2 +1,14 @@
 .git
 thirdparty
+ci/tmp
+ci/thirdparty/eigen-eigen-3.3.7
+ci/thirdparty/eigen-eigen-323c052e1731
+ci/thirdparty/opencv-4.2.0
+ci/thirdparty/opencv_contrib-4.2.0
+ci/thirdparty/pcl-1.9.1
+ci/thirdparty/clapack-3.2.1/lib
+ci/thirdparty/clapack-3.2.1/build/linux
+ci/thirdparty/clapack-3.2.1/build/linux_debug
+ci/thirdparty/sba-1.6/lib
+ci/thirdparty/sba-1.6/build/linux
+ci/thirdparty/sba-1.6/build/linux_debug
