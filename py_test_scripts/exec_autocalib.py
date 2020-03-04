@@ -69,6 +69,14 @@ def init_child_lock(lock_, lock2_):
     lock2 = lock2_
 
 
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
 def autocalib_pre(path_ov_file, executable, cpu_cnt, message_path, output_path, inlier_ratios, kp_accs, depths,
                   kp_pos_distr, nr_keypoints, cmds, eval_ngransac=False):
     dirs_f = os.path.join(path_ov_file, 'generated_dirs_config.txt')
@@ -228,11 +236,22 @@ def autocalib_pre(path_ov_file, executable, cpu_cnt, message_path, output_path, 
         if df.empty:
             raise ValueError('No data left after filtering number of keypoints')
 
+    pathnew = os.path.join(output_path, 'results')
+    try:
+        os.mkdir(pathnew)
+    except FileExistsError:
+        print('Directory ' + pathnew + ' already exists')
+
     sequ = df.to_dict('list')
     sequ_cmd = {'sequDir': [], 'parSetNr': [], 'kp_distr': [], 'depth_distr': [], 'nrTP': [], 'inlrat_min': [],
                  'inlrat_max': [], 'inlrat_c_rate': [], 'kp_acc_sd': [], 'cmd': [], 'sub_path': []}
     cnt = 0
     sub_path = 0
+    sub_dirs = [name for name in os.listdir(pathnew) if os.path.isdir(os.path.join(pathnew, name))]
+    if sub_dirs:
+        sub_dirs = [int(name) for name in sub_dirs if RepresentsInt(name)]
+    if sub_dirs:
+        sub_path = max(sub_dirs) + 1
     for it in cmds:
         for i, sd in enumerate(sequ['sequDir']):
             sequ_cmd['sequDir'].append(sd)
@@ -263,12 +282,6 @@ def autocalib_pre(path_ov_file, executable, cpu_cnt, message_path, output_path, 
     if os.path.exists(ov_file):
         raise ValueError('File ' + ov_file + ' already exists')
     df1.to_csv(index=True, sep=';', path_or_buf=ov_file)
-
-    pathnew = os.path.join(output_path, 'results')
-    try:
-        os.mkdir(pathnew)
-    except FileExistsError:
-        print('Directory ' + pathnew + ' already exists')
 
     return start_autocalib(ov_file, executable, cpu_cnt, message_path, pathnew, nr_call)
 
