@@ -523,14 +523,14 @@ def main():
                              'BART_stereo, if BART_stereo is not provided.')
     parser.add_argument('--RobMethod', type=str, nargs='+', required=False, default=['USAC'],
                         help='If provided, the list of strings specify the used robust estimation methods.')
-    parser.add_argument('--cfgUSAC', type=int, nargs='+', required=True,
+    parser.add_argument('--cfgUSAC', type=int, nargs='+', required=False,
                         help='The first 6 values are reserved for providing specific values. If another 6 values are '
                              'provided (value range 0-1), they specify, if the 6 options should be varied. '
                              'If another 6 values are provided, option values that should not be used during '
                              'the parameter sweep can be entered. '
                              'For sub-parameters where no sweep should be performed, the corresponding value '
                              'within the first 6 values is selected.')
-    parser.add_argument('--USACInlratFilt', type=int, required=True,
+    parser.add_argument('--USACInlratFilt', type=int, required=False,
                         help='If the specified value is >=0 and <2, the given filter (0 = GMS, 1 = VFC) is used. '
                              'For a value >=2, a parameter sweep is performed on the possible inputs.')
     parser.add_argument('--th', type=float, nargs='+', required=True,
@@ -757,85 +757,89 @@ def main():
                     raise ValueError('Wrong arguments for RobMethod')
                 cmds.append(it + ['--RobMethod', it1])
 
-    if len(args.cfgUSAC) < 6 or len(args.cfgUSAC) > 18:
-        raise ValueError('Wrong number of arguments for cfgUSAC')
-    cfgUSAC_tmp = None
-    if len(args.cfgUSAC) == 6:
-        if args.cfgUSAC[0] < 0 or args.cfgUSAC[0] > 3:
-            raise ValueError('First value for cfgUSAC out of range')
-        if args.cfgUSAC[1] < 0 or args.cfgUSAC[1] > 1:
-            raise ValueError('Second value for cfgUSAC out of range')
-        if args.cfgUSAC[2] < 0 or args.cfgUSAC[2] > 1:
-            raise ValueError('Third value for cfgUSAC out of range')
-        if args.cfgUSAC[3] < 0 or args.cfgUSAC[3] > 2:
-            raise ValueError('4th value for cfgUSAC out of range')
-        if args.cfgUSAC[4] < 0 or args.cfgUSAC[4] > 2:
-            raise ValueError('5th value for cfgUSAC out of range')
-        if args.cfgUSAC[5] < 0 or args.cfgUSAC[5] > 7:
-            raise ValueError('6th value for cfgUSAC out of range')
-        for it in cmds:
-            it.extend(['--cfgUSAC', ''.join(map(str, args.cfgUSAC))])
-    elif len(args.cfgUSAC) > 6:
-        missdig = [-1] * 6
-        if len(args.cfgUSAC) == 18:
-            if args.cfgUSAC[12] >= 0 and args.cfgUSAC[12] < 4:
-                missdig[0] = args.cfgUSAC[12]
-            if args.cfgUSAC[13] >= 0 and args.cfgUSAC[13] < 2:
-                missdig[1] = args.cfgUSAC[13]
-            if args.cfgUSAC[14] >= 0 and args.cfgUSAC[14] < 2:
-                missdig[2] = args.cfgUSAC[14]
-            if args.cfgUSAC[15] >= 0 and args.cfgUSAC[15] < 3:
-                missdig[3] = args.cfgUSAC[15]
-            if args.cfgUSAC[16] >= 0 and args.cfgUSAC[16] < 3:
-                missdig[4] = args.cfgUSAC[16]
-            if args.cfgUSAC[17] >= 0 and args.cfgUSAC[17] < 8:
-                missdig[5] = args.cfgUSAC[17]
-        elif len(args.cfgUSAC) != 12:
+    if args.cfgUSAC:
+        if len(args.cfgUSAC) < 6 or len(args.cfgUSAC) > 18:
             raise ValueError('Wrong number of arguments for cfgUSAC')
-        if args.cfgUSAC[6] > 0:
-            cfgUSAC_tmp = [[i] for i in range(0,4) if i != missdig[0]]
-        else:
+        cfgUSAC_tmp = None
+        if len(args.cfgUSAC) == 6:
             if args.cfgUSAC[0] < 0 or args.cfgUSAC[0] > 3:
                 raise ValueError('First value for cfgUSAC out of range')
-            cfgUSAC_tmp = [[args.cfgUSAC[0]]]
-        cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 7, 'Second', 1, missdig)
-        cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 8, 'Third', 1, missdig)
-        cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 9, '4th', 2, missdig)
-        cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 10, '5th', 2, missdig)
-        cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 11, '6th', 7, missdig)
-        cmds_usac = deepcopy(cmds)
-        cmds = []
-        for it in cmds_usac:
-            for it1 in cfgUSAC_tmp:
-                cmds.append(it + ['--cfgUSAC', ''.join(map(str, it1))])
-    else:
-        raise ValueError('Wrong number of arguments for cfgUSAC')
-
-    if args.USACInlratFilt < 0:
-        raise ValueError('Wrong number of arguments for USACInlratFilt')
-    if args.USACInlratFilt < 2:
-        for it in cmds:
-            if it[it.index('--RobMethod') + 1] == 'USAC' and int(it[it.index('--cfgUSAC') + 1][0]) > 1:
-                if args.USACInlratFilt == 0:
-                    if '--refineGMS' in it:
-                        raise ValueError('Cannot use GMS filter within USAC if the filter was used on the input data')
-                if args.USACInlratFilt == 1:
-                    if '--refineVFC' in it:
-                        raise ValueError('Cannot use VFC filter within USAC if the filter was used on the input data')
-            it.extend(['--USACInlratFilt', str(args.USACInlratFilt)])
-    else:
-        cmds_usac = deepcopy(cmds)
-        cmds = []
-        for it in cmds_usac:
-            if '--refineGMS' in it:
-                raise ValueError('Cannot use GMS filter within USAC if the filter was used on the input data')
-            if '--refineVFC' in it:
-                raise ValueError('Cannot use VFC filter within USAC if the filter was used on the input data')
-            if int(it[it.index('--cfgUSAC') + 1][0]) > 1:
-                for i in range(2):
-                    cmds.append(it + ['--USACInlratFilt', str(i)])
+            if args.cfgUSAC[1] < 0 or args.cfgUSAC[1] > 1:
+                raise ValueError('Second value for cfgUSAC out of range')
+            if args.cfgUSAC[2] < 0 or args.cfgUSAC[2] > 1:
+                raise ValueError('Third value for cfgUSAC out of range')
+            if args.cfgUSAC[3] < 0 or args.cfgUSAC[3] > 2:
+                raise ValueError('4th value for cfgUSAC out of range')
+            if args.cfgUSAC[4] < 0 or args.cfgUSAC[4] > 2:
+                raise ValueError('5th value for cfgUSAC out of range')
+            if args.cfgUSAC[5] < 0 or args.cfgUSAC[5] > 7:
+                raise ValueError('6th value for cfgUSAC out of range')
+            for it in cmds:
+                it.extend(['--cfgUSAC', ''.join(map(str, args.cfgUSAC))])
+        elif len(args.cfgUSAC) > 6:
+            missdig = [-1] * 6
+            if len(args.cfgUSAC) == 18:
+                if args.cfgUSAC[12] >= 0 and args.cfgUSAC[12] < 4:
+                    missdig[0] = args.cfgUSAC[12]
+                if args.cfgUSAC[13] >= 0 and args.cfgUSAC[13] < 2:
+                    missdig[1] = args.cfgUSAC[13]
+                if args.cfgUSAC[14] >= 0 and args.cfgUSAC[14] < 2:
+                    missdig[2] = args.cfgUSAC[14]
+                if args.cfgUSAC[15] >= 0 and args.cfgUSAC[15] < 3:
+                    missdig[3] = args.cfgUSAC[15]
+                if args.cfgUSAC[16] >= 0 and args.cfgUSAC[16] < 3:
+                    missdig[4] = args.cfgUSAC[16]
+                if args.cfgUSAC[17] >= 0 and args.cfgUSAC[17] < 8:
+                    missdig[5] = args.cfgUSAC[17]
+            elif len(args.cfgUSAC) != 12:
+                raise ValueError('Wrong number of arguments for cfgUSAC')
+            if args.cfgUSAC[6] > 0:
+                cfgUSAC_tmp = [[i] for i in range(0,4) if i != missdig[0]]
             else:
-                cmds.append(it)
+                if args.cfgUSAC[0] < 0 or args.cfgUSAC[0] > 3:
+                    raise ValueError('First value for cfgUSAC out of range')
+                cfgUSAC_tmp = [[args.cfgUSAC[0]]]
+            cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 7, 'Second', 1, missdig)
+            cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 8, 'Third', 1, missdig)
+            cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 9, '4th', 2, missdig)
+            cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 10, '5th', 2, missdig)
+            cfgUSAC_tmp = appUSAC(cfgUSAC_tmp, args.cfgUSAC, 11, '6th', 7, missdig)
+            cmds_usac = deepcopy(cmds)
+            cmds = []
+            for it in cmds_usac:
+                for it1 in cfgUSAC_tmp:
+                    cmds.append(it + ['--cfgUSAC', ''.join(map(str, it1))])
+        else:
+            raise ValueError('Wrong number of arguments for cfgUSAC')
+
+    if args.USACInlratFilt:
+        if args.USACInlratFilt < 0:
+            raise ValueError('Wrong number of arguments for USACInlratFilt')
+        if args.USACInlratFilt < 2:
+            for it in cmds:
+                if it[it.index('--RobMethod') + 1] == 'USAC' and int(it[it.index('--cfgUSAC') + 1][0]) > 1:
+                    if args.USACInlratFilt == 0:
+                        if '--refineGMS' in it:
+                            raise ValueError('Cannot use GMS filter within USAC if the filter was '
+                                             'used on the input data')
+                    if args.USACInlratFilt == 1:
+                        if '--refineVFC' in it:
+                            raise ValueError('Cannot use VFC filter within USAC if the filter was '
+                                             'used on the input data')
+                it.extend(['--USACInlratFilt', str(args.USACInlratFilt)])
+        else:
+            cmds_usac = deepcopy(cmds)
+            cmds = []
+            for it in cmds_usac:
+                if '--refineGMS' in it:
+                    raise ValueError('Cannot use GMS filter within USAC if the filter was used on the input data')
+                if '--refineVFC' in it:
+                    raise ValueError('Cannot use VFC filter within USAC if the filter was used on the input data')
+                if int(it[it.index('--cfgUSAC') + 1][0]) > 1:
+                    for i in range(2):
+                        cmds.append(it + ['--USACInlratFilt', str(i)])
+                else:
+                    cmds.append(it)
 
     cmds = appRange(cmds, args.th, 'th')
 
