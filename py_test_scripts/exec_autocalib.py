@@ -1,7 +1,8 @@
 """
 Execute autocalibration using different parameters and all generated sequences within a given folder.
 """
-import sys, re, numpy as np, argparse, os, pandas, subprocess as sp
+import numpy as np
+import sys, re, argparse, os, pandas, subprocess as sp
 import ruamel.yaml as yaml
 import multiprocessing
 import warnings

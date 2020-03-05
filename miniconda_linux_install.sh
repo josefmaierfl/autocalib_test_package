@@ -12,7 +12,9 @@ InstallDir="miniconda3"
 # Dependencies installed by Conda
 # Comment out the next line if no Conda dependencies
 #CondaDeps="numpy scipy scikit-learn pandas"
-CondaDepsFile="requirements_necce_no_vers.txt"
+#CondaDepsFile="requirements_necce_no_vers.txt"
+CondaDepsFileConda="requirements_conda_install.txt"
+CondaDepsFilePip="requirements_pip.txt"
 
 # Install the package from PyPi
 # Comment out next line if installing locally
@@ -105,6 +107,13 @@ if [[ $CondaDepsFile ]]; then
     while read requirement; do conda install --yes -c defaults -c conda-forge -c anaconda $requirement || sudo pip install $requirement; done < "${CURR_DIR}/$CondaDepsFile"
     conda uninstall --yes libtiff
 fi
+if [[ $CondaDepsFileConda ]]; then
+    conda install --yes -c defaults -c conda-forge -c anaconda --file "${CURR_DIR}/$CondaDepsFileConda"
+    conda uninstall --yes libtiff
+fi
+if [[ $CondaDepsFilePip ]]; then
+    while read requirement; do sudo pip install $requirement; done < "${CURR_DIR}/$CondaDepsFilePip"
+fi
 
 # Install Package from PyPi
 if [[ $PyPiPackage ]]; then
@@ -119,6 +128,8 @@ fi
 # Cleanup
 rm Miniconda_Install.sh
 #conda clean -itp --yes
+
+conda update mkl
 
 echo "export PATH=$FullInstallDir/bin:$PATH" >> ~/.bashrc
 sudo ln -s $FullInstallDir/etc/profile.d/conda.sh /etc/profile.d/conda.sh

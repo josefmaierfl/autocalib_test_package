@@ -27,9 +27,9 @@ xhost +local:
 docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /app/start_testing.sh "${@:2}"
 
 # Shut down if asked for
-if [ $# -ne 0 ]; then
+# if [ $# -ne 0 ]; then
     if [ "${FIRST_ARG}" == "shutdown" ]; then
         echo "Shutting down"
         sudo shutdown -h now
     fi
-fi
+# fi

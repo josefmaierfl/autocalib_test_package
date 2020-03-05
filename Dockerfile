@@ -89,6 +89,8 @@ RUN mkdir /ci/tmp/
 COPY miniconda_linux_install.sh /ci/tmp/
 COPY build_ngransac.sh /ci/tmp/
 COPY py_test_scripts/requirements_necce_no_vers.txt /ci/tmp/
+COPY py_test_scripts/requirements_conda_install.txt /ci/tmp/
+COPY py_test_scripts/requirements_pip.txt /ci/tmp/
 COPY py_test_scripts/requirements_reinstall.txt /ci/tmp/
 COPY conda_package_reinstall.sh /ci/tmp/
 
@@ -112,7 +114,7 @@ RUN conda activate NGRANSAC
 RUN cd /ci && ./build_thirdparty.sh
 RUN cd /ci && ./copy_thirdparty.sh
 
-#FROM dependencies as usercode
+FROM dependencies as usercode
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/
 COPY build_generateVirtualSequence.sh /ci/tmp/
 RUN cd /ci/tmp && ./build_generateVirtualSequence.sh
@@ -134,6 +136,7 @@ COPY start_testing.sh /app/
 RUN chown -R conan /app
 
 USER conan
+RUN echo "export MKL_THREADING_LAYER=TBB" >> ~/.bashrc
 #SHELL ["/usr/bin/env", "bash", "--login", "-c"]
 #RUN echo 'alias python=python3' >> ~/.bashrc
 CMD [ "/bin/bash" ]

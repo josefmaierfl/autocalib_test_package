@@ -1,7 +1,8 @@
 """
 Main script file for executing the whole test procedure for testing the autocalibration SW
 """
-import sys, re, argparse, os, subprocess as sp, warnings, numpy as np, logging
+import numpy as np
+import sys, re, argparse, os, subprocess as sp, warnings, logging
 import communication as com
 import evaluation_numbers as en
 import pandas as pd
