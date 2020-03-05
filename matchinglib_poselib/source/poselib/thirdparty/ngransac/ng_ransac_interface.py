@@ -27,7 +27,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
         session = ''
         model_file = util.create_session_string('e2e', fmat, orb, rootsift, ratio, session)
         model_file = 'models/weights_' + model_file + '.net'
-        print("No model file specified. Inferring pre-trained model from given parameters:", model_file)
+        # print("No model file specified. Inferring pre-trained model from given parameters:", model_file)
     resblocks = 12 # number of res blocks of the network
     hyps = 1000 # number of hypotheses, i.e. number of RANSAC iterations
 
