@@ -42,6 +42,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -
 #RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y python3.6 && apt-get clean
 #RUN python3 -m pip install --upgrade pip setuptools wheel
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y nano && apt-get clean
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libomp-dev && apt-get clean
 
 #Install CUDA
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends \
@@ -83,6 +84,25 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -
   apt-mark hold libnccl2 && \
   apt-get clean
 
+# CUDA development
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends \
+	cuda-nvml-dev-$CUDA_PKG_VERSION \
+	cuda-command-line-tools-$CUDA_PKG_VERSION \
+	cuda-libraries-dev-$CUDA_PKG_VERSION \
+  cuda-minimal-build-$CUDA_PKG_VERSION \
+  libnccl-dev=$NCCL_VERSION-1+cuda10.2 && \
+	apt-get clean
+
+ENV LIBRARY_PATH /usr/local/cuda/lib64/stubs
+
+# cudnn7 libs
+ENV CUDNN_VERSION 7.6.5.32
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends \
+	libcudnn7=$CUDNN_VERSION-1+cuda10.2 \
+	libcudnn7-dev=$CUDNN_VERSION-1+cuda10.2 && \
+  apt-mark hold libcudnn7 && \
+  apt-get clean
+
 ADD ci /ci
 RUN mkdir /ci/tmp/
 
@@ -113,6 +133,7 @@ RUN conda activate NGRANSAC
 
 RUN cd /ci && ./build_thirdparty.sh
 RUN cd /ci && ./copy_thirdparty.sh
+RUN cd /ci && ./build_pytorch.sh
 
 FROM dependencies as usercode
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/

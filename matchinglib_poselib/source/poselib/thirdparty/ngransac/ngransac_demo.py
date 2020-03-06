@@ -1,4 +1,8 @@
 import numpy as np
+import sys
+sys.path.append('/usr/local/include/opencv4')
+sys.path.append('/usr/local/lib')
+sys.path.append('/home/maierj/anaconda3/envs/autoc_testing/lib/python3.6/site-packages/cv2')
 import cv2
 import math
 import argparse
@@ -12,6 +16,9 @@ import ngransac
 from network import CNNet
 from dataset import SparseDataset
 import util
+import eval_mutex as em
+import time
+from pynvml import *
 
 parser = util.create_parser('NG-RANSAC demo for a user defined image pair. Fits an essential matrix (default) or fundamental matrix (-fmat) using OpenCV RANSAC vs. NG-RANSAC.')
 
@@ -71,153 +78,185 @@ if len(model_file) == 0:
 	print("No model file specified. Inferring pre-trained model from given parameters:")
 	print(model_file)
 
-model = CNNet(opt.resblocks)
-model.load_state_dict(torch.load(model_file))
-model = model.cuda()
-model.eval()
-print("Successfully loaded model.")
+em.init_lock('gpu_mem_acqu')
+necc_mem = 850
+nrGPUs = torch.cuda.device_count()
+useGPU = 0
+try:
+	em.acquire_lock(40)
+	nfound = True
 
-print("\nProcessing pair:")
-print("Image 1: ", opt.image1)
-print("Image 2: ", opt.image2)
+	if nrGPUs > 1:
+		nvmlInit()
+		wcnt = 0
+		while nfound and wcnt < 40:
+			for i in range(0, nrGPUs):
+				h = nvmlDeviceGetHandleByIndex(i)
+				info = nvmlDeviceGetMemoryInfo(h)
+				free = info.free / 1048576
+				if free >= necc_mem:
+					useGPU = i
+					nfound = False
+					break
+			if nfound:
+				time.sleep(1)
+				if wcnt % 10 == 0:
+					print('Already waiting for ', wcnt, 'seconds for free GPU memory.')
+				wcnt += 1
 
-# read images
-img1 = cv2.imread(opt.image1)
-img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+	with torch.cuda.device(useGPU):
+		model = CNNet(opt.resblocks)
+		model.load_state_dict(torch.load(model_file))
+		model = model.cuda()
+		model.eval()
+		em.release_lock()
+		print("Successfully loaded model.")
 
-img2 = cv2.imread(opt.image2)
-img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+		print("\nProcessing pair:")
+		print("Image 1: ", opt.image1)
+		print("Image 2: ", opt.image2)
 
-# calibration matrices of image 1 and 2, principal point assumed to be at the center
-K1 = np.eye(3)
-K1[0,0] = K1[1,1] = opt.focallength1
-K1[0,2] = img1.shape[1] * 0.5
-K1[1,2] = img1.shape[0] * 0.5
+		# read images
+		img1 = cv2.imread(opt.image1)
+		img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 
-K2 = np.eye(3)
-K2[0,0] = K2[1,1] = opt.focallength2
-K2[0,2] = img2.shape[1] * 0.5
-K2[1,2] = img2.shape[0] * 0.5
+		img2 = cv2.imread(opt.image2)
+		img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
-# detect features
-kp1, desc1 = detector.detectAndCompute(img1, None)
-kp2, desc2 = detector.detectAndCompute(img2, None)
+		# calibration matrices of image 1 and 2, principal point assumed to be at the center
+		K1 = np.eye(3)
+		K1[0,0] = K1[1,1] = opt.focallength1
+		K1[0,2] = img1.shape[1] * 0.5
+		K1[1,2] = img1.shape[0] * 0.5
 
-print("\nFeature found in image 1:", len(kp1))
-print("Feature found in image 2:", len(kp2))
+		K2 = np.eye(3)
+		K2[0,0] = K2[1,1] = opt.focallength2
+		K2[0,2] = img2.shape[1] * 0.5
+		K2[1,2] = img2.shape[0] * 0.5
 
-# root sift normalization
-if opt.rootsift:
-	print("Using RootSIFT normalization.")
-	desc1 = util.rootSift(desc1)
-	desc2 = util.rootSift(desc2)
+		# detect features
+		kp1, desc1 = detector.detectAndCompute(img1, None)
+		kp2, desc2 = detector.detectAndCompute(img2, None)
 
-# feature matching
-bf = cv2.BFMatcher()
-matches = bf.knnMatch(desc1, desc2, k=2)
+		print("\nFeature found in image 1:", len(kp1))
+		print("Feature found in image 2:", len(kp2))
 
-good_matches = []
-pts1 = []
-pts2 = []
+		# root sift normalization
+		if opt.rootsift:
+			print("Using RootSIFT normalization.")
+			desc1 = util.rootSift(desc1)
+			desc2 = util.rootSift(desc2)
 
-#side information for the network (matching ratios in this case)
-ratios = []
+		# feature matching
+		bf = cv2.BFMatcher()
+		matches = bf.knnMatch(desc1, desc2, k=2)
 
-print("")
-if opt.ratio < 1.0:
-	print("Using Lowe's ratio filter with", opt.ratio)
+		good_matches = []
+		pts1 = []
+		pts2 = []
 
-for (m,n) in matches:
-	if m.distance < opt.ratio*n.distance: # apply Lowe's ratio filter
-		good_matches.append(m)
-		pts2.append(kp2[m.trainIdx].pt)
-		pts1.append(kp1[m.queryIdx].pt)
-		ratios.append(m.distance / n.distance)
+		#side information for the network (matching ratios in this case)
+		ratios = []
 
-print("Number of valid matches:", len(good_matches))
+		print("")
+		if opt.ratio < 1.0:
+			print("Using Lowe's ratio filter with", opt.ratio)
 
-pts1 = np.array([pts1])
-pts2 = np.array([pts2])
+		for (m,n) in matches:
+			if m.distance < opt.ratio*n.distance: # apply Lowe's ratio filter
+				good_matches.append(m)
+				pts2.append(kp2[m.trainIdx].pt)
+				pts1.append(kp1[m.queryIdx].pt)
+				ratios.append(m.distance / n.distance)
 
-ratios = np.array([ratios])
-ratios = np.expand_dims(ratios, 2)
+		print("Number of valid matches:", len(good_matches))
 
-# ------------------------------------------------
-# fit fundamental or essential matrix using OPENCV
-# ------------------------------------------------
-if opt.fmat:
+		pts1 = np.array([pts1])
+		pts2 = np.array([pts2])
 
-	# === CASE FUNDAMENTAL MATRIX =========================================
+		ratios = np.array([ratios])
+		ratios = np.expand_dims(ratios, 2)
 
-	ransac_model, ransac_inliers = cv2.findFundamentalMat(pts1, pts2, ransacReprojThreshold=opt.threshold, confidence=0.999)
-else:
-	# === CASE ESSENTIAL MATRIX =========================================
+		# ------------------------------------------------
+		# fit fundamental or essential matrix using OPENCV
+		# ------------------------------------------------
+		if opt.fmat:
 
-	# normalize key point coordinates when fitting the essential matrix
-	pts1 = cv2.undistortPoints(pts1, K1, None)
-	pts2 = cv2.undistortPoints(pts2, K2, None)
+			# === CASE FUNDAMENTAL MATRIX =========================================
 
-	K = np.eye(3)
+			ransac_model, ransac_inliers = cv2.findFundamentalMat(pts1, pts2, ransacReprojThreshold=opt.threshold, confidence=0.999)
+		else:
+			# === CASE ESSENTIAL MATRIX =========================================
 
-	ransac_model, ransac_inliers = cv2.findEssentialMat(pts1, pts2, K, method=cv2.RANSAC, prob=0.999, threshold=opt.threshold)
+			# normalize key point coordinates when fitting the essential matrix
+			pts1 = cv2.undistortPoints(pts1, K1, None)
+			pts2 = cv2.undistortPoints(pts2, K2, None)
 
-print("\n=== Model found by RANSAC: ==========\n")
-print(ransac_model)
+			K = np.eye(3)
 
-print("\nRANSAC Inliers:", ransac_inliers.sum())
+			ransac_model, ransac_inliers = cv2.findEssentialMat(pts1, pts2, K, method=cv2.RANSAC, prob=0.999, threshold=opt.threshold)
+			pts1 = np.array([np.squeeze(pts1).tolist()])
+			pts2 = np.array([np.squeeze(pts2).tolist()])
 
-# ---------------------------------------------------
-# fit fundamental or essential matrix using NG-RANSAC
-# ---------------------------------------------------
+		print("\n=== Model found by RANSAC: ==========\n")
+		print(ransac_model)
 
-if opt.fmat:
-	# normalize x and y coordinates before passing them to the network
-	# normalized by the image size
-	util.normalize_pts(pts1, img1.shape)
-	util.normalize_pts(pts2, img2.shape)
+		print("\nRANSAC Inliers:", ransac_inliers.sum())
 
-if opt.nosideinfo:
-	# remove side information before passing it to the network
-	ratios = np.zeros(ratios.shape)
+		# ---------------------------------------------------
+		# fit fundamental or essential matrix using NG-RANSAC
+		# ---------------------------------------------------
 
-# create data tensor of feature coordinates and matching ratios
-correspondences = np.concatenate((pts1, pts2, ratios), axis=2)
-correspondences = np.transpose(correspondences)
-correspondences = torch.from_numpy(correspondences).float()
+		if opt.fmat:
+			# normalize x and y coordinates before passing them to the network
+			# normalized by the image size
+			util.normalize_pts(pts1, img1.shape)
+			util.normalize_pts(pts2, img2.shape)
 
-# predict neural guidance, i.e. RANSAC sampling probabilities
-log_probs = model(correspondences.unsqueeze(0).cuda())[0] #zero-indexing creates and removes a dummy batch dimension
-probs = torch.exp(log_probs).cpu()
+		if opt.nosideinfo:
+			# remove side information before passing it to the network
+			ratios = np.zeros(ratios.shape)
 
-out_model = torch.zeros((3, 3)).float() # estimated model
-out_inliers = torch.zeros(log_probs.size()) # inlier mask of estimated model
-out_gradients = torch.zeros(log_probs.size()) # gradient tensor (only used during training)
-rand_seed = 0 # random seed to by used in C++
+		# create data tensor of feature coordinates and matching ratios
+		correspondences = np.concatenate((pts1, pts2, ratios), axis=2)
+		correspondences = np.transpose(correspondences)
+		correspondences = torch.from_numpy(correspondences).float()
 
-# run NG-RANSAC
-if opt.fmat:
+		# predict neural guidance, i.e. RANSAC sampling probabilities
+		log_probs = model(correspondences.unsqueeze(0).cuda())[0] #zero-indexing creates and removes a dummy batch dimension
+		probs = torch.exp(log_probs).cpu()
 
-	# === CASE FUNDAMENTAL MATRIX =========================================
+		out_model = torch.zeros((3, 3)).float() # estimated model
+		out_inliers = torch.zeros(log_probs.size()) # inlier mask of estimated model
+		out_gradients = torch.zeros(log_probs.size()) # gradient tensor (only used during training)
+		rand_seed = 0 # random seed to by used in C++
 
-	# undo normalization of x and y image coordinates
-	util.denormalize_pts(correspondences[0:2], img1.shape)
-	util.denormalize_pts(correspondences[2:4], img2.shape)
+		# run NG-RANSAC
+		if opt.fmat:
 
-	incount = ngransac.find_fundamental_mat(correspondences, probs, rand_seed, opt.hyps, opt.threshold, opt.refine, out_model, out_inliers, out_gradients)
-else:
+			# === CASE FUNDAMENTAL MATRIX =========================================
 
-	# === CASE ESSENTIAL MATRIX =========================================
+			# undo normalization of x and y image coordinates
+			util.denormalize_pts(correspondences[0:2], img1.shape)
+			util.denormalize_pts(correspondences[2:4], img2.shape)
 
-	incount = ngransac.find_essential_mat(correspondences, probs, rand_seed, opt.hyps, opt.threshold, out_model, out_inliers, out_gradients)
+			incount = ngransac.find_fundamental_mat(correspondences, probs, rand_seed, opt.hyps, opt.threshold, opt.refine, out_model, out_inliers, out_gradients)
+		else:
 
-print("\n=== Model found by NG-RANSAC: =======\n")
-print(out_model.numpy())
+			# === CASE ESSENTIAL MATRIX =========================================
 
-print("\nNG-RANSAC Inliers: ", int(incount))
+			incount = ngransac.find_essential_mat(correspondences, probs, rand_seed, opt.hyps, opt.threshold, out_model, out_inliers, out_gradients)
 
-# create a visualization of the matching, comparing results of RANSAC and NG-RANSAC
-out_inliers = out_inliers.byte().numpy().ravel().tolist()
-ransac_inliers = ransac_inliers.ravel().tolist()
+		print("\n=== Model found by NG-RANSAC: =======\n")
+		print(out_model.numpy())
+
+		print("\nNG-RANSAC Inliers: ", int(incount))
+
+		# create a visualization of the matching, comparing results of RANSAC and NG-RANSAC
+		out_inliers = out_inliers.byte().numpy().ravel().tolist()
+		ransac_inliers = ransac_inliers.ravel().tolist()
+except Exception:
+	em.release_lock()
 
 match_img_ransac = cv2.drawMatches(img1, kp1, img2, kp2, good_matches, None, flags=2, matchColor=(75,180,60), matchesMask = ransac_inliers)
 match_img_ngransac = cv2.drawMatches(img1, kp1, img2, kp2, good_matches, None, flags=2, matchColor=(200,130,0), matchesMask = out_inliers)

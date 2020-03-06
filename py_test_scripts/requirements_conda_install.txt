@@ -9,7 +9,6 @@ pandocfilters
 passlib
 Pillow
 pyparsing
-pytorch
 PyYAML
 regex
 ruamel.yaml
@@ -20,3 +19,11 @@ Send2Trash
 setproctitle
 twilio
 pathos
+pynvml
+ninja
+mkl
+mkl-include
+setuptools
+cmake
+cffi
+typing
