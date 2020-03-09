@@ -110,7 +110,7 @@ fi
 if [[ $CondaDepsFileConda ]]; then
     conda install --yes -c defaults -c conda-forge -c anaconda --file "${CURR_DIR}/$CondaDepsFileConda"
     # conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
-    conda install -c pytorch magma-cuda102
+    conda install -c pytorch magma-cuda101
     conda uninstall --yes libtiff
 fi
 if [[ $CondaDepsFilePip ]]; then
