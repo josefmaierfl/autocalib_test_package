@@ -10,5 +10,6 @@ eval "$(conda shell.bash hook)"
 conda activate NGRANSAC
 #conda list
 
+export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 $CFLAGS"
 python setup.py install
 #sudo pip install -e .

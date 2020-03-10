@@ -181,8 +181,8 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 FROM dev-pytorch-build as dev-pytorch-vision
 WORKDIR /ci/thirdparty
-RUN git clone git@github.com:pytorch/vision.git
-RUN cd vision && python setup.py install
+RUN git clone https://github.com/pytorch/vision.git
+RUN ../build_pytorch_vision.sh
 
 FROM dev-pytorch-vision as usercode
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/

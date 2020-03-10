@@ -21,10 +21,11 @@ export CUDNN_LIBRARY_PATH="/usr/local/cuda-10.1/lib64/"
 export LIBRARY_PATH="/usr/local/cuda-10.1/lib64"
 
 export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
-export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 $CFLAGS"
+export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 $CFLAGS"
 export TORCH_CUDA_ARCH_LIST="3.5 5.2 6.0 6.1 7.0+PTX"
 export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
-export USE_CUDA=1 USE_CUDNN=1 USE_MKLDNN=1 USE_OPENCV USE_GLOO=0
+# export USE_CUDA=1 USE_CUDNN=1 USE_MKLDNN=1 USE_OPENCV USE_GLOO=0
+export USE_CUDA=1 USE_CUDNN=1 USE_MKLDNN=1 USE_OPENCV
 python setup.py install
 
 # cd $thirdparty_dir
