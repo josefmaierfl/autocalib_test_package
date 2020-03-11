@@ -197,7 +197,7 @@ def update_max_used_mem(file_mutex, file, nrGPUs):
 
 
 def read_max_used_mem(file_mutex, file):
-    mem_per_task = 850
+    mem_per_task = 500
     if os.path.exists(file):
         file_mutex.acquire_lock()
         with open(file, 'r') as fi:
