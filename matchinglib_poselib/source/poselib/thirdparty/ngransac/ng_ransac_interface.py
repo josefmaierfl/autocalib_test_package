@@ -26,9 +26,12 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     # pts1 & pts2 list of tuples with matching image locations
     gpu_mutex = em.Locking('gpu_mem_acqu')
     file_mutex = em.Locking('file_write')
+    file2_mutex = em.Locking('file_mem_write')
     file_procs = 'nr_gpu_processes.txt'
+    file_mem = 'max_cached_mem.txt'
     home_dir = str(Path.home())
     pfile = os.path.join(home_dir, file_procs)
+    mfile = os.path.join(home_dir, file_mem)
     pyfilepath = os.path.dirname(os.path.realpath(__file__))
     os.chdir(pyfilepath)
     if len(model_file) == 0:
@@ -42,9 +45,9 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
         # print("No model file specified. Inferring pre-trained model from given parameters:", model_file)
     resblocks = 12 # number of res blocks of the network
     hyps = 1000 # number of hypotheses, i.e. number of RANSAC iterations
-
-    necc_mem = 1000
-    mem_per_task = 900
+    rec_mem = read_max_used_mem(file2_mutex, mfile)
+    necc_mem = 2 * rec_mem
+    mem_per_task = 1.2 * rec_mem
     nrGPUs = torch.cuda.device_count()
     useGPU = 0
     try:
@@ -132,6 +135,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
                 sys.stdout.flush()
                 raise
             model_npy = out_model.numpy()
+            update_max_used_mem(file2_mutex, mfile, nrGPUs)
             try:
                 del model
                 del log_probs
@@ -168,3 +172,32 @@ def rem_proc_num(file_mutex, file, gpu_nr):
         with open(file, 'w') as fo:
             fo.write(','.join(map(str, procs)))
     file_mutex.release_lock()
+
+
+def update_max_used_mem(file_mutex, file, nrGPUs):
+    max_mem = 0
+    for i in range(0, nrGPUs):
+        max_mem += int(torch.cuda.max_memory_reserved(i) / 1048576)
+    file_mutex.acquire_lock()
+    if os.path.exists(file):
+        with open(file, 'r') as fi:
+            li = fi.readline()
+        mem_stored = int(li)
+        if max_mem > mem_stored:
+            with open(file, 'w') as fo:
+                fo.write(str(max_mem))
+    else:
+        with open(file, 'w') as fo:
+            fo.write(str(max_mem))
+    file_mutex.release_lock()
+
+
+def read_max_used_mem(file_mutex, file):
+    mem_per_task = 900
+    if os.path.exists(file):
+        file_mutex.acquire_lock()
+        with open(file, 'r') as fi:
+            li = fi.readline()
+        file_mutex.release_lock()
+        mem_per_task = int(li)
+    return mem_per_task
