@@ -28,7 +28,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     file_mutex = em.Locking('file_write')
     file_procs = 'nr_gpu_processes.txt'
     home_dir = str(Path.home())
-    pfile = os.path.join('nr_gpu_processes.txt')
+    pfile = os.path.join(home_dir, file_procs)
     pyfilepath = os.path.dirname(os.path.realpath(__file__))
     os.chdir(pyfilepath)
     if len(model_file) == 0:
