@@ -1933,7 +1933,7 @@ bool startEvaluation(ArgvParser& cmd)
                     failNr++;
                     if ((float)failNr / (float)filenamesRt.size() < 0.5f)
                     {
-                        std::cout << "Estimation of essential matrix failed! Trying next pair." << endl;
+                        std::cout << "Estimation of essential matrix failed for image pair " << i << "! Trying next pair." << endl;
                         t_2 = chrono::high_resolution_clock::now();
                         ar[i].tm.stereoRefine = chrono::duration_cast<chrono::microseconds>(t_2 - t_1).count();
                         sm.actR.copyTo(ar[i].R_GT);
