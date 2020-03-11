@@ -51,13 +51,13 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     nrGPUs = torch.cuda.device_count()
     useGPU = 0
     try:
-        gpu_mutex.acquire_lock(42)
+        gpu_mutex.acquire_lock(62)
         nfound = True
 
         if nrGPUs > 1:
             nvmlInit()
             wcnt = 0
-            while nfound and wcnt < 40:
+            while nfound and wcnt < 60:
                 if os.path.exists(pfile):
                     file_mutex.acquire_lock()
                     with open(pfile, 'r') as fi:
@@ -83,7 +83,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
                         break
                 if nfound:
                     time.sleep(1)
-                    if wcnt % 10 == 0:
+                    if wcnt % 10 == 0 and wcnt > 0:
                         print('Already waiting for ', wcnt, 'seconds for free GPU memory.')
                     wcnt += 1
             if wcnt >= 40:
@@ -192,7 +192,7 @@ def update_max_used_mem(file_mutex, file, nrGPUs):
 
 
 def read_max_used_mem(file_mutex, file):
-    mem_per_task = 900
+    mem_per_task = 850
     if os.path.exists(file):
         file_mutex.acquire_lock()
         with open(file, 'r') as fi:
