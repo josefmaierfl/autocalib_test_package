@@ -22,7 +22,7 @@ from pathlib import Path
 from pynvml import *
 
 
-def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
+def start_ngransac(pts1, pts2, model_file, threshold=0.001, gpu_nr=-1, K1=None, K2=None):
     # pts1 & pts2 list of tuples with matching image locations
     gpu_mutex = em.Locking('gpu_mem_acqu')
     file_mutex = em.Locking('file_write')
@@ -51,51 +51,55 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     nrGPUs = torch.cuda.device_count()
     useGPU = 0
     try:
-        gpu_mutex.acquire_lock(62)
-        nfound = True
+        if gpu_nr < 0:
+            gpu_mutex.acquire_lock(62)
+            nfound = True
 
-        if nrGPUs > 1:
-            nvmlInit()
-            wcnt = 0
-            while nfound and wcnt < 60:
-                if os.path.exists(pfile):
-                    file_mutex.acquire_lock()
-                    with open(pfile, 'r') as fi:
-                        li = fi.readline()
-                    file_mutex.release_lock()
-                    procs = list(map(int, li.split(',')))
-                else:
-                    procs = [0] * nrGPUs
-                for i in range(0, nrGPUs):
-                    h = nvmlDeviceGetHandleByIndex(i)
-                    info = nvmlDeviceGetMemoryInfo(h)
-                    free = info.free / 1048576
-                    total = info.total / 1048576
-                    free2 = total - procs[i] * mem_per_task
-                    if free >= necc_mem and free2 >= necc_mem:
-                        useGPU = i
-                        nfound = False
-                        procs[i] += 1
+            if nrGPUs > 1:
+                nvmlInit()
+                wcnt = 0
+                while nfound and wcnt < 60:
+                    if os.path.exists(pfile):
                         file_mutex.acquire_lock()
-                        with open(pfile, 'w') as fo:
-                            fo.write(','.join(map(str, procs)))
+                        with open(pfile, 'r') as fi:
+                            li = fi.readline()
                         file_mutex.release_lock()
-                        break
-                if nfound:
-                    time.sleep(1)
-                    if wcnt % 10 == 0 and wcnt > 0:
-                        print('Already waiting for ', wcnt, 'seconds for free GPU memory.')
-                    wcnt += 1
-            if wcnt >= 40:
-                gpu_mutex.release_lock()
-                raise TimeoutError('Waited too long for free memory')
+                        procs = list(map(int, li.split(',')))
+                    else:
+                        procs = [0] * nrGPUs
+                    for i in range(0, nrGPUs):
+                        h = nvmlDeviceGetHandleByIndex(i)
+                        info = nvmlDeviceGetMemoryInfo(h)
+                        free = info.free / 1048576
+                        total = info.total / 1048576
+                        free2 = total - procs[i] * mem_per_task
+                        if free >= necc_mem and free2 >= necc_mem:
+                            useGPU = i
+                            nfound = False
+                            procs[i] += 1
+                            file_mutex.acquire_lock()
+                            with open(pfile, 'w') as fo:
+                                fo.write(','.join(map(str, procs)))
+                            file_mutex.release_lock()
+                            break
+                    if nfound:
+                        time.sleep(1)
+                        if wcnt % 10 == 0 and wcnt > 0:
+                            print('Already waiting for ', wcnt, 'seconds for free GPU memory.')
+                        wcnt += 1
+                if wcnt >= 40:
+                    gpu_mutex.release_lock()
+                    raise TimeoutError('Waited too long for free memory')
+        else:
+            useGPU = gpu_nr
 
         with torch.cuda.device(useGPU):
             model = CNNet(resblocks)
             model.load_state_dict(torch.load(model_file))
             model = model.cuda()
             model.eval()
-            gpu_mutex.release_lock()
+            if gpu_nr < 0:
+                gpu_mutex.release_lock()
             # print("Successfully loaded model.")
 
             ratios = np.array([[0] * len(pts1)])
@@ -149,14 +153,15 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
                 pass
             torch.cuda.empty_cache()
     except:
-        gpu_mutex.release_lock()
+        if gpu_nr < 0:
+            gpu_mutex.release_lock()
         e = sys.exc_info()
         print(str(e))
         sys.stdout.flush()
         rem_proc_num(file_mutex, pfile, useGPU)
         raise
     out_inliers = out_inliers.byte().numpy().ravel().tolist()
-    output = {'model': model_npy, 'inlier_mask': out_inliers, 'nr_inliers': incount}
+    output = {'model': model_npy, 'inlier_mask': out_inliers, 'nr_inliers': incount, 'used_gpu': useGPU}
     rem_proc_num(file_mutex, pfile, useGPU)
     return output
 

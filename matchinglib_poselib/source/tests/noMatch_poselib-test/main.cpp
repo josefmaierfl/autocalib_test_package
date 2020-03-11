@@ -1675,6 +1675,7 @@ bool startEvaluation(ArgvParser& cmd)
     std::list<std::pair<int, int>> nrFeatures;
     std::list<std::vector<cv::DMatch>> matches_accum;
     std::list<std::vector<bool>> frameInliers_accum;
+    int gpu_nr = -1;
     for(int i = 0; i < (int)filenamesMatches.size(); i++)
     {
         //Load stereo configuration
@@ -1928,7 +1929,7 @@ bool startEvaluation(ArgvParser& cmd)
 			}
 			else if(cp.RobMethod == "NGRANSAC"){
 			    int inliers = 0;
-                inliers = py_interface.call_ngransac(ngransacModel, th, points1, points2, E, mask);
+                inliers = py_interface.call_ngransac(ngransacModel, th, points1, points2, E, mask, gpu_nr);
                 if(inliers < 0){
                     failNr++;
                     if ((float)failNr / (float)filenamesRt.size() < 0.5f)

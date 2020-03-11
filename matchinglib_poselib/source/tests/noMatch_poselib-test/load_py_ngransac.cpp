@@ -12,6 +12,7 @@ BOOST_PYTHON_MODULE(ComputeFramework)
             .def_readonly("threshold", &Py_input::threshold)
             .def_readonly("pts1", &Py_input::pts1)
             .def_readonly("pts2", &Py_input::pts2)
+            .def_readonly("gpu_nr", &Py_input::gpu_nr)
             .def_readonly("K1", &Py_input::K1)
             .def_readonly("K2", &Py_input::K2)
             ;
@@ -33,11 +34,11 @@ bp::object import(const std::string& module, const std::string& path, bp::object
     return locals["new_module"];
 }
 
-void ngransacInterface::transferModel(bp::list &model, bp::list &inlier_mask, int nr_inliers)
+void ngransacInterface::transferModel(bp::list &model, bp::list &inlier_mask, int nr_inliers, int gpu_nr)
 {
     std::vector<double> model_c = pyList2Vec<double>(model);
     std::vector<int> mask = pyList2Vec<int>(inlier_mask);
-    result = Py_output((unsigned int)nr_inliers, vecToMat<int, unsigned char>(mask, 1, (int)mask.size()), vecToMat<double, double>(model_c, 3, 3).t());
+    result = Py_output((unsigned int)nr_inliers, vecToMat<int, unsigned char>(mask, 1, (int)mask.size()), vecToMat<double, double>(model_c, 3, 3).t(), gpu_nr);
 }
 
 int ngransacInterface::initialize(const std::string& module_name, const std::string& path, const std::string& workdir){
@@ -71,19 +72,21 @@ int ngransacInterface::call_ngransac(const std::string &model_file_name,
                                      const std::vector<cv::Point2f> &points2,
                                      cv::Mat &model,
                                      cv::Mat &mask,
+                                     int &gpu_nr,
                                      cv::InputArray &K1,
                                      cv::InputArray &K2){
     if(!is_init){
         return -1;
     }
     try {
-        data = Py_input(model_file_name, threshold, points1, points2, K1, K2);
+        data = Py_input(model_file_name, threshold, points1, points2, gpu_nr, K1, K2);
         bp::object compute = compute_module();
         bp::object py_out = compute.attr("compute")(data);
         bp::list model_ = bp::extract<bp::list>(py_out[0]);
         bp::list inlier_mask_ = bp::extract<bp::list>(py_out[1]);
         int nr_inliers = bp::extract<int>(py_out[2]);
-        transferModel(model_, inlier_mask_, nr_inliers);
+        gpu_nr = bp::extract<int>(py_out[3]);
+        transferModel(model_, inlier_mask_, nr_inliers, gpu_nr);
         result.model.copyTo(model);
         result.mask.copyTo(mask);
         return nr_inliers;

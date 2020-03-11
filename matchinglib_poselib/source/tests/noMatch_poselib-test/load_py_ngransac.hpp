@@ -74,15 +74,18 @@ struct Py_input{
         double threshold;
         bp::list pts1, pts2;
         bp::list K1, K2;
+        int gpu_nr;
 
         Py_input(const std::string &model_file_name_,
                 const double &threshold_,
                 const std::vector<cv::Point2f> &pts1_,
                 const std::vector<cv::Point2f> &pts2_,
+                const int &gpu_nr_,
                 cv::InputArray &K1_ = cv::noArray(),
                 cv::InputArray &K2_ = cv::noArray()):
                 model_file_name(model_file_name_),
-                threshold(threshold_){
+                threshold(threshold_),
+                gpu_nr(gpu_nr_){
             std::vector<bp::tuple> pts1__ = vecCvPoints2vecPyTuple(pts1_);
             std::vector<bp::tuple> pts2__ = vecCvPoints2vecPyTuple(pts2_);
             pts1 = std_vector_to_py_list(pts1__);
@@ -99,6 +102,7 @@ struct Py_input{
         Py_input(){
             model_file_name = "";
             threshold = 0.001;
+            gpu_nr = -1;
         }
     };
 
@@ -106,17 +110,20 @@ struct Py_output{
     unsigned int nr_inliers;
     cv::Mat mask;
     cv::Mat model;
+    int gpu_nr;
 
-    Py_output(const unsigned int &nr_inliers_, cv::Mat mask_, cv::Mat model_):
+    Py_output(const unsigned int &nr_inliers_, cv::Mat mask_, cv::Mat model_, const int &gpu_nr_):
             nr_inliers(nr_inliers_),
             mask(mask_.clone()),
-            model(model_.clone()){
+            model(model_.clone()),
+            gpu_nr(gpu_nr_){
         CV_Assert((mask.type() == CV_8UC1) && (mask.rows == 1) && (mask.cols > mask.rows));
         CV_Assert((model.type() == CV_64FC1) && (model.rows == 3) && (model.cols == model.rows));
     };
 
     Py_output(){
         nr_inliers = 0;
+        gpu_nr = -1;
     };
 };
 
@@ -161,9 +168,10 @@ public:
                       const std::vector<cv::Point2f> &points2,
                       cv::Mat &model,
                       cv::Mat &mask,
+                      int &gpu_nr,
                       cv::InputArray &K1 = cv::noArray(),
                       cv::InputArray &K2 = cv::noArray());
-    void transferModel(bp::list &model, bp::list &inlier_mask, int nr_inliers);
+    void transferModel(bp::list &model, bp::list &inlier_mask, int nr_inliers, int gpu_nr);
 private:
     bool is_init = false;
     Py_input data;
