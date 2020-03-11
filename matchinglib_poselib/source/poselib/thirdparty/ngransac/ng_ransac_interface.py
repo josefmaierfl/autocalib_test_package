@@ -47,7 +47,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     hyps = 1000 # number of hypotheses, i.e. number of RANSAC iterations
     rec_mem = read_max_used_mem(file2_mutex, mfile)
     necc_mem = 2 * rec_mem
-    mem_per_task = 1.2 * rec_mem
+    mem_per_task = 1.1 * rec_mem
     nrGPUs = torch.cuda.device_count()
     useGPU = 0
     try:
@@ -57,16 +57,15 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
         if nrGPUs > 1:
             nvmlInit()
             wcnt = 0
-            if os.path.exists(pfile):
-                file_mutex.acquire_lock()
-                with open(pfile, 'r') as fi:
-                    li = fi.readline()
-                file_mutex.release_lock()
-                procs = list(map(int, li.split(',')))
-            else:
-                procs = [0] * nrGPUs
-
             while nfound and wcnt < 40:
+                if os.path.exists(pfile):
+                    file_mutex.acquire_lock()
+                    with open(pfile, 'r') as fi:
+                        li = fi.readline()
+                    file_mutex.release_lock()
+                    procs = list(map(int, li.split(',')))
+                else:
+                    procs = [0] * nrGPUs
                 for i in range(0, nrGPUs):
                     h = nvmlDeviceGetHandleByIndex(i)
                     info = nvmlDeviceGetMemoryInfo(h)
