@@ -133,16 +133,11 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
                 raise
             model_npy = out_model.numpy()
             try:
-                if model:
-                    del model
-                if log_probs:
-                    del log_probs
-                if out_gradients:
-                    del out_gradients
-                if correspondences:
-                    del correspondences
-                if probs:
-                    del probs
+                del model
+                del log_probs
+                del out_gradients
+                del correspondences
+                del probs
             except:
                 e = sys.exc_info()
                 print('Deleting objects failed')
