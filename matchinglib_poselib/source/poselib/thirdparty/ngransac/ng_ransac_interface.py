@@ -38,11 +38,11 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
     resblocks = 12 # number of res blocks of the network
     hyps = 1000 # number of hypotheses, i.e. number of RANSAC iterations
 
-    necc_mem = 850
+    necc_mem = 1000
     nrGPUs = torch.cuda.device_count()
     useGPU = 0
     try:
-        em.acquire_lock(40)
+        em.acquire_lock(42)
         nfound = True
 
         if nrGPUs > 1:
@@ -62,6 +62,8 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
                     if wcnt % 10 == 0:
                         print('Already waiting for ', wcnt, 'seconds for free GPU memory.')
                     wcnt += 1
+            if wcnt >= 40:
+                raise TimeoutError('Waited too long for free memory')
 
         with torch.cuda.device(useGPU):
             model = CNNet(resblocks)
@@ -107,6 +109,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
                 sys.stdout.flush()
                 raise
             model = out_model.numpy()
+            torch.cuda.empty_cache()
     except:
         em.release_lock()
         e = sys.exc_info()
