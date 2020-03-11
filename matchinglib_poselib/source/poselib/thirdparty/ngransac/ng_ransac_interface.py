@@ -131,7 +131,24 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
                 print(str(e))
                 sys.stdout.flush()
                 raise
-            model = out_model.numpy()
+            model_npy = out_model.numpy()
+            try:
+                if model:
+                    del model
+                if log_probs:
+                    del log_probs
+                if out_gradients:
+                    del out_gradients
+                if correspondences:
+                    del correspondences
+                if probs:
+                    del probs
+            except:
+                e = sys.exc_info()
+                print('Deleting objects failed')
+                print(str(e))
+                sys.stdout.flush()
+                pass
             torch.cuda.empty_cache()
     except:
         gpu_mutex.release_lock()
@@ -141,7 +158,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, K1=None, K2=None):
         rem_proc_num(file_mutex, pfile, useGPU)
         raise
     out_inliers = out_inliers.byte().numpy().ravel().tolist()
-    output = {'model': model, 'inlier_mask': out_inliers, 'nr_inliers': incount}
+    output = {'model': model_npy, 'inlier_mask': out_inliers, 'nr_inliers': incount}
     rem_proc_num(file_mutex, pfile, useGPU)
     return output
 
