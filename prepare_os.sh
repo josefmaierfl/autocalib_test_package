@@ -18,7 +18,7 @@ if [ ${FOUND} -ne 1 ]; then
   exit 1
 fi
 sudo mkdir /data
-sudo mount /dev/nvme1n1 /data
+sudo mount /dev/${DRIVE_NAME} /data
 sudo cp /etc/fstab /etc/fstab.orig
 echo "UUID=$(lsblk -nr -o UUID,NAME | grep -Po '.*(?= ${DRIVE_NAME})')  /data  xfs  defaults,nofail  0  2" | sudo tee -a /etc/fstab
 sudo umount /data
