@@ -18,7 +18,7 @@ test_raise = [False, False, False]
 def start_testing(path, path_confs_out, skip_tests, skip_gen_sc_conf, skip_crt_sc,
                         use_cal_tests, use_evals, img_path, store_path_sequ, load_path, cpu_use,
                         exec_sequ, message_path, exec_cal, store_path_cal, compare_pars,
-                        comp_pars_ev_nr, compare_path, log_new_folders):
+                        comp_pars_ev_nr, compare_path, log_new_folders, skip_find_opt_pars, other_conf):
     main_tests = en.get_available_main_tests()
     scene_creation = en.get_available_sequences()
     if skip_tests:
@@ -39,14 +39,15 @@ def start_testing(path, path_confs_out, skip_tests, skip_gen_sc_conf, skip_crt_s
         # Generate configuration files
         if any([b == mt for b in scene_creation]) and \
                 not (skip_gen_sc_conf and any([b == mt for b in skip_gen_sc_conf])):
-            ret = gen_config_files(mt, path, path_confs_out, img_path, store_path_sequ, load_path, log_new_folders)
+            ret = gen_config_files(mt, path, path_confs_out, img_path, store_path_sequ, load_path, log_new_folders,
+                                   other_conf)
             if ret:
                 return ret
             print('Finished generating sequence configuration files for ' + mt)
         # Generate scenes and matches
         if any([b == mt for b in scene_creation]) and \
                 not (skip_crt_sc and any([b == mt for b in skip_crt_sc])):
-            pcol = get_confs_path(mt, -1, path, path_confs_out)
+            pcol = get_confs_path(mt, -1, path, path_confs_out, other_conf)
             for pco in pcol:
                 ret = gen_scenes(mt, pco, exec_sequ, message_path_new, cpu_use)
                 log_sequ_folders(mt, store_path_sequ, log_new_folders)
@@ -67,7 +68,7 @@ def start_testing(path, path_confs_out, skip_tests, skip_gen_sc_conf, skip_crt_s
             for tn in test_nrs1:
                 if tn in test_nr_list:
                     (conf_name, conf_nr) = en.get_autocalib_sequence_config_ref(mt, tn)
-                    pco = get_confs_path(conf_name, conf_nr, path, path_confs_out)
+                    pco = get_confs_path(conf_name, conf_nr, path, path_confs_out, other_conf)
                     # Run autocalibration
                     ret = start_autocalibration(mt, tn, pco, store_path_cal, exec_cal, message_path_new, cpu_use)
                     log_autoc_folders(mt, tn, store_path_cal, log_new_folders)
@@ -83,7 +84,7 @@ def start_testing(path, path_confs_out, skip_tests, skip_gen_sc_conf, skip_crt_s
                     else:
                         ev_nrs = use_evals[mt][str(tn)]
                     ret = start_eval(mt, tn, ev_nrs, store_path_cal, cpu_use, message_path_new,
-                                     compare_pars, comp_pars_ev_nr, compare_path)
+                                     compare_pars, comp_pars_ev_nr, compare_path, skip_find_opt_pars)
                     log_autoc_folders(mt, tn, store_path_cal, log_new_folders)
                     if ret:
                         return ret
@@ -98,7 +99,7 @@ def start_testing(path, path_confs_out, skip_tests, skip_gen_sc_conf, skip_crt_s
                     tn = int(nr_key)
                     ev_nrs = use_evals[mt][nr_key]
                 ret = start_eval(mt, tn, ev_nrs, store_path_cal, cpu_use, message_path_new,
-                                 compare_pars, comp_pars_ev_nr, compare_path)
+                                 compare_pars, comp_pars_ev_nr, compare_path, skip_find_opt_pars)
                 log_autoc_folders(mt, tn, store_path_cal, log_new_folders, True)
                 if ret:
                     return ret
@@ -109,7 +110,7 @@ def start_testing(path, path_confs_out, skip_tests, skip_gen_sc_conf, skip_crt_s
 
 
 def start_eval(test_name, test_nr, use_evals, store_path_cal, cpu_use, message_path,
-               compare_pars, comp_pars_ev_nr, compare_path):
+               compare_pars, comp_pars_ev_nr, compare_path, skip_find_opt_pars):
     pyfilepath = os.path.dirname(os.path.realpath(__file__))
     pyfilename = os.path.join(pyfilepath, 'eval_tests_main.py')
     cmdline = ['python', pyfilename, '--path', store_path_cal, '--nrCPUs', str(cpu_use),
@@ -158,20 +159,21 @@ def start_eval(test_name, test_nr, use_evals, store_path_cal, cpu_use, message_p
         return ret
 
     # After evals are finished try to find optimal parameters
-    try:
-        ret = find_optimal_parameters(test_name, test_nr, store_path_cal)
-        if ret:
-            ret = 0
-        else:
-            ret = 1
-            send_message('Finding optimal parameters failed. They have to be manually entered. Main test ' + test_name +
+    if not skip_find_opt_pars:
+        try:
+            ret = find_optimal_parameters(test_name, test_nr, store_path_cal)
+            if ret:
+                ret = 0
+            else:
+                ret = 1
+                send_message('Finding optimal parameters failed. They have to be manually entered. Main test ' + test_name +
+                             (' with test nr ' + str(test_nr) if test_nr else ''))
+        except Exception:
+            logging.error('Finding optimal parameters failed due to error in main script. Main test ' + test_name +
+                          (' with test nr ' + str(test_nr) if test_nr else ''), exc_info=True)
+            send_message('Finding optimal parameters failed due to error in main script. Main test ' + test_name +
                          (' with test nr ' + str(test_nr) if test_nr else ''))
-    except Exception:
-        logging.error('Finding optimal parameters failed due to error in main script. Main test ' + test_name +
-                      (' with test nr ' + str(test_nr) if test_nr else ''), exc_info=True)
-        send_message('Finding optimal parameters failed due to error in main script. Main test ' + test_name +
-                     (' with test nr ' + str(test_nr) if test_nr else ''))
-        ret = 99
+            ret = 99
     return ret
 
 
@@ -303,7 +305,8 @@ def gen_scenes(test_name, gen_dirs_config_f, executable, message_path, cpu_use):
     return ret
 
 
-def gen_config_files(test_name, path_init_confs, path_confs_out, img_path, store_path_sequ, load_path, log_new_folders):
+def gen_config_files(test_name, path_init_confs, path_confs_out, img_path, store_path_sequ, load_path, log_new_folders,
+                     other_conf):
     if not path_init_confs:
         raise ValueError('Path containing initial configuration files must be provided.')
     if not img_path:
@@ -313,7 +316,13 @@ def gen_config_files(test_name, path_init_confs, path_confs_out, img_path, store
     pars = en.get_config_file_parameters(test_name)
     pyfilepath = os.path.dirname(os.path.realpath(__file__))
     pyfilename = os.path.join(pyfilepath, 'gen_mult_scene_configs.py')
-    dir_names = en.get_mult_conf_dirs_per_test(test_name)
+    dir_names = []
+    if other_conf:
+        for idx in range(0, 2, len(other_conf)):
+            if other_conf[idx] == test_name:
+                dir_names.append(other_conf[idx + 1])
+    if not dir_names:
+        dir_names = en.get_mult_conf_dirs_per_test(test_name)
     ret = 3
     for dir_name in dir_names:
         sub_path = os.path.join(path_init_confs, dir_name)
@@ -361,11 +370,23 @@ def gen_config_files(test_name, path_init_confs, path_confs_out, img_path, store
     return ret
 
 
-def get_confs_path(test_name, test_nr=-1, path_confs_init=None, path_confs_out=None):
-    if test_nr == -1:
-        dir_name = en.get_mult_conf_dirs_per_test(test_name)
-    else:
-        dir_name = en.get_config_file_dir(test_name, test_nr)
+def get_confs_path(test_name, test_nr=-1, path_confs_init=None, path_confs_out=None, other_conf=None):
+    dir_name = []
+    if other_conf:
+        for idx in range(0, 2, len(other_conf)):
+            if other_conf[idx] == test_name:
+                dir_name.append(other_conf[idx + 1])
+        if len(dir_name) > 1:
+            raise ValueError('Providing multiple configuration file folders for the same test is currently '
+                             'not supported.')
+        elif len(dir_name) == 1:
+            dir_name = dir_name[0]
+
+    if not dir_name:
+        if test_nr == -1:
+            dir_name = en.get_mult_conf_dirs_per_test(test_name)
+        else:
+            dir_name = en.get_config_file_dir(test_name, test_nr)
     if not path_confs_out and not path_confs_init:
         raise ValueError('Main path to initial configuration files is missing.')
     elif path_confs_out:
@@ -981,7 +1002,6 @@ def IsPathValid(parentDir, path, rootDir, ignoreDir, ignoreExt, useOnlyDir):
                     except:
                         return False
 
-
     if not is_file and not ignoreDir:
         return True
 
@@ -1236,13 +1256,32 @@ def main():
                              'to take only folders created within this main test (only used when creating sequences).')
     parser.add_argument('--shutdown_afterwards', type=str, nargs='?', required=False, default='dont', const='shutdown',
                         help='If provided, the system will be shut down after finishing. ')
+    parser.add_argument('--skip_find_opt_pars', type=bool, nargs='?', required=False, default=False, const=True,
+                        help='If provided, the functionality for finding optimal parameters based on evaluation '
+                             'results is disabled')
+    parser.add_argument('--other_conf', type=str, nargs='+', required=False, default=None,
+                        help='Multiple tuples of test names for replacing configuration file folders can be specified '
+                             'in the order \'original_test_name new_name\'. This is useful if one wants to use '
+                             'different sequence configuration files but the same testing properties of the original '
+                             'test. The given \'new_name\' for configuration files to use must be equal to the folder '
+                             'name holding the configuration files and this folder must be within the main folder '
+                             'holding all other configuration file folders.')
     args = parser.parse_args()
     if args.path and not os.path.exists(args.path):
         raise ValueError('Directory ' + args.path + ' holding directories with template scene '
                                                     'configuration files does not exist')
+    main_test_names = en.get_available_main_tests()
+    if args.path and args.other_conf and len(args.other_conf) % 2 != 0:
+        raise ValueError('Wrong number of arguments for argument other_conf')
+    elif args.path and args.other_conf:
+        for idx in range(0, 2, len(args.other_conf)):
+            if args.other_conf[idx] not in main_test_names:
+                raise ValueError('Unknown test name ' + args.other_conf[idx])
+            if not os.path.exists(os.path.join(args.path, args.other_conf[idx + 1])):
+                raise ValueError('Directory ' + args.other_conf[idx + 1] + ' holding directories with template scene '
+                                                                           'configuration files does not exist')
     if args.path_confs_out and not os.path.exists(args.path_confs_out):
         raise ValueError('Directory ' + args.path_confs_out + ' for storing config files does not exist')
-    main_test_names = en.get_available_main_tests()
     if args.skip_tests:
         for i in args.skip_tests:
             if i not in main_test_names:
@@ -1324,6 +1363,15 @@ def main():
             args.path = os.path.join(pyfilepath, 'Config_Files')
             if not os.path.exists(args.path):
                 raise ValueError('Missing initial configuration main folder within python files folder')
+        if args.other_conf and len(args.other_conf) % 2 != 0:
+            raise ValueError('Wrong number of arguments for argument other_conf')
+        elif args.other_conf:
+            for idx in range(0, 2, len(args.other_conf)):
+                if args.other_conf[idx] not in main_test_names:
+                    raise ValueError('Unknown test name ' + args.other_conf[idx])
+                if not os.path.exists(os.path.join(args.path, args.other_conf[idx + 1])):
+                    raise ValueError('Directory ' + args.other_conf[idx + 1] +
+                                     ' holding directories with template scene configuration files does not exist')
         if not args.path_confs_out:
             args.path_confs_out = os.path.join(args.complete_res_path, 'conf_files_generated')
             try:
@@ -1452,7 +1500,8 @@ def main():
         ret = start_testing(args.path, args.path_confs_out, args.skip_tests, args.skip_gen_sc_conf, args.skip_crt_sc,
                             use_cal_tests, use_evals, args.img_path, args.store_path_sequ, args.load_path, cpu_use,
                             args.exec_sequ, args.message_path, args.exec_cal, args.store_path_cal, args.compare_pars,
-                            args.comp_pars_ev_nr, args.compare_path, log_new_folders)
+                            args.comp_pars_ev_nr, args.compare_path, log_new_folders, args.skip_find_opt_pars,
+                            args.other_conf)
     except Exception:
         logging.error('Error in main file', exc_info=True)
         ret = 99

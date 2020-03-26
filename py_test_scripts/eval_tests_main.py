@@ -523,10 +523,11 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
             calcSatisticAndPlot_2D_partitions, \
             calcFromFuncAndPlot_3D, \
             calcFromFuncAndPlot_2D_partitions, \
-            calcFromFuncAndPlot_3D_partitions
+            calcFromFuncAndPlot_3D_partitions, \
+            calcSatisticAndPlot_3D_partitions
         if test_nr == 1:
             if eval_nr[0] < 0:
-                evals = list(range(1, 7))
+                evals = list(range(1, 7)) + list(range(37, 40))
             else:
                 evals = eval_nr
             for ev in evals:
@@ -746,11 +747,98 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              make_fig_index=True,
                                                              build_pdf=True,
                                                              figs_externalize=False)
+                elif ev == 37:
+                    fig_title_pre_str = 'Statistics on execution Times for USAC Option Combinations of '
+                    eval_columns = ['robEstimationAndRef_us']
+                    units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                    it_parameters = ['USAC_parameters_estimator',
+                                     'USAC_parameters_refinealg']
+                    ret += calcSatisticAndPlot_2D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_USAC_opts_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='time',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  x_axis_column=['inlratMin'],
+                                                  pdfsplitentry=None,
+                                                  filter_func=None,
+                                                  filter_func_args=None,
+                                                  special_calcs_func=None,
+                                                  special_calcs_args=None,
+                                                  calc_func=None,
+                                                  calc_func_args=None,
+                                                  compare_source=None,
+                                                  fig_type='smooth',
+                                                  use_marks=True,
+                                                  ctrl_fig_size=True,
+                                                  make_fig_index=False,
+                                                  build_pdf=True,
+                                                  figs_externalize=False)
+                elif ev == 38:
+                    fig_title_pre_str = 'Values of Execution Times for USAC Option Combinations of '
+                    eval_columns = ['robEstimationAndRef_us']
+                    units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                    it_parameters = ['USAC_parameters_estimator',
+                                     'USAC_parameters_refinealg']
+                    ret += calcSatisticAndPlot_3D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_USAC_opts_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='time',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  xy_axis_columns=['th', 'inlratMin'],
+                                                  filter_func=None,
+                                                  filter_func_args=None,
+                                                  special_calcs_func=None,
+                                                  special_calcs_args=None,
+                                                  calc_func=None,
+                                                  calc_func_args=None,
+                                                  fig_type='surface',
+                                                  use_marks=True,
+                                                  ctrl_fig_size=False,
+                                                  make_fig_index=True,
+                                                  build_pdf=True,
+                                                  figs_externalize=False)
+                elif ev == 39:
+                    fig_title_pre_str = 'Values of Execution Times for USAC Option Combinations of '
+                    eval_columns = ['robEstimationAndRef_us']
+                    units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                    it_parameters = ['USAC_parameters_estimator',
+                                     'USAC_parameters_refinealg']
+                    partitions = ['kpDistr', 'kpAccSd']
+                    ret += calcSatisticAndPlot_3D_partitions(data=data,
+                                                             store_path=output_path,
+                                                             tex_file_pre_str='plots_USAC_opts_',
+                                                             fig_title_pre_str=fig_title_pre_str,
+                                                             eval_description_path='time',
+                                                             eval_columns=eval_columns,
+                                                             units=units,
+                                                             it_parameters=it_parameters,
+                                                             partitions=partitions,
+                                                             xy_axis_columns=['th', 'inlratMin'],
+                                                             filter_func=None,
+                                                             filter_func_args=None,
+                                                             special_calcs_func=None,
+                                                             special_calcs_args=None,
+                                                             calc_func=None,
+                                                             calc_func_args=None,
+                                                             fig_type='surface',
+                                                             use_marks=True,
+                                                             ctrl_fig_size=True,
+                                                             make_fig_index=True,
+                                                             build_pdf=True,
+                                                             figs_externalize=True,
+                                                             no_tex=False,
+                                                             cat_sort=None)
                 else:
                     raise ValueError('Eval nr ' + str(ev) + ' does not exist')
         elif test_nr == 2:
             if eval_nr[0] < 0:
-                evals = list(range(7, 15)) + [36]
+                evals = list(range(7, 15)) + [36] + list(range(40, 43))
             else:
                 evals = eval_nr
             for ev in evals:
@@ -1099,6 +1187,99 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              make_fig_index=True,
                                                              build_pdf=True,
                                                              figs_externalize=True)
+                elif ev == 40:
+                    fig_title_pre_str = 'Statistics on execution Times for USAC Option Combinations of '
+                    eval_columns = ['robEstimationAndRef_us']
+                    units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                    it_parameters = ['USAC_parameters_automaticSprtInit',
+                                     'USAC_parameters_automaticProsacParameters',
+                                     'USAC_parameters_prevalidateSample',
+                                     'USAC_parameters_USACInlratFilt']
+                    ret += calcSatisticAndPlot_2D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_USAC_opts_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='time',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  x_axis_column=['inlratMin'],
+                                                  pdfsplitentry=None,
+                                                  filter_func=None,
+                                                  filter_func_args=None,
+                                                  special_calcs_func=None,
+                                                  special_calcs_args=None,
+                                                  calc_func=None,
+                                                  calc_func_args=None,
+                                                  compare_source=None,
+                                                  fig_type='smooth',
+                                                  use_marks=True,
+                                                  ctrl_fig_size=True,
+                                                  make_fig_index=False,
+                                                  build_pdf=True,
+                                                  figs_externalize=False)
+                elif ev == 41:
+                    fig_title_pre_str = 'Values of Execution Times for USAC Option Combinations of '
+                    eval_columns = ['robEstimationAndRef_us']
+                    units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                    it_parameters = ['USAC_parameters_automaticSprtInit',
+                                     'USAC_parameters_automaticProsacParameters',
+                                     'USAC_parameters_prevalidateSample',
+                                     'USAC_parameters_USACInlratFilt']
+                    ret += calcSatisticAndPlot_3D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_USAC_opts_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='time',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  xy_axis_columns=['th', 'inlratMin'],
+                                                  filter_func=None,
+                                                  filter_func_args=None,
+                                                  special_calcs_func=None,
+                                                  special_calcs_args=None,
+                                                  calc_func=None,
+                                                  calc_func_args=None,
+                                                  fig_type='surface',
+                                                  use_marks=True,
+                                                  ctrl_fig_size=False,
+                                                  make_fig_index=True,
+                                                  build_pdf=True,
+                                                  figs_externalize=False)
+                elif ev == 42:
+                    fig_title_pre_str = 'Values of Execution Times for USAC Option Combinations of '
+                    eval_columns = ['robEstimationAndRef_us']
+                    units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                    it_parameters = ['USAC_parameters_automaticSprtInit',
+                                     'USAC_parameters_automaticProsacParameters',
+                                     'USAC_parameters_prevalidateSample',
+                                     'USAC_parameters_USACInlratFilt']
+                    partitions = ['kpDistr', 'kpAccSd']
+                    ret += calcSatisticAndPlot_3D_partitions(data=data,
+                                                             store_path=output_path,
+                                                             tex_file_pre_str='plots_USAC_opts_',
+                                                             fig_title_pre_str=fig_title_pre_str,
+                                                             eval_description_path='time',
+                                                             eval_columns=eval_columns,
+                                                             units=units,
+                                                             it_parameters=it_parameters,
+                                                             partitions=partitions,
+                                                             xy_axis_columns=['th', 'inlratMin'],
+                                                             filter_func=None,
+                                                             filter_func_args=None,
+                                                             special_calcs_func=None,
+                                                             special_calcs_args=None,
+                                                             calc_func=None,
+                                                             calc_func_args=None,
+                                                             fig_type='surface',
+                                                             use_marks=True,
+                                                             ctrl_fig_size=True,
+                                                             make_fig_index=True,
+                                                             build_pdf=True,
+                                                             figs_externalize=True,
+                                                             no_tex=False,
+                                                             cat_sort=None)
                 else:
                     raise ValueError('Eval nr ' + str(ev) + ' does not exist')
         else:
@@ -1108,9 +1289,10 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
             calcSatisticAndPlot_3D, \
             calcSatisticAndPlot_2D_partitions, \
             calcFromFuncAndPlot_3D, \
-            calcFromFuncAndPlot_2D_partitions
+            calcFromFuncAndPlot_2D_partitions, \
+            calcSatisticAndPlot_3D_partitions
         if eval_nr[0] < 0:
-            evals = list(range(1, 8))
+            evals = list(range(1, 11))
         else:
             evals = eval_nr
         for ev in evals:
@@ -1353,6 +1535,90 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                          make_fig_index=True,
                                                          build_pdf=True,
                                                          figs_externalize=False)
+            elif ev == 8:
+                fig_title_pre_str = 'Statistics on execution Times for Comparison of '
+                eval_columns = ['robEstimationAndRef_us']
+                units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                it_parameters = ['RobMethod']
+                ret += calcSatisticAndPlot_2D(data=data,
+                                              store_path=output_path,
+                                              tex_file_pre_str='plots_USAC_vs_RANSAC_',
+                                              fig_title_pre_str=fig_title_pre_str,
+                                              eval_description_path='time',
+                                              eval_columns=eval_columns,
+                                              units=units,
+                                              it_parameters=it_parameters,
+                                              x_axis_column=['inlratMin'],
+                                              pdfsplitentry=None,
+                                              filter_func=None,
+                                              filter_func_args=None,
+                                              special_calcs_func=None,
+                                              special_calcs_args=None,
+                                              calc_func=None,
+                                              calc_func_args=None,
+                                              compare_source=None,
+                                              fig_type='smooth',
+                                              use_marks=True,
+                                              ctrl_fig_size=True,
+                                              make_fig_index=False,
+                                              build_pdf=True,
+                                              figs_externalize=False)
+            elif ev == 9:
+                fig_title_pre_str = 'Values of Execution Times for Comparison of '
+                eval_columns = ['robEstimationAndRef_us']
+                units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                it_parameters = ['RobMethod']
+                ret += calcSatisticAndPlot_3D(data=data,
+                                              store_path=output_path,
+                                              tex_file_pre_str='plots_USAC_vs_RANSAC_',
+                                              fig_title_pre_str=fig_title_pre_str,
+                                              eval_description_path='time',
+                                              eval_columns=eval_columns,
+                                              units=units,
+                                              it_parameters=it_parameters,
+                                              xy_axis_columns=['th', 'inlratMin'],
+                                              filter_func=None,
+                                              filter_func_args=None,
+                                              special_calcs_func=None,
+                                              special_calcs_args=None,
+                                              calc_func=None,
+                                              calc_func_args=None,
+                                              fig_type='surface',
+                                              use_marks=True,
+                                              ctrl_fig_size=False,
+                                              make_fig_index=True,
+                                              build_pdf=True,
+                                              figs_externalize=False)
+            elif ev == 10:
+                fig_title_pre_str = 'Values of Execution Times for Comparison of '
+                eval_columns = ['robEstimationAndRef_us']
+                units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                it_parameters = ['RobMethod']
+                partitions = ['kpDistr', 'kpAccSd']
+                ret += calcSatisticAndPlot_3D_partitions(data=data,
+                                                         store_path=output_path,
+                                                         tex_file_pre_str='plots_USAC_vs_RANSAC_',
+                                                         fig_title_pre_str=fig_title_pre_str,
+                                                         eval_description_path='time',
+                                                         eval_columns=eval_columns,
+                                                         units=units,
+                                                         it_parameters=it_parameters,
+                                                         partitions=partitions,
+                                                         xy_axis_columns=['th', 'inlratMin'],
+                                                         filter_func=None,
+                                                         filter_func_args=None,
+                                                         special_calcs_func=None,
+                                                         special_calcs_args=None,
+                                                         calc_func=None,
+                                                         calc_func_args=None,
+                                                         fig_type='surface',
+                                                         use_marks=True,
+                                                         ctrl_fig_size=True,
+                                                         make_fig_index=True,
+                                                         build_pdf=True,
+                                                         figs_externalize=True,
+                                                         no_tex=False,
+                                                         cat_sort=None)
             else:
                 raise ValueError('Eval nr ' + str(ev) + ' does not exist')
     elif test_name == 'refinement_ba':
@@ -1960,7 +2226,8 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                       'use_marks': False,
                                       'nr_target_kps': 1000,
                                       'res_par_name': 'vfc_gms_sof_min_time'}
-                from usac_eval import calc_Time_Model, filter_nr_kps
+                filter_func_args = {'time_col': 'filtering_us'}
+                from usac_eval import calc_Time_Model, filter_nr_kps_time
                 from refinement_eval import estimate_alg_time_fixed_kp_agg
                 ret += calcFromFuncAndPlot_aggregate(data=data,
                                                      store_path=output_path,
@@ -1971,8 +2238,8 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                      units=units,
                                                      it_parameters=it_parameters,
                                                      x_axis_column=['nrCorrs_GT'],
-                                                     filter_func=filter_nr_kps,
-                                                     filter_func_args=None,
+                                                     filter_func=filter_nr_kps_time,
+                                                     filter_func_args=filter_func_args,
                                                      special_calcs_func=estimate_alg_time_fixed_kp_agg,
                                                      special_calcs_args=special_calcs_args,
                                                      calc_func=calc_Time_Model,
@@ -1984,6 +2251,71 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                      make_fig_index=True,
                                                      build_pdf=True,
                                                      figs_externalize=False)
+            elif ev == 8:
+                fig_title_pre_str = 'Absolute Execution Times for Comparison of '
+                eval_columns = ['filtering_us']
+                units = [('filtering_us', '/$\\mu s$')]
+                it_parameters = ['matchesFilter_refineGMS',
+                                 'matchesFilter_refineVFC',
+                                 'matchesFilter_refineSOF']
+                filter_func_args = {'time_col': 'filtering_us'}
+                from usac_eval import filter_time
+                ret += calcSatisticAndPlot_aggregate(data=data,
+                                                     store_path=output_path,
+                                                     tex_file_pre_str='plots_vfc_gms_sof_',
+                                                     fig_title_pre_str=fig_title_pre_str,
+                                                     eval_description_path='time',
+                                                     eval_columns=eval_columns,
+                                                     units=units,
+                                                     it_parameters=it_parameters,
+                                                     pdfsplitentry=None,
+                                                     filter_func=filter_time,
+                                                     filter_func_args=filter_func_args,
+                                                     special_calcs_func=None,
+                                                     special_calcs_args=None,
+                                                     calc_func=None,
+                                                     calc_func_args=None,
+                                                     compare_source=None,
+                                                     fig_type='ybar',
+                                                     use_marks=False,
+                                                     ctrl_fig_size=True,
+                                                     make_fig_index=True,
+                                                     build_pdf=True,
+                                                     figs_externalize=False)
+            elif ev == 9:
+                fig_title_pre_str = 'Statistics on Absolute Execution Times for Comparison of '
+                eval_columns = ['filtering_us']
+                units = [('filtering_us', '/$\\mu s$')]
+                it_parameters = ['matchesFilter_refineGMS',
+                                 'matchesFilter_refineVFC',
+                                 'matchesFilter_refineSOF']
+                filter_func_args = {'time_col': 'filtering_us'}
+                from usac_eval import filter_time
+                ret += calcSatisticAndPlot_2D(data=data,
+                                              store_path=output_path,
+                                              tex_file_pre_str='plots_vfc_gms_sof_',
+                                              fig_title_pre_str=fig_title_pre_str,
+                                              eval_description_path='time',
+                                              eval_columns=eval_columns,
+                                              units=units,
+                                              it_parameters=it_parameters,
+                                              x_axis_column=['inlratMin'],
+                                              pdfsplitentry=None,
+                                              filter_func=filter_time,
+                                              filter_func_args=filter_func_args,
+                                              special_calcs_func=None,
+                                              special_calcs_args=None,
+                                              calc_func=None,
+                                              calc_func_args=None,
+                                              compare_source=None,
+                                              fig_type='ybar',
+                                              use_marks=False,
+                                              ctrl_fig_size=True,
+                                              make_fig_index=True,
+                                              build_pdf=True,
+                                              figs_externalize=False,
+                                              no_tex=False,
+                                              cat_sort=False)
             else:
                 raise ValueError('Eval nr ' + str(ev) + ' does not exist')
     elif test_name == 'refinement_ba_stereo':
@@ -2452,7 +2784,7 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              figs_externalize=True)
                 elif ev == 4:
                     fig_title_pre_str = 'R\\&t Differences from Frame to Frame with a Maximum Correspondence Pool ' \
-                                        'Size of $\\hat{n}_{cp}=40000$ Features for Different '
+                                        'Size of $\\hat{n}_{cp}=30000$ Features for Different '
                     eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
                                     't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz']
                     units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
@@ -2486,7 +2818,7 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              figs_externalize=True)
                 elif ev == 5:
                     fig_title_pre_str = 'Differences of R\\&t Differences from Frame to Frame with a Maximum ' \
-                                        'Correspondence Pool Size of $\\hat{n}_{cp}=40000$ Features for Different '
+                                        'Correspondence Pool Size of $\\hat{n}_{cp}=30000$ Features for Different '
                     eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
                                     't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz',
                                     'poolSize']
@@ -2530,7 +2862,7 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              figs_externalize=True)
                 elif ev == 6:
                     fig_title_pre_str = 'Values on R\\&t Differences from Frame to Frame with a Maximum ' \
-                                        'Correspondence Pool Size of $\\hat{n}_{cp}=40000$ Features for Different '
+                                        'Correspondence Pool Size of $\\hat{n}_{cp}=30000$ Features for Different '
                     eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
                                     't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz']
                     units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
@@ -2564,7 +2896,7 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                   figs_externalize=True)
                 elif ev == 7:
                     fig_title_pre_str = 'Statistics on R\\&t Differences from Frame to Frame with a Maximum ' \
-                                        'Correspondence Pool Size of $\\hat{n}_{cp}=40000$ Features for Different '
+                                        'Correspondence Pool Size of $\\hat{n}_{cp}=30000$ Features for Different '
                     eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
                                     't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz']
                     units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
@@ -2600,7 +2932,7 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                   figs_externalize=True)
                 elif ev == 8:
                     fig_title_pre_str = 'Differences on Frame to Frame Statistics of R\\&t Errors with a Maximum ' \
-                                        'Correspondence Pool Size of $\\hat{n}_{cp}=40000$ Features for Different '
+                                        'Correspondence Pool Size of $\\hat{n}_{cp}=30000$ Features for Different '
                     eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
                                     't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz']
                     units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),

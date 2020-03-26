@@ -206,7 +206,9 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
         if pars['robMFilt'] == 'USAC':
             if not pars['usac56'] or not pars['usac123']:
                 raise ValueError('Enter best test results for parameters 1-3 and 5-6 of usac-testing')
-            args += ['--cfgUSAC'] + list(map(str, pars['usac123'])) + ['0'] + list(map(str, pars['usac56']))
+            usac123_tmp = list(map(str, pars['usac123']))
+            usac123_tmp[0] = '1'
+            args += ['--cfgUSAC'] + usac123_tmp + ['0'] + list(map(str, pars['usac56']))
         else:
             args += ['--cfgUSAC', '3', '1', '1', '0', '2', '5']
         args += ['--USACInlratFilt', '0']
@@ -911,7 +913,9 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
 def write_par_file_template(path):
     pfile = os.path.join(path, 'optimal_autocalib_pars.yml')
     if os.path.exists(pfile):
-        raise ValueError('Parameter file already exists')
+        warnings.warn('Parameter file already exists', UserWarning)
+        return 0
+        # raise ValueError('Parameter file already exists')
     from usac_eval import NoAliasDumper
 
     usac56 = [None, None] #[2, 5]
