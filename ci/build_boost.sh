@@ -22,6 +22,9 @@ PYTHON_VERSION="$(python -c "from distutils.sysconfig import get_python_version;
 ./bootstrap.sh --with-python="$(which python)" --with-python-root="${PYTHON_ROOT_PATH}" --with-python-version="${PYTHON_VERSION}"
 export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:${PYTHON_ROOT_PATH}"
 ./b2 install
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 TO_BASH="export CPLUS_INCLUDE_PATH=\\\$CPLUS_INCLUDE_PATH:${PYTHON_ROOT_PATH}"
 id -u conan
 if [ $? -ne 1 ]; then

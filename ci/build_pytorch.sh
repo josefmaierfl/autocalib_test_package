@@ -27,6 +27,9 @@ export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # export USE_CUDA=1 USE_CUDNN=1 USE_MKLDNN=1 USE_OPENCV USE_GLOO=0
 export USE_CUDA=1 USE_CUDNN=1 USE_MKLDNN=1 USE_OPENCV
 python setup.py install
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 # cd $thirdparty_dir
 # git clone git@github.com:pytorch/vision.git

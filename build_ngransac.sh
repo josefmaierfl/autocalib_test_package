@@ -13,3 +13,6 @@ conda activate NGRANSAC
 export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 $CFLAGS"
 python setup.py install
 #sudo pip install -e .
+if [ $? -ne 0 ]; then
+    exit 1
+fi
