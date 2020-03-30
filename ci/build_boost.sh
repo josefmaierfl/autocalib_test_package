@@ -15,6 +15,7 @@ tar --bzip2 -xf ${Boost_FILEN}
 rm -rf ${Boost_FILEN}
 
 cd ${Boost_ROOT}
+unset CPLUS_INCLUDE_PATH
 PYTHON_ROOT_PATH="$(python -c "from distutils.sysconfig import get_config_h_filename; from os.path import dirname; print(dirname(get_config_h_filename()))")"
 PYTHON_VERSION="$(python -c "from distutils.sysconfig import get_python_version; print(get_python_version())")"
 #  --with-libraries=python
