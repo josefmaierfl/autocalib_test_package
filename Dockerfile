@@ -61,6 +61,8 @@ RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
 	export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y nano && apt-get clean
 RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
 	export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libomp-dev ccache && apt-get clean
+RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
+  export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libhdf5-dev libhdf5-serial-dev ccache && apt-get clean
 
 #Install CUDA
 RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
