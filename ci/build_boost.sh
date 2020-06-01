@@ -7,7 +7,7 @@ eval "$(conda shell.bash hook)"
 conda activate NGRANSAC
 
 cd ${thirdparty_dir}
-Boost_VERSION=1.72.0
+Boost_VERSION=1.71.0
 Boost_ROOT="boost_$(echo ${Boost_VERSION} | tr . _)"
 Boost_FILEN="${Boost_ROOT}.tar.bz2"
 wget -q https://dl.bintray.com/boostorg/release/${Boost_VERSION}/source/${Boost_FILEN}

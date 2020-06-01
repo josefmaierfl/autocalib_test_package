@@ -49,8 +49,16 @@ RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
 	gfortran && apt-get clean
 RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
 	export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y python3-dev && apt-get clean
+#RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
+#	export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libvtk7-dev && apt-get clean
 RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
-	export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libvtk7-dev && apt-get clean
+		export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libglu1-mesa-dev mesa-common-dev mesa-utils freeglut3-dev && apt-get clean
+RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
+		export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y qt5-default && apt-get clean
+RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
+		export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libgoogle-glog-dev libatlas-base-dev && apt-get clean
+RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
+		export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libsuitesparse-dev && apt-get clean
 #RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libboost-all-dev && apt-get clean
 RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
 	export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y texlive-latex-base texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra && apt-get clean
