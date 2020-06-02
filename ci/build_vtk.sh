@@ -16,7 +16,7 @@ git submodule update --init
 git checkout "v${VTK_VERSION}"
 mkdir build
 cd build
-cmake ..  -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DQT_QMAKE_EXECUTABLE="$(whereis qmake)"
+cmake .. -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DQT_QMAKE_EXECUTABLE="$(whereis qmake)"
 make -j "$(nproc)"
 if [ $? -ne 0 ]; then
     exit 1

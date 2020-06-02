@@ -24,6 +24,7 @@ cd ${root_dir}
 if [ $? -ne 0 ]; then
     exit 1
 fi
+ldconfig
 
 #-----------------------------------
 # Clapack 3.2.1
@@ -63,6 +64,7 @@ cd ${root_dir}
 if [ $? -ne 0 ]; then
     exit 1
 fi
+ldconfig
 
 #-----------------------------------
 # PCL
@@ -85,6 +87,7 @@ cd ${root_dir}
 if [ $? -ne 0 ]; then
     exit 1
 fi
+ldconfig
 
 #-----------------------------------
 # OpenCV
@@ -96,3 +99,4 @@ ${root_dir}/make_opencv.sh
 if [ $? -ne 0 ]; then
     exit 1
 fi
+ldconfig
