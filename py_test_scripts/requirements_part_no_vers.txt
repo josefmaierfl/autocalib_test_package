@@ -98,3 +98,4 @@ wcwidth
 webencodings
 widgetsnbextension
 pathos
+beautifulsoup4

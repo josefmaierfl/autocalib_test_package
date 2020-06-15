@@ -21,3 +21,4 @@ Send2Trash
 setproctitle
 twilio
 pathos
+beautifulsoup4

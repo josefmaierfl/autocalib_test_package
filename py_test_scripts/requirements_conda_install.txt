@@ -27,3 +27,4 @@ setuptools
 cmake
 cffi
 typing
+beautifulsoup4
