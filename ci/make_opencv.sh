@@ -48,6 +48,9 @@ OPENCV_MODULES="-DBUILD_opencv_apps:BOOL=OFF -DBUILD_opencv_aruco:BOOL=OFF -DBUI
 
 cmake $OPENCV_DIR $CMAKE_OPENCV_EXTRA_MODULES $FLAGS $PACK_FLAGS ${OPENCV_MODULES}
 make -j "$(nproc)"
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 make install
 if [ $? -ne 0 ]; then
     exit 1
