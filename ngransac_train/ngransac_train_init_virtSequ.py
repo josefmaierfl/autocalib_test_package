@@ -1,5 +1,5 @@
 import numpy as np
-import math
+import math, os
 
 import torch
 import torch.optim as optim
@@ -13,11 +13,11 @@ import util
 parser = util.create_parser(
 	description = "Train a neural guidance network using correspondence distance to a ground truth model to calculate target probabilities.")
 
-parser.add_argument('--datasets', '-ds', 
-	default='brown_bm_3---brown_bm_3-maxpairs-10000-random---skip-10-dilate-25,st_peters_square',
-	help='which datasets to use, separate multiple datasets by comma')
+parser.add_argument('--path', '-p',
+	required=True,
+	help='Path to folders train and validate')
 
-parser.add_argument('--variant', '-v', default='train',	
+parser.add_argument('--variant', '-v', default='train',	choices=['train', 'validate'],
 		help='subfolder of the dataset to use')
 
 parser.add_argument('--learningrate', '-lr', type=float, default=0.001, 
@@ -32,20 +32,12 @@ parser.add_argument('--model', '-m', default='',
 opt = parser.parse_args()
 
 # construct folder that should contain pre-calculated correspondences
-data_folder = opt.variant + '_data'
-if opt.orb:
-	data_folder += '_orb'
-if opt.rootsift:
-	data_folder += '_rs'
+data_folder = os.path.join(opt.path, opt.variant)
+if not os.path.exists(data_folder):
+	raise ValueError('Path ' + data_folder + ' does not exist')
+data_folder = [data_folder + '/']
 
-train_data = opt.datasets.split(',')  #support multiple training datasets used jointly
-train_data = ['traindata/' + ds + '/' + data_folder + '/' for ds in train_data]
-
-print('Using datasets:')
-for d in train_data:
-	print(d)
-
-trainset = SparseDataset(train_data, opt.ratio, opt.nfeatures, opt.fmat, opt.nosideinfo)
+trainset = SparseDataset(data_folder, opt.ratio, opt.nfeatures, opt.fmat, opt.nosideinfo)
 trainset_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=6, batch_size=opt.batchsize)
 
 print("\nImage pairs: ", len(trainset), "\n")

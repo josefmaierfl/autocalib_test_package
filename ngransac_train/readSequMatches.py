@@ -104,7 +104,12 @@ def readOpenCVYaml(file, isstr = False):
 
 
 def readYamlOrXml(file):
-    _, ending = os.path.splitext(file)
+    base, ending11 = os.path.splitext(file)
+    _, ending12 = os.path.splitext(base)
+    if ending12 and ('yaml' in ending12 or 'yml' in ending12 or 'xml' in ending12):
+        ending = ending12 + ending11
+    else:
+        ending = ending11
     is_zipped = True if 'gz' in ending else False
     is_xml = True if 'xml' in ending else False
     if is_zipped:
@@ -126,13 +131,18 @@ def readYamlOrXml(file):
     return data
 
 
-def read_matches(output_path, sequ_dirs2):
+def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, nr_validate):
     for elem in sequ_dirs2:
         fs = os.listdir(elem['sequDir'])
         ending = '.yaml'
         for i in fs:
             if 'sequSingleFrameData_0' in i:
-                _, ending = os.path.splitext(i)
+                base, ending11 = os.path.splitext(i)
+                _, ending12 = os.path.splitext(base)
+                if ending12 and ('yaml' in ending12 or 'yml' in ending12 or 'xml' in ending12):
+                    ending = ending12 + ending11
+                else:
+                    ending = ending11
                 break
         is_zipped = True if 'gz' in ending else False
         cnt = 0
@@ -177,6 +187,7 @@ def read_matches(output_path, sequ_dirs2):
             if len(match_data_full1) != sequ_len:
                 raise ValueError("Number of frames with 3D information and matches are not consistent")
             match_data_full.append(match_data_full1)
+        cnt_tv = 0
         for match in match_data_full:
             for i in range(0, sequ_len):
                 # Get stereo correspondences
@@ -186,11 +197,11 @@ def read_matches(output_path, sequ_dirs2):
                 descr2 = []
                 dists = []
                 for m in match[i]['matches']:
-                    pts2.append(match[i]['kp2'][m.trainIdx].pt)
-                    pts1.append(match[i]['kp1'][m.queryIdx].pt)
-                    descr1.append(match[i]['descr1'][m.queryIdx])
-                    descr2.append(match[i]['descr2'][m.trainIdx])
-                    dists.append(m.distance)
+                    pts2.append(match[i]['kp2'][m[1]][:2])
+                    pts1.append(match[i]['kp1'][m[0]][:2])
+                    descr1.append(match[i]['descr1'][m[0]])
+                    descr2.append(match[i]['descr2'][m[1]])
+                    dists.append(m[3])
                 ratios = calcRatios(descr1, descr2, dists)
                 isInt = descr_is_int(descr1)
                 pts1 = np.array([pts1])
@@ -207,7 +218,10 @@ def read_matches(output_path, sequ_dirs2):
                         match[i]['keyPointType'] + '_'
                 if pts1.shape[1] > 10:
                     name = name0 + 'pair_%d-1_%d-2.npy' % (i, i)
-                    file = os.path.join(output_path, name)
+                    if cnt_tv < nr_train:
+                        file = os.path.join(output_path_train, name)
+                    else:
+                        file = os.path.join(output_path_validate, name)
                     np.save(file, [
                         pts1.astype(np.float32),
                         pts2.astype(np.float32),
@@ -219,16 +233,21 @@ def read_matches(output_path, sequ_dirs2):
                         GT_R_Rel.astype(np.float32),
                         GT_t_Rel.astype(np.float32)
                     ])
+                    cnt_tv += 1
 
                 #Get frame to frame correspondences for cam1
                 if i > 0:
                     idx3D2 = {}
+                    nr_TP2 = len(sequ_data_full[i]['pt3Didx'])
                     for idx, id in enumerate(match[i]['idx1']):
-                        idx3D2[sequ_data_full[i]['pt3Didx'][id]] = idx
+                        if id < nr_TP2:
+                            idx3D2[sequ_data_full[i]['pt3Didx'][id]] = idx
 
                     idx3D1 = {}
+                    nr_TP1 = len(sequ_data_full[i - 1]['pt3Didx'])
                     for idx, id in enumerate(match[i - 1]['idx1']):
-                        idx3D1[sequ_data_full[i - 1]['pt3Didx'][id]] = idx
+                        if id < nr_TP1:
+                            idx3D1[sequ_data_full[i - 1]['pt3Didx'][id]] = idx
 
                     pts1 = []
                     pts2 = []
@@ -241,8 +260,8 @@ def read_matches(output_path, sequ_dirs2):
                         if item[0] in idx3D2:
                             corrs1.add(item[1])
                             corrs2.add(idx3D2[item[0]])
-                            pts1.append(match[i - 1]['kp1'][item[1]].pt)
-                            pts2.append(match[i]['kp1'][idx3D2[item[0]]].pt)
+                            pts1.append(match[i - 1]['kp1'][item[1]][:2])
+                            pts2.append(match[i]['kp1'][idx3D2[item[0]]][:2])
                             descr1.append(match[i - 1]['descr1'][item[1]])
                             descr2.append(match[i]['descr1'][idx3D2[item[0]]])
                             dists.append(getDescriptorDist(descr1[-1], descr2[-1], isInt))
@@ -266,7 +285,7 @@ def read_matches(output_path, sequ_dirs2):
                             pt2_[0, 0] = pt2[0]
                             pt2_[0, 1] = pt2[1]
                             err = abs(pt2_ @ gt_F @ pt1_)
-                            if err < 10:
+                            if err[0, 0] < 10:
                                 cnt += 1
                         err_rat = cnt / len(pts1)
                         if err_rat < 0.6:
@@ -294,25 +313,39 @@ def read_matches(output_path, sequ_dirs2):
                                 descr1tn.append(match[i - 1]['descr1'][tnidx1[j]])
                                 descr2tn.append(match[i]['descr1'][tnidx2[j]])
                             bf = cv2.BFMatcher()
-                            tnmatches = bf.knnMatch(descr1tn, descr2tn, k=2)
+                            if isInt:
+                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
+                                                        np.array(descr2tn).astype(np.uint8), k=2)
+                            else:
+                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
+                                                        np.array(descr2tn).astype(float), k=2)
                             for (m, n) in tnmatches:
-                                pts2.append(kp2tn[m.trainIdx].pt)
-                                pts1.append(kp1tn[m.queryIdx].pt)
-                                ratios.append(m.distance / n.distance)
+                                pts2.append(kp2tn[m.trainIdx][:2])
+                                pts1.append(kp1tn[m.queryIdx][:2])
+                                ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
 
-                            shlist = range(0, len(pts1))
+                            shlist = list(range(0, len(pts1)))
                             np.random.shuffle(shlist)
                             shlist = list(shlist)
-                            pts1.sort(key=lambda k: shlist[k])
-                            pts2.sort(key=lambda k: shlist[k])
-                            ratios.sort(key=lambda k: shlist[k])
+                            pts1_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts1)]
+                            pts2_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts2)]
+                            ratios_ = [[r_idx, r] for r_idx, r in zip(shlist, ratios)]
+                            pts1_.sort(key=lambda k: k[0])
+                            pts2_.sort(key=lambda k: k[0])
+                            ratios_.sort(key=lambda k: k[0])
+                            pts1 = [pt[1] for pt in pts1_]
+                            pts2 = [pt[1] for pt in pts2_]
+                            ratios = [pt[1] for pt in ratios_]
                             pts1 = np.array([pts1])
                             pts2 = np.array([pts2])
                             ratios = np.array([ratios])
                             ratios = np.expand_dims(ratios, 2)
 
                             name = name0 + 'pair_%d-1_%d-1.npy' % (i - 1, i)
-                            file = os.path.join(output_path, name)
+                            if cnt_tv < nr_train:
+                                file = os.path.join(output_path_train, name)
+                            else:
+                                file = os.path.join(output_path_validate, name)
                             np.save(file, [
                                 pts1.astype(np.float32),
                                 pts2.astype(np.float32),
@@ -324,16 +357,21 @@ def read_matches(output_path, sequ_dirs2):
                                 GT_R_Rel.astype(np.float32),
                                 GT_t_Rel.astype(np.float32)
                             ])
+                            cnt_tv += 1
 
 
                     # Get frame to frame correspondences for cam2
                     idx3D2 = {}
+                    nr_TP2 = len(sequ_data_full[i]['pt3Didx'])
                     for idx, id in enumerate(match[i]['idx2']):
-                        idx3D2[sequ_data_full[i]['pt3Didx'][id]] = idx
+                        if id < nr_TP2:
+                            idx3D2[sequ_data_full[i]['pt3Didx'][id]] = idx
 
                     idx3D1 = {}
+                    nr_TP1 = len(sequ_data_full[i - 1]['pt3Didx'])
                     for idx, id in enumerate(match[i - 1]['idx2']):
-                        idx3D1[sequ_data_full[i - 1]['pt3Didx'][id]] = idx
+                        if id < nr_TP1:
+                            idx3D1[sequ_data_full[i - 1]['pt3Didx'][id]] = idx
 
                     pts1 = []
                     pts2 = []
@@ -346,8 +384,8 @@ def read_matches(output_path, sequ_dirs2):
                         if item[0] in idx3D2:
                             corrs1.add(item[1])
                             corrs2.add(idx3D2[item[0]])
-                            pts1.append(match[i - 1]['kp2'][item[1]].pt)
-                            pts2.append(match[i]['kp2'][idx3D2[item[0]]].pt)
+                            pts1.append(match[i - 1]['kp2'][item[1]][:2])
+                            pts2.append(match[i]['kp2'][idx3D2[item[0]]][:2])
                             descr1.append(match[i - 1]['descr2'][item[1]])
                             descr2.append(match[i]['descr2'][idx3D2[item[0]]])
                             dists.append(getDescriptorDist(descr1[-1], descr2[-1], isInt))
@@ -372,7 +410,7 @@ def read_matches(output_path, sequ_dirs2):
                             pt2_[0, 0] = pt2[0]
                             pt2_[0, 1] = pt2[1]
                             err = abs(pt2_ @ gt_F @ pt1_)
-                            if err < 10:
+                            if err[0, 0] < 10:
                                 cnt += 1
                         err_rat = cnt / len(pts1)
                         if err_rat < 0.6:
@@ -400,25 +438,39 @@ def read_matches(output_path, sequ_dirs2):
                                 descr1tn.append(match[i - 1]['descr2'][tnidx1[j]])
                                 descr2tn.append(match[i]['descr2'][tnidx2[j]])
                             bf = cv2.BFMatcher()
-                            tnmatches = bf.knnMatch(descr1tn, descr2tn, k=2)
+                            if isInt:
+                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
+                                                        np.array(descr2tn).astype(np.uint8), k=2)
+                            else:
+                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
+                                                        np.array(descr2tn).astype(float), k=2)
                             for (m, n) in tnmatches:
-                                pts2.append(kp2tn[m.trainIdx].pt)
-                                pts1.append(kp1tn[m.queryIdx].pt)
-                                ratios.append(m.distance / n.distance)
+                                pts2.append(kp2tn[m.trainIdx][:2])
+                                pts1.append(kp1tn[m.queryIdx][:2])
+                                ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
 
-                            shlist = range(0, len(pts1))
+                            shlist = list(range(0, len(pts1)))
                             np.random.shuffle(shlist)
                             shlist = list(shlist)
-                            pts1.sort(key=lambda k: shlist[k])
-                            pts2.sort(key=lambda k: shlist[k])
-                            ratios.sort(key=lambda k: shlist[k])
+                            pts1_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts1)]
+                            pts2_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts2)]
+                            ratios_ = [[r_idx, r] for r_idx, r in zip(shlist, ratios)]
+                            pts1_.sort(key=lambda k: k[0])
+                            pts2_.sort(key=lambda k: k[0])
+                            ratios_.sort(key=lambda k: k[0])
+                            pts1 = [pt[1] for pt in pts1_]
+                            pts2 = [pt[1] for pt in pts2_]
+                            ratios = [pt[1] for pt in ratios_]
                             pts1 = np.array([pts1])
                             pts2 = np.array([pts2])
                             ratios = np.array([ratios])
                             ratios = np.expand_dims(ratios, 2)
 
                             name = name0 + 'pair_%d-2_%d-2.npy' % (i - 1, i)
-                            file = os.path.join(output_path, name)
+                            if cnt_tv < nr_train:
+                                file = os.path.join(output_path_train, name)
+                            else:
+                                file = os.path.join(output_path_validate, name)
                             np.save(file, [
                                 pts1.astype(np.float32),
                                 pts2.astype(np.float32),
@@ -430,6 +482,7 @@ def read_matches(output_path, sequ_dirs2):
                                 GT_R_Rel.astype(np.float32),
                                 GT_t_Rel.astype(np.float32)
                             ])
+                            cnt_tv += 1
 
 
 def getEssentialMat(R, t):
@@ -460,7 +513,7 @@ def calcRatios(descr1, descr2, dists):
             di3 = getDescriptorDist(dv1, dv2, isInt)
             if di1 < di3 < di2:
                 di2 = di3
-        ratios.append(di1 / di2)
+        ratios.append((di1 + 1e-8) / (di2 + 1e-8))
     return ratios
 
 
@@ -475,9 +528,9 @@ def descr_is_int(descr):
 
 def getDescriptorDist(descr1, descr2, isInt):
     if isInt:
-        return cv2.norm(descr1, descr2, cv2.NORM_HAMMING)
+        return cv2.norm(descr1.astype(np.uint8), descr2.astype(np.uint8), normType=cv2.NORM_HAMMING)
     else:
-        return cv2.norm(descr1, descr2, cv2.NORM_L2)
+        return cv2.norm(descr1.astype(float), descr2.astype(float), normType=cv2.NORM_L2)
 
 
 def main():
@@ -485,24 +538,19 @@ def main():
                                                  'varying the used inlier ratio and keypoint accuracy')
     parser.add_argument('--path', type=str, required=True,
                         help='Directory holding template configuration files')
+    parser.add_argument('--validatePort', type=float, required=False, default=0.33,
+                        help='Directory holding template configuration files')
     args = parser.parse_args()
     if not os.path.exists(args.path):
         raise ValueError('Directory ' + args.path + ' does not exist')
     fs = os.listdir(args.path)
     ending = ''
-    ending1 = ''
-    cnt = 0
     for i in fs:
-        if 'sequInfos' in i and not ending:
+        if 'sequInfos' in i:
             _, ending = os.path.splitext(i)
-            cnt += 1
-        if 'sequPars' in i and not ending1:
-            _, ending1 = os.path.splitext(i)
-            cnt += 1
-        if cnt >= 2:
             break
-    if cnt < 2:
-        raise ValueError('Missing sequPars or sequInfos file')
+    if not ending:
+        raise ValueError('Missing sequInfos file')
     sequFile = 'sequInfos' + ending
     sequf = os.path.join(args.path, sequFile)
     if not os.path.exists(sequf):
@@ -518,10 +566,27 @@ def main():
 
     sequ_dirs2 = []
     matchFile = 'matchInfos' + ending
+    cnt = 0
     for d in sequ_dirs:
         s_dir = os.path.join(args.path, d)
         if not os.path.exists(s_dir):
             raise ValueError('Missing folder ' + s_dir)
+        fs = os.listdir(s_dir)
+        ending1 = ''
+        cnt1 = 0
+        for i in fs:
+            if 'sequPars' in i and not ending1:
+                base, ending11 = os.path.splitext(i)
+                _, ending12 = os.path.splitext(base)
+                if ending12 and ('yaml' in ending12 or 'yml' in ending12 or 'xml' in ending12):
+                    ending1 = ending12 + ending11
+                else:
+                    ending1 = ending11
+            elif 'sequSingleFrameData_' in i:
+                cnt1 += 1
+        if not ending1:
+            raise ValueError('Missing sequPars file')
+        cnt += cnt1 + 2 * (cnt1 - 1)
         sequ_parf = os.path.join(s_dir, 'sequPars' + ending1)
         if not os.path.exists(sequ_parf):
             raise ValueError('Missing file ' + sequ_parf)
@@ -547,8 +612,19 @@ def main():
         if len(ms['matchDirs']) == 0:
             raise ValueError('File ' + f_match + ' does not hold matching information')
         sequ_dirs2.append(ms)
+    if args.validatePort > 0.8:
+        args.validatePort = 0.8
+    elif args.validatePort < 0:
+        args.validatePort = 0
+    nr_validate = int(round(args.validatePort * cnt))
+    nr_train = cnt - nr_validate
     output_path = os.path.join(args.path, 'matches_python')
-    read_matches(output_path, sequ_dirs2)
+    os.mkdir(output_path)
+    output_path_train = os.path.join(output_path, 'train')
+    os.mkdir(output_path_train)
+    output_path_validate = os.path.join(output_path, 'validate')
+    os.mkdir(output_path_validate)
+    read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, nr_validate)
 
 
 if __name__ == "__main__":
