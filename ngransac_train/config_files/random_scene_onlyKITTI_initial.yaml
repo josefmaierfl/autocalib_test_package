@@ -4,31 +4,31 @@
 # 
 # 
 # Number of total frames. Max. 10000
-nrTotalFrames: 1005
+nrTotalFrames: 500
 # ---- Options for stereo extrinsics ----
 # 
 # 
 # Number of different stereo configurations (max. 1000). 
 # The number of frames per camera configuration is controlled by the smallest number of the change rates (e.g. txChangeFRate) for tx, ty, tz, roll, pitch, and yaw.
-nrStereoConfigs: 67
+nrStereoConfigs: 50
 # Specifies after how many frames the x-component for the translation vector between the stereo cameras shall be changed linearly by a given value. 
 # Set this value to 0, if you do not want to change the x-component linearly.
-txChangeFRate: 15
+txChangeFRate: 10
 # Specifies after how many frames the y-component for the translation vector between the stereo cameras shall be changed linearly by a given value. 
 # Set this value to 0, if you do not want to change the y-component linearly.
-tyChangeFRate: 15
+tyChangeFRate: 10
 # Specifies after how many frames the z-component for the translation vector between the stereo cameras shall be changed linearly by a given value. 
 # Set this value to 0, if you do not want to change the z-component linearly.
-tzChangeFRate: 15
+tzChangeFRate: 10
 # Specifies after how many frames the roll angle (angle about x-axis) between the stereo cameras shall be changed linearly by a given value. 
 # Set this value to 0, if you do not want to change the roll linearly.
-rollChangeFRate: 15
+rollChangeFRate: 10
 # Specifies after how many frames the pitch angle (angle about y-axis) between the stereo cameras shall be changed linearly by a given value. 
 # Set this value to 0, if you do not want to change the pitch linearly.
-pitchChangeFRate: 15
+pitchChangeFRate: 10
 # Specifies after how many frames the yaw angle (angle about z-axis) between the stereo cameras shall be changed linearly by a given value. 
 # Set this value to 0, if you do not want to change the yaw linearly.
-yawChangeFRate: 15
+yawChangeFRate: 10
 # Linear change rate for tx (x-component of the translation vector between the stereo cameras).
 txLinChangeVal: -1.0000000000000000e-02
 # Linear change rate for ty (y-component of the translation vector between the stereo cameras).

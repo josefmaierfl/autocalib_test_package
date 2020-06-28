@@ -11,6 +11,7 @@ import multiprocessing.pool
 #from tabulate import tabulate as tab
 #from copy import deepcopy
 
+
 def opencv_matrix_constructor(loader, node):
     mapping = loader.construct_mapping(node, deep=True)
     mat = np.array(mapping["data"])
