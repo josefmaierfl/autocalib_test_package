@@ -29,15 +29,15 @@ if [ "${SECOND_ARG}" == "RESDIR" ]; then
     exit 1
   fi
 else
-  RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/results"
+  RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/results_train"
   if [ ! -d ${RES_DIR} ]; then
     mkdir ${RES_DIR}
   fi
 fi
 # -c $(echo "${@:2}")
 xhost +local:
-#docker run -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package:1.0 /bin/bash
-docker run -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package:1.0 /app/start_testing.sh "${@:2}"
+#docker run -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ngransac_data_package:1.0 /bin/bash
+docker run -v `pwd`/images:/app/images:ro -v `pwd`/ngransac_prepare:/app/ngransac_prepare -v ${RES_DIR}:/app/results_train -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ngransac_data_package:1.0 /app/start_testing.sh "${@:2}"
 
 # Shut down if asked for
 #if [ $# -ne 0 ]; then

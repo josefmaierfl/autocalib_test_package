@@ -53,7 +53,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -
 
 ADD ci /ci
 RUN cd /ci && ./build_thirdparty.sh
-RUN cd /ci && ./copy_thirdparty.sh
 RUN python -m pip install --upgrade pip setuptools wheel
 ADD py_test_scripts/requirements.txt .
 RUN python -m pip install -r requirements.txt && rm requirements.txt
@@ -63,14 +62,7 @@ COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/
 COPY build_generateVirtualSequence.sh /ci/tmp/
 RUN cd /ci/tmp && ./build_generateVirtualSequence.sh
 
-#RUN pip install glibc
-COPY matchinglib_poselib /ci/tmp/matchinglib_poselib/
-COPY build_matchinglib_poselib.sh /ci/tmp/
-RUN cd /ci/tmp && ./build_matchinglib_poselib.sh
-
 WORKDIR /app
-RUN cp -r /ci/tmp/thirdparty /app/
-RUN cp -r /ci/tmp/tmp/. /app/
 COPY start_testing.sh /app/
 #RUN rm -r /ci
 
