@@ -98,3 +98,4 @@ webencodings==0.5.1
 widgetsnbextension==3.4.2
 pathos
 beautifulsoup4
+mgzip
