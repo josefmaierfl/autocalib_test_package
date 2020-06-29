@@ -82,22 +82,22 @@ tzRange:
 # first stereo configuration. If specified by rollVariable, the range is used for every new configuration. 
 # If the range (difference between both values) is 0, the roll angle will be kept fixed at the given start value for roll.
 rollRange:
-   first: -15.
-   second: 15.
+   first: -20.
+   second: 20.
 # Possible range for the initial pitch angle (angle in degrees about y-axis between the stereo cameras, right handed coordinate system, R = R_y * R_z * R_x)
 # to be able to meet a user specific image overlap. The optimal pitch starting-value is by default only estimated for the
 # first stereo configuration. If specified by pitchVariable, the range is used for every new configuration.
 # If the range (difference between both values) is 0, the pitch angle will be kept fixed at the given start value for pitch.
 pitchRange:
-   first: -22.
-   second: 22.
+   first: -25.
+   second: 25.
 # Possible range for the initial yaw angle (angle in degrees about z-axis between the stereo cameras, right handed coordinate system, R = R_y * R_z * R_x)
 # to be able to meet a user specific image overlap. The optimal yaw starting-value is by default only estimated for the
 # first stereo configuration. If specified by yawVariable, the range is used for every new configuration.
 # If the range (difference between both values) is 0, the yaw angle will be kept fixed at the given start value for yaw.
 yawRange:
-   first: -12.
-   second: 12.
+   first: -15.
+   second: 15.
 # Use the specified tx-range for every new stereo configuration (not only for the first) where tx should change (depends on txChangeFRate). 
 # If this value is 1, an optimal value is selected within the given range for every new changed stereo configuration to meet a 
 # specific image overlap between the 2 stereo cameras. Otherwise set the value to 0.
