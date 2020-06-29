@@ -3,11 +3,27 @@ Reads matches of a given directory
 """
 import sys, numpy as np, argparse, os, warnings, math, mgzip, time, psutil
 import ruamel.yaml as yaml
-#import yaml
-#from yaml import CLoader as Loader
+from ruamel.yaml import CLoader as Loader
 import cv2
 from xml.etree import cElementTree as ElementTree
 import multiprocessing
+import multiprocessing.pool
+import threading
+
+
+class NoDaemonProcess(multiprocessing.Process):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+
+# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
+# because the latter is only a wrapper function, not a proper class.
+class MyPool(multiprocessing.pool.Pool):
+    Process = NoDaemonProcess
 
 
 class XmlListConfig(list):
@@ -78,13 +94,15 @@ def opencv_matrix_constructor(loader, node):
     mat = np.array(mapping["data"])
     mat.resize(mapping["rows"], mapping["cols"])
     return mat
+
+
 yaml.add_constructor(u"tag:yaml.org,2002:opencv-matrix", opencv_matrix_constructor)
 yaml.SafeLoader.add_constructor(u"tag:yaml.org,2002:opencv-matrix", opencv_matrix_constructor)
 
 warnings.simplefilter('ignore', yaml.error.UnsafeLoaderWarning)
 
 
-def readOpenCVYaml(file, isstr = False):
+def readOpenCVYaml(file, isstr=False, isSingleWrite=False):
     if isstr:
         data = file.split('\n')
     else:
@@ -92,12 +110,14 @@ def readOpenCVYaml(file, isstr = False):
             data = fi.readlines()
     data = [line for line in data if line and line[0] is not '%']
     try:
-        #yaml_ = yaml(typ='safe')
-        data = yaml.load_all("\n".join(data))
-        data1 = {}
-        for d in data:
-            data1.update(d)
-        data = data1
+        if isSingleWrite:
+            data = yaml.load("\n".join(data), Loader=Loader)
+        else:
+            data = yaml.load_all("\n".join(data))
+            data1 = {}
+            for d in data:
+                data1.update(d)
+            data = data1
     except:
         print('Exception during reading yaml.')
         e = sys.exc_info()
@@ -107,7 +127,7 @@ def readOpenCVYaml(file, isstr = False):
     return data
 
 
-def readYamlOrXml(file):
+def readYamlOrXml(file, isSingleWrite=False):
     base, ending11 = os.path.splitext(file)
     _, ending12 = os.path.splitext(base)
     if ending12 and ('yaml' in ending12 or 'yml' in ending12 or 'xml' in ending12):
@@ -126,14 +146,14 @@ def readYamlOrXml(file):
             root = ElementTree.XML(f_str)
             data = XmlDictConfig(root)
         else:
-            data = readOpenCVYaml(f_str, True)
+            data = readOpenCVYaml(f_str, True, isSingleWrite)
     else:
         if is_xml:
             tree = ElementTree.parse('your_file.xml')
             root = tree.getroot()
             data = XmlDictConfig(root)
         else:
-            data = readOpenCVYaml(file)
+            data = readOpenCVYaml(file, False, isSingleWrite)
     return data
 
 
@@ -181,6 +201,13 @@ def estimate_available_cpus(nr_tasks, nr_cpus=-1, mult_proc=True):
             cpu_use = 1
     else:
         cpu_use = max(nr_cpus, 1)
+    act_nr_threads = threading.active_count()
+    if av_cpus:
+        max_threads = av_cpus * 2
+    else:
+        max_threads = 100
+    if cpu_use > 1 and cpu_use + act_nr_threads > max_threads:
+        cpu_use = max(max_threads - act_nr_threads, 1)
     return cpu_use
 
 
@@ -205,7 +232,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
             sequFile = os.path.join(elem['sequDir'], sequFile)
             if not os.path.exists(sequFile):
                 break
-            sequ_data = readYamlOrXml(sequFile)
+            sequ_data = readYamlOrXml(sequFile, True)
             sequ_data_full.append({'pt3Didx': sequ_data['combCorrsImg12TP_IdxWorld2'],
                                    'hashSequ': hashSequ,
                                    'Rrel': sequ_data['actR'],
@@ -225,7 +252,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                 mtchFile = os.path.join(melem, mtchFile)
                 if not os.path.exists(mtchFile):
                     break
-                match_data = readYamlOrXml(mtchFile)
+                match_data = readYamlOrXml(mtchFile, True)
                 match_data_full1.append({'kp1': match_data['frameKeypoints1'],
                                          'kp2': match_data['frameKeypoints1'],
                                          'descr1': match_data['frameDescriptors1'],
@@ -668,7 +695,7 @@ def main():
         sequ_parf = os.path.join(s_dir, 'sequPars' + ending1)
         if not os.path.exists(sequ_parf):
             raise ValueError('Missing file ' + sequ_parf)
-        sequ_par_data = readYamlOrXml(sequ_parf)
+        sequ_par_data = readYamlOrXml(sequ_parf, True)
         f_match = os.path.join(s_dir, matchFile)
         if not os.path.exists(f_match):
             raise ValueError('Missing file ' + f_match)
@@ -738,7 +765,7 @@ def main():
             nr_train = cnt - nr_validate
             cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:nr_dirs], nr_train))
         cmd_fails = []
-        with multiprocessing.Pool(processes=max_procs) as pool:
+        with MyPool(processes=max_procs) as pool:
             # results = pool.map(processDir, work_items)
             results = [pool.apply_async(read_matches, t) for t in cmds]
             cnt = 0
