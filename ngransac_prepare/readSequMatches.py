@@ -1,7 +1,7 @@
 """
 Reads matches of a given directory
 """
-import sys, numpy as np, argparse, os, warnings, math, mgzip, time, psutil
+import sys, numpy as np, argparse, os, warnings, math, mgzip, time, psutil, gzip
 import ruamel.yaml as yaml
 from ruamel.yaml import CLoader as Loader
 import cv2
@@ -137,8 +137,9 @@ def readYamlOrXml(file, isSingleWrite=False):
     is_zipped = True if 'gz' in ending else False
     is_xml = True if 'xml' in ending else False
     if is_zipped:
-        nr_threads = estimate_available_cpus(32)
-        with mgzip.open(file, 'rt', thread=nr_threads) as fin:
+        # nr_threads = estimate_available_cpus(32)
+        # with mgzip.open(file, 'rt', thread=nr_threads) as fin:
+        with gzip.open(file, 'rt') as fin:
             f_str = fin.read()
             #f_bytes = fin.read()
         #f_str = f_bytes.decode('utf-8')
