@@ -4000,7 +4000,7 @@ void genMatchSequ::distortKeyPointPosition(cv::KeyPoint &kp2,
                 if (maxr > (parsMtch.keypErrDistr.first + 5.0 * parsMtch.keypErrDistr.second)) {
                     float r_error = (float) abs(distr(rand_gen)) * pow(-1.f, (float) (rand2() % 2));
                     kp2.pt.y += r_error;
-                } else if (!nearZero(maxr)) {
+                } else if (maxr > 0 && !nearZero(maxr)) {
                     auto r_error = (float) getRandDoubleValRng(-1.0 * maxr, maxr);
                     kp2.pt.y += r_error;
                 }
@@ -4014,7 +4014,7 @@ void genMatchSequ::distortKeyPointPosition(cv::KeyPoint &kp2,
                 if (maxr > (parsMtch.keypErrDistr.first + 5.0 * parsMtch.keypErrDistr.second)) {
                     float r_error = (float) abs(distr(rand_gen)) * pow(-1.f, (float) (rand2() % 2));
                     kp2.pt.x += r_error;
-                } else if (!nearZero(maxr)) {
+                } else if (maxr > 0 && !nearZero(maxr)) {
                     auto r_error = (float) getRandDoubleValRng(-1.0 * maxr, maxr);
                     kp2.pt.x += r_error;
                 }
