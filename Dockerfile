@@ -63,6 +63,7 @@ COPY build_generateVirtualSequence.sh /ci/tmp/
 RUN cd /ci/tmp && ./build_generateVirtualSequence.sh
 
 WORKDIR /app
+RUN cp -r /ci/tmp/tmp/. /app/
 COPY start_testing.sh /app/
 #RUN rm -r /ci
 
