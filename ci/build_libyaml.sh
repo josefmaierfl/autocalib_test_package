@@ -16,7 +16,7 @@ make install
 if [ $? -ne 0 ]; then
     exit 1
 fi
-pip install ruamel.yaml --upgrade --force
+pip install ruamel.yaml numpy --upgrade --force
 if [ $? -ne 0 ]; then
     exit 1
 fi

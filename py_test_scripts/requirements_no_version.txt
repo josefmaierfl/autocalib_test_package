@@ -97,3 +97,4 @@ wcwidth
 webencodings
 widgetsnbextension
 mgzip
+cPython

@@ -99,3 +99,4 @@ widgetsnbextension==3.4.2
 pathos
 beautifulsoup4
 mgzip
+cPython
