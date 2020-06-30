@@ -1,7 +1,8 @@
 """
 Reads matches of a given directory
 """
-import sys, numpy as np, argparse, os, warnings, math, mgzip, time, psutil, gzip
+import sys, numpy as np, argparse, os, warnings, math, time, psutil, gzip, logging
+#import mgzip
 import ruamel.yaml as yaml
 from ruamel.yaml import CLoader as Loader
 import cv2
@@ -24,6 +25,30 @@ class NoDaemonProcess(multiprocessing.Process):
 # because the latter is only a wrapper function, not a proper class.
 class MyPool(multiprocessing.pool.Pool):
     Process = NoDaemonProcess
+
+
+def configure_logging(message_path, base_name, already_set=False):
+    err_trace_base_name = base_name
+    base = err_trace_base_name
+    excmess = os.path.join(message_path, base + '.txt')
+    cnt = 1
+    while os.path.exists(excmess):
+        base = err_trace_base_name + '_-_' + str(cnt)
+        excmess = os.path.join(message_path, base + '.txt')
+        cnt += 1
+    if already_set:
+        global fileh
+        fileh = logging.FileHandler(excmess, 'a')
+        fileh.setLevel(level=logging.DEBUG)
+        log = logging.getLogger()  # root logger
+        for hdlr in log.handlers[:]:  # remove all old handlers
+            hdlr.close()
+            log.removeHandler(hdlr)
+        log.addHandler(fileh)  # set the new handler
+    else:
+        logging.basicConfig(filename=excmess, level=logging.DEBUG)
+        log = logging.getLogger()  # root logger
+    return excmess, log
 
 
 class XmlListConfig(list):
@@ -276,6 +301,8 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                 descr1 = []
                 descr2 = []
                 dists = []
+                if len(match[i]['matches']) < 10:
+                    continue
                 for m in match[i]['matches']:
                     pts2.append(match[i]['kp2'][m[1]][:2])
                     pts1.append(match[i]['kp1'][m[0]][:2])
@@ -319,12 +346,16 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                 if i > 0:
                     idx3D2 = {}
                     nr_TP2 = len(sequ_data_full[i]['pt3Didx'])
+                    if nr_TP2 < 10:
+                        continue
                     for idx, id in enumerate(match[i]['idx1']):
                         if id < nr_TP2:
                             idx3D2[sequ_data_full[i]['pt3Didx'][id]] = idx
 
                     idx3D1 = {}
                     nr_TP1 = len(sequ_data_full[i - 1]['pt3Didx'])
+                    if nr_TP1 < 10:
+                        continue
                     for idx, id in enumerate(match[i - 1]['idx1']):
                         if id < nr_TP1:
                             idx3D1[sequ_data_full[i - 1]['pt3Didx'][id]] = idx
@@ -338,12 +369,16 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                     corrs2 = set()
                     for item in idx3D1.items():
                         if item[0] in idx3D2:
+                            try:
+                                idx2 = idx3D2[item[0]]
+                            except Exception:
+                                continue
                             corrs1.add(item[1])
-                            corrs2.add(idx3D2[item[0]])
+                            corrs2.add(idx2)
                             pts1.append(match[i - 1]['kp1'][item[1]][:2])
-                            pts2.append(match[i]['kp1'][idx3D2[item[0]]][:2])
+                            pts2.append(match[i]['kp1'][idx2][:2])
                             descr1.append(match[i - 1]['descr1'][item[1]])
-                            descr2.append(match[i]['descr1'][idx3D2[item[0]]])
+                            descr2.append(match[i]['descr1'][idx2])
                             dists.append(getDescriptorDist(descr1[-1], descr2[-1], isInt))
                     if len(pts1) > 10:
                         ratios = calcRatios(descr1, descr2, dists)
@@ -381,28 +416,29 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                             for j in range(0, len(idx3D2)):
                                 if j not in corrs2:
                                     tnidx2.append(j)
-                            np.random.shuffle(tnidx1)
-                            np.random.shuffle(tnidx2)
-                            kp1tn = []
-                            kp2tn = []
-                            descr1tn = []
-                            descr2tn = []
-                            for j in range(0, minlen):
-                                kp1tn.append(match[i - 1]['kp1'][tnidx1[j]])
-                                kp2tn.append(match[i]['kp1'][tnidx2[j]])
-                                descr1tn.append(match[i - 1]['descr1'][tnidx1[j]])
-                                descr2tn.append(match[i]['descr1'][tnidx2[j]])
-                            bf = cv2.BFMatcher()
-                            if isInt:
-                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
-                                                        np.array(descr2tn).astype(np.uint8), k=2)
-                            else:
-                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
-                                                        np.array(descr2tn).astype(float), k=2)
-                            for (m, n) in tnmatches:
-                                pts2.append(kp2tn[m.trainIdx][:2])
-                                pts1.append(kp1tn[m.queryIdx][:2])
-                                ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
+                            if len(tnidx1) > 5 and len(tnidx2) > 5:
+                                np.random.shuffle(tnidx1)
+                                np.random.shuffle(tnidx2)
+                                kp1tn = []
+                                kp2tn = []
+                                descr1tn = []
+                                descr2tn = []
+                                for j in range(0, minlen):
+                                    kp1tn.append(match[i - 1]['kp1'][tnidx1[j]])
+                                    kp2tn.append(match[i]['kp1'][tnidx2[j]])
+                                    descr1tn.append(match[i - 1]['descr1'][tnidx1[j]])
+                                    descr2tn.append(match[i]['descr1'][tnidx2[j]])
+                                bf = cv2.BFMatcher()
+                                if isInt:
+                                    tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
+                                                            np.array(descr2tn).astype(np.uint8), k=2)
+                                else:
+                                    tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
+                                                            np.array(descr2tn).astype(float), k=2)
+                                for (m, n) in tnmatches:
+                                    pts2.append(kp2tn[m.trainIdx][:2])
+                                    pts1.append(kp1tn[m.queryIdx][:2])
+                                    ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
 
                             shlist = list(range(0, len(pts1)))
                             np.random.shuffle(shlist)
@@ -443,12 +479,16 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                     # Get frame to frame correspondences for cam2
                     idx3D2 = {}
                     nr_TP2 = len(sequ_data_full[i]['pt3Didx'])
+                    if nr_TP2 < 10:
+                        continue
                     for idx, id in enumerate(match[i]['idx2']):
                         if id < nr_TP2:
                             idx3D2[sequ_data_full[i]['pt3Didx'][id]] = idx
 
                     idx3D1 = {}
                     nr_TP1 = len(sequ_data_full[i - 1]['pt3Didx'])
+                    if nr_TP1 < 10:
+                        continue
                     for idx, id in enumerate(match[i - 1]['idx2']):
                         if id < nr_TP1:
                             idx3D1[sequ_data_full[i - 1]['pt3Didx'][id]] = idx
@@ -462,12 +502,16 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                     corrs2 = set()
                     for item in idx3D1.items():
                         if item[0] in idx3D2:
+                            try:
+                                idx2 = idx3D2[item[0]]
+                            except Exception:
+                                continue
                             corrs1.add(item[1])
-                            corrs2.add(idx3D2[item[0]])
+                            corrs2.add(idx2)
                             pts1.append(match[i - 1]['kp2'][item[1]][:2])
-                            pts2.append(match[i]['kp2'][idx3D2[item[0]]][:2])
+                            pts2.append(match[i]['kp2'][idx2][:2])
                             descr1.append(match[i - 1]['descr2'][item[1]])
-                            descr2.append(match[i]['descr2'][idx3D2[item[0]]])
+                            descr2.append(match[i]['descr2'][idx2])
                             dists.append(getDescriptorDist(descr1[-1], descr2[-1], isInt))
                     if len(pts1) > 10:
                         ratios = calcRatios(descr1, descr2, dists)
@@ -506,6 +550,8 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                             for j in range(0, len(idx3D2)):
                                 if j not in corrs2:
                                     tnidx2.append(j)
+                            if len(tnidx1) < 5 or len(tnidx2) < 5:
+                                continue
                             np.random.shuffle(tnidx1)
                             np.random.shuffle(tnidx2)
                             kp1tn = []
@@ -751,6 +797,7 @@ def main():
             sys.stdout.flush()
             sys.exit(1)
     else:
+        excmess, log = configure_logging(output_path, 'convert_except_')
         nr_dirs_sub = int(math.ceil(nr_dirs / max_procs))
         cmds = []
         il = 0
@@ -791,7 +838,8 @@ def main():
                             cnt_dot = 0
                         sys.stdout.write('.')
                         cnt_dot = cnt_dot + 1
-                    except:
+                    except Exception:
+                        log.error('Exception during conversion of sequence data', exc_info=True)
                         print()
                         print('Exception in processing directories.')
                         e = sys.exc_info()
@@ -802,6 +850,9 @@ def main():
                 cnt = cnt + 1
             pool.close()
             pool.join()
+        logging.shutdown()
+        if os.path.exists(excmess) and os.stat(excmess).st_size < 4:
+            os.remove(excmess)
         if cmd_fails:
             res_file = os.path.join(output_path, 'error_overview.txt')
             cnt = 1
