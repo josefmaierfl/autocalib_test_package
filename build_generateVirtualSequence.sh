@@ -15,4 +15,4 @@ fi
 
 copy_dir=${root_dir}/tmp/generateVirtualSequence/build
 mkdir -p ${copy_dir}
-find ${build_dir} -type f \( -executable -o -name \*.so \) -exec cp {} ${copy_dir} \;
+find ${build_dir} -type f \( -executable -o -name \*.so \*.py \) -exec cp {} ${copy_dir} \;
