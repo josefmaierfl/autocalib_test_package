@@ -173,7 +173,7 @@ struct GENERATEVIRTUALSEQUENCELIB_API GenMatchSequParameters {
             return false;
         }
         imgIntNoise.second = abs(imgIntNoise.second);
-        if(abs(imgIntNoise.first) + 2 * imgIntNoise.first > 85){//A minimum sum of mean and std of 25 is advisable
+        if(abs(imgIntNoise.first) + 2 * imgIntNoise.second > 85){//A minimum sum of mean and std of 25 is advisable
             std::cerr << "Invalid imgIntNoise." << std::endl;
             return false;
         }
