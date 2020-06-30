@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # ===========================================
 # VERSION
@@ -26,9 +26,11 @@ CMAKE_OPENCV_EXTRA_MODULES=-DOPENCV_EXTRA_MODULES_PATH=$OPENCV_CONTRIB_DIR/modul
 FLAGS="-DBUILD_DOCS=OFF -DBUILD_PERF_TESTS=OFF -DBUILD_APPS=OFF -DBUILD_TESTS=OFF -DWITH_CUDA=OFF -DWITH_IPP=ON -DWITH_TBB=ON -DWITH_V4L=ON -DWITH_QT=ON -DWITH_OPENGL=ON -DEIGEN_INCLUDE_PATH=/usr/include/eigen3 -DENABLE_AVX=ON \
 -DHAVE_opencv_python3=ON -DPYTHON_INCLUDE_DIR=$(python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())") \
 -DINSTALL_PYTHON_EXAMPLES=ON \
+-DBUILD_NEW_PYTHON_SUPPORT=ON \
 -DBUILD_EXAMPLES=OFF \
 -DPYTHON3_EXECUTABLE=$(which python) \
 -DPYTHON_EXECUTABLE=$(which python) \
+-DPYTHON_DEFAULT_EXECUTABLE=$(which python) \
 -DPYTHON_INCLUDE_DIR2=$(python -c "from os.path import dirname; from distutils.sysconfig import get_config_h_filename; print(dirname(get_config_h_filename()))") \
 -DPYTHON_LIBRARY=$(python -c "from distutils.sysconfig import get_config_var;from os.path import dirname,join ; print(join(dirname(get_config_var('LIBPC')),get_config_var('LDLIBRARY')))") \
 -DPYTHON3_NUMPY_INCLUDE_DIRS=$(python -c "import numpy; print(numpy.get_include())") \

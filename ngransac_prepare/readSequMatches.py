@@ -435,10 +435,20 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                                 else:
                                     tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
                                                             np.array(descr2tn).astype(float), k=2)
-                                for (m, n) in tnmatches:
-                                    pts2.append(kp2tn[m.trainIdx][:2])
-                                    pts1.append(kp1tn[m.queryIdx][:2])
-                                    ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
+                                if len(tnmatches) > 5:
+                                    dellist = []
+                                    for midx, m in enumerate(tnmatches):
+                                        if len(m) != 2:
+                                            dellist.append(midx)
+                                    if dellist:
+                                        dellist.sort(reverse=True)
+                                        for dl in dellist:
+                                            del tnmatches[dl]
+                                    if len(tnmatches) > 5:
+                                        for (m, n) in tnmatches:
+                                            pts2.append(kp2tn[m.trainIdx][:2])
+                                            pts1.append(kp1tn[m.queryIdx][:2])
+                                            ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
 
                             shlist = list(range(0, len(pts1)))
                             np.random.shuffle(shlist)
@@ -570,10 +580,20 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                             else:
                                 tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
                                                         np.array(descr2tn).astype(float), k=2)
-                            for (m, n) in tnmatches:
-                                pts2.append(kp2tn[m.trainIdx][:2])
-                                pts1.append(kp1tn[m.queryIdx][:2])
-                                ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
+                            if len(tnmatches) > 5:
+                                dellist = []
+                                for midx, m in enumerate(tnmatches):
+                                    if len(m) != 2:
+                                        dellist.append(midx)
+                                if dellist:
+                                    dellist.sort(reverse=True)
+                                    for dl in dellist:
+                                        del tnmatches[dl]
+                                if len(tnmatches) > 5:
+                                    for (m, n) in tnmatches:
+                                        pts2.append(kp2tn[m.trainIdx][:2])
+                                        pts1.append(kp1tn[m.queryIdx][:2])
+                                        ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
 
                             shlist = list(range(0, len(pts1)))
                             np.random.shuffle(shlist)

@@ -36,7 +36,7 @@ else
 fi
 # -c $(echo "${@:2}")
 xhost +local:
-#docker run -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ngransac_data_package:1.0 /bin/bash
+#docker run -v `pwd`/images:/app/images:ro -v `pwd`/ngransac_prepare:/app/ngransac_prepare -v ${RES_DIR}:/app/results_train -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ngransac_data_package:1.0 /bin/bash
 docker run -v `pwd`/images:/app/images:ro -v `pwd`/ngransac_prepare:/app/ngransac_prepare -v ${RES_DIR}:/app/results_train -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ngransac_data_package:1.0 /app/start_testing.sh "${@:2}"
 
 # Shut down if asked for
