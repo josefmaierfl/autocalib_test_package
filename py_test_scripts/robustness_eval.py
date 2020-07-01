@@ -11,10 +11,24 @@ import ruamel.yaml as yaml
 from usac_eval import ji_env, get_time_fixed_kp, insert_opt_lbreak, prepare_io
 from statistics_and_plot import compile_tex
 from copy import deepcopy
+import pickle
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 
 def get_rt_change_type(**keywords):
     if 'data_seperators' not in keywords:
         raise ValueError('data_seperators missing!')
+    if 'data_file' in keywords:
+        if os.path.exists(keywords['data_file']):
+            df_new = pd.read_pickle(keywords['data_file'])
+            return df_new
 
     df_grp = keywords['data'].groupby(keywords['data_seperators'])
     grp_keys = df_grp.groups.keys()
@@ -74,16 +88,183 @@ def get_rt_change_type(**keywords):
 
         for first, last in zip(indexes['first'], indexes['last']):
             tmp1 = tmp.iloc[((tmp.index >= first) & (tmp.index < last))].copy(deep=True)
-            hlp = (tmp1['R_GT_n_diffAll'] + tmp1['t_GT_n_angDiff']).fillna(0).round(decimals=6)
-            cnt = float(np.count_nonzero(hlp.to_numpy()))
-            frac = cnt / float(tmp1.shape[0])
-            if frac > 0.5:
-                rxc = tmp1['R_GT_n_diff_roll_deg'].fillna(0).abs().sum() > 1e-3
-                ryc = tmp1['R_GT_n_diff_pitch_deg'].fillna(0).abs().sum() > 1e-3
-                rzc = tmp1['R_GT_n_diff_yaw_deg'].fillna(0).abs().sum() > 1e-3
-                txc = tmp1['t_GT_n_elemDiff_tx'].fillna(0).abs().sum() > 1e-4
-                tyc = tmp1['t_GT_n_elemDiff_ty'].fillna(0).abs().sum() > 1e-4
-                tzc = tmp1['t_GT_n_elemDiff_tz'].fillna(0).abs().sum() > 1e-4
+            hlp = (tmp1['R_GT_n_diffAll'] + tmp1['t_GT_n_elemDiff_tx'] + tmp1['t_GT_n_elemDiff_ty'] +
+                   tmp1['t_GT_n_elemDiff_tz']).fillna(0)#.round(decimals=4)
+            hlp_max = hlp.max()
+            hlp_min = hlp.min()
+            cnt1 = float(hlp.loc[hlp > hlp_max / 3].shape[0])
+            th_cnt = hlp_min + 0.5 * (hlp_max - hlp_min)
+            cnt2 = float(hlp.loc[hlp > th_cnt].shape[0])
+            frac1 = cnt1 / float(tmp1.shape[0])
+            frac2 = cnt2 / float(tmp1.shape[0])
+            # cnt = float(np.count_nonzero(hlp.to_numpy()))
+            # frac = cnt / float(tmp1.shape[0])
+            if frac1 > 0.4 and frac2 > 0.3:
+                rxcc = tmp1['R_GT_n_diff_roll_deg'].fillna(0).abs()
+                rycc = tmp1['R_GT_n_diff_pitch_deg'].fillna(0).abs()
+                rzcc = tmp1['R_GT_n_diff_yaw_deg'].fillna(0).abs()
+                rxc = rxcc.round(decimals=4).sum() > 1e-3
+                ryc = rycc.round(decimals=4).sum() > 1e-3
+                rzc = rzcc.round(decimals=4).sum() > 1e-3
+                check_r_later = False
+                if (rxc and ryc) or (rxc and rzc) or (ryc and rzc):
+                    rxc_max = rxcc.max()
+                    ryc_max = rycc.max()
+                    rzc_max = rzcc.max()
+                    rxyz_max = max(rxc_max, ryc_max, rzc_max)
+                    th = rxyz_max / 3
+                    if rxc_max < th:
+                        rxc = False
+                    if ryc_max < th:
+                        ryc = False
+                    if rzc_max < th:
+                        rzc = False
+                    if (rxc and ryc and not rzc) or (rxc and rzc and not ryc) or (ryc and rzc and not rxc):
+                        check_r_later = True
+                txcc = tmp1['t_GT_n_elemDiff_tx'].fillna(0).abs()
+                tycc = tmp1['t_GT_n_elemDiff_ty'].fillna(0).abs()
+                tzcc = tmp1['t_GT_n_elemDiff_tz'].fillna(0).abs()
+                txc = txcc.round(decimals=4).sum() > 1e-4
+                tyc = tycc.round(decimals=4).sum() > 1e-4
+                tzc = tzcc.round(decimals=4).sum() > 1e-4
+                again = True
+                cnt = 0
+                while again and cnt < 3:
+                    cnt += 1
+                    if (txc and tyc) or (txc and tzc) or (tyc and tzc):
+                        check_t_later = True
+                        again = False
+                        if (txc and tyc and not tzc) or (txc and tzc and not tyc) or (tyc and tzc and not txc):
+                            if check_r_later:
+                                rxc = True
+                                ryc = True
+                                rzc = True
+                                txc = True
+                                tyc = True
+                                tzc = True
+                                check_t_later = False
+                            elif rxc or ryc or rzc:
+                                if not (rxc and ryc and rzc):
+                                    txc = False
+                                    tyc = False
+                                    tzc = False
+                                    check_t_later = False
+                        elif not check_r_later and not (rxc and ryc and rzc) and (rxc or ryc or rzc):
+                            txc = False
+                            tyc = False
+                            tzc = False
+                            check_t_later = False
+                        if check_t_later:
+                            txc_max = txcc.max()
+                            tyc_max = tycc.max()
+                            tzc_max = tzcc.max()
+                            txyz_max = max(txc_max, tyc_max, tzc_max)
+                            th = txyz_max / 3
+                            if txc_max < th:
+                                txc = False
+                            if tyc_max < th:
+                                tyc = False
+                            if tzc_max < th:
+                                tzc = False
+                            if (txc and tyc and not tzc) or (txc and tzc and not tyc) or (tyc and tzc and not txc):
+                                if check_r_later:
+                                    rxc = True
+                                    ryc = True
+                                    rzc = True
+                                    txc = True
+                                    tyc = True
+                                    tzc = True
+                                elif not (rxc or ryc or rzc):
+                                    if np.isclose(txc_max, txyz_max):
+                                        txc = True
+                                        tyc = False
+                                        tzc = False
+                                    elif np.isclose(tyc_max, txyz_max):
+                                        txc = False
+                                        tyc = True
+                                        tzc = False
+                                    else:
+                                        txc = False
+                                        tyc = False
+                                        tzc = True
+                                else:
+                                    txc = False
+                                    tyc = False
+                                    tzc = False
+                            elif txc and tyc and tzc and (rxc or ryc or rzc) and not (rxc and ryc and rzc):
+                                txc_max = txcc.round(decimals=4).max()
+                                tyc_max = tycc.round(decimals=4).max()
+                                tzc_max = tzcc.round(decimals=4).max()
+                                txyz_max = max(txc_max, tyc_max, tzc_max)
+                                th = txyz_max / 5
+                                if txc_max < th:
+                                    txc = False
+                                if tyc_max < th:
+                                    tyc = False
+                                if tzc_max < th:
+                                    tzc = False
+                                if not (txc and tyc and tzc):
+                                    txc = False
+                                    tyc = False
+                                    tzc = False
+                                else:
+                                    rxc = False
+                                    ryc = False
+                                    rzc = False
+                            elif (txc or tyc or tzc) and rxc and ryc and rzc:
+                                txc = False
+                                tyc = False
+                                tzc = False
+                    elif (rxc or ryc or rzc) and (txc or tyc or tzc):
+                        if rxc and ryc and rzc and txc and tyc and tzc:
+                            again = False
+                        elif cnt < 2:
+                            rxc_max = rxcc.max()
+                            ryc_max = rycc.max()
+                            rzc_max = rzcc.max()
+                            rxyz_max = max(rxc_max, ryc_max, rzc_max)
+                            th = rxyz_max / 3
+                            if rxc_max < th:
+                                rxc = False
+                            if ryc_max < th:
+                                ryc = False
+                            if rzc_max < th:
+                                rzc = False
+                            if (rxc and ryc and not rzc) or (rxc and rzc and not ryc) or (ryc and rzc and not rxc):
+                                check_r_later = True
+                            txc_max = txcc.max()
+                            tyc_max = tycc.max()
+                            tzc_max = tzcc.max()
+                            txyz_max = max(txc_max, tyc_max, tzc_max)
+                            th = txyz_max / 3
+                            if txc_max < th:
+                                txc = False
+                            if tyc_max < th:
+                                tyc = False
+                            if tzc_max < th:
+                                tzc = False
+                        elif cnt >= 2:
+                            again = False
+                            rxc_max = rxcc.max()
+                            ryc_max = rycc.max()
+                            rzc_max = rzcc.max()
+                            rsort = sorted([rxc_max, ryc_max, rzc_max])
+                            rrat = (rsort[2] - rsort[1]) / rsort[2]
+                            txc_max = txcc.max()
+                            tyc_max = tycc.max()
+                            tzc_max = tzcc.max()
+                            tsort = sorted([txc_max, tyc_max, tzc_max])
+                            trat = (tsort[2] - tsort[1]) / tsort[2]
+                            if rrat > trat:
+                                txc = False
+                                tyc = False
+                                tzc = False
+                            else:
+                                rxc = False
+                                ryc = False
+                                rzc = False
+                    else:
+                        again = False
                 if rxc and ryc and rzc and txc and tyc and tzc:
                     tmp1['rt_change_type'] = ['crt'] * int(tmp1.shape[0])
                 elif rxc and ryc and rzc:
@@ -106,12 +287,247 @@ def get_rt_change_type(**keywords):
                     tmp1['rt_change_type'] = ['nv'] * int(tmp1.shape[0])# no variation
                 tmp1['rt_change_pos'] = [0] * int(tmp1.shape[0])
             else:
-                rxc = tmp1['R_GT_n_diff_roll_deg'].fillna(0).abs().sum() > 1e-3
-                ryc = tmp1['R_GT_n_diff_pitch_deg'].fillna(0).abs().sum() > 1e-3
-                rzc = tmp1['R_GT_n_diff_yaw_deg'].fillna(0).abs().sum() > 1e-3
-                txc = tmp1['t_GT_n_elemDiff_tx'].fillna(0).abs().sum() > 1e-4
-                tyc = tmp1['t_GT_n_elemDiff_ty'].fillna(0).abs().sum() > 1e-4
-                tzc = tmp1['t_GT_n_elemDiff_tz'].fillna(0).abs().sum() > 1e-4
+                rxcc = tmp1['R_GT_n_diff_roll_deg'].fillna(0).abs()
+                rycc = tmp1['R_GT_n_diff_pitch_deg'].fillna(0).abs()
+                rzcc = tmp1['R_GT_n_diff_yaw_deg'].fillna(0).abs()
+                rxc = rxcc.round(decimals=4).sum() > 1e-3
+                ryc = rycc.round(decimals=4).sum() > 1e-3
+                rzc = rzcc.round(decimals=4).sum() > 1e-3
+                check_r_later = False
+                if (rxc and ryc) or (rxc and rzc) or (ryc and rzc):
+                    rxc_max = rxcc.max()
+                    ryc_max = rycc.max()
+                    rzc_max = rzcc.max()
+                    rxyz_max = max(rxc_max, ryc_max, rzc_max)
+                    th = rxyz_max / 5
+                    if rxc_max < th:
+                        rxc = False
+                    if ryc_max < th:
+                        ryc = False
+                    if rzc_max < th:
+                        rzc = False
+                    if (rxc and ryc and not rzc) or (rxc and rzc and not ryc) or (ryc and rzc and not rxc):
+                        check_r_later = True
+                txcc = tmp1['t_GT_n_elemDiff_tx'].fillna(0).abs()
+                tycc = tmp1['t_GT_n_elemDiff_ty'].fillna(0).abs()
+                tzcc = tmp1['t_GT_n_elemDiff_tz'].fillna(0).abs()
+                txc = txcc.round(decimals=4).sum() > 1e-4
+                tyc = tycc.round(decimals=4).sum() > 1e-4
+                tzc = tzcc.round(decimals=4).sum() > 1e-4
+                again = True
+                cnt = 0
+                while again and cnt < 3:
+                    cnt += 1
+                    if (txc and tyc) or (txc and tzc) or (tyc and tzc):
+                        check_t_later = True
+                        again = False
+                        if (txc and tyc and not tzc) or (txc and tzc and not tyc) or (tyc and tzc and not txc):
+                            if check_r_later:
+                                rxc = True
+                                ryc = True
+                                rzc = True
+                                txc = True
+                                tyc = True
+                                tzc = True
+                                check_t_later = False
+                            elif rxc or ryc or rzc:
+                                if not (rxc and ryc and rzc):
+                                    txc = False
+                                    tyc = False
+                                    tzc = False
+                                    check_t_later = False
+                        elif not check_r_later and not (rxc and ryc and rzc) and (rxc or ryc or rzc):
+                            rxc_max = rxcc.max()
+                            ryc_max = rycc.max()
+                            rzc_max = rzcc.max()
+                            if rxc_max > 0.1 or ryc_max > 0.1 or rzc_max > 0.1:
+                                txc = False
+                                tyc = False
+                                tzc = False
+                            else:
+                                rxc = False
+                                ryc = False
+                                rzc = False
+                            check_t_later = False
+                        if check_t_later:
+                            txc_max = txcc.max()
+                            tyc_max = tycc.max()
+                            tzc_max = tzcc.max()
+                            txyz_max = max(txc_max, tyc_max, tzc_max)
+                            th = txyz_max / 5
+                            if txc_max < th:
+                                txc = False
+                            if tyc_max < th:
+                                tyc = False
+                            if tzc_max < th:
+                                tzc = False
+                            if (txc and tyc and not tzc) or (txc and tzc and not tyc) or (tyc and tzc and not txc):
+                                if check_r_later:
+                                    rxc = True
+                                    ryc = True
+                                    rzc = True
+                                    txc = True
+                                    tyc = True
+                                    tzc = True
+                                elif not (rxc or ryc or rzc):
+                                    if np.isclose(txc_max, txyz_max):
+                                        txc = True
+                                        tyc = False
+                                        tzc = False
+                                    elif np.isclose(tyc_max, txyz_max):
+                                        txc = False
+                                        tyc = True
+                                        tzc = False
+                                    else:
+                                        txc = False
+                                        tyc = False
+                                        tzc = True
+                                else:
+                                    txc = txc_max > 0.01
+                                    tyc = tyc_max > 0.01
+                                    tzc = tzc_max > 0.01
+                                    rxc_max = rxcc.max()
+                                    ryc_max = rycc.max()
+                                    rzc_max = rzcc.max()
+                                    if ((txc and tyc) or (txc and tzc) or (tyc and tzc)) and not \
+                                        (rxc_max > 0.2 or ryc_max > 0.2 or rzc_max > 0.2):
+                                        rxc = False
+                                        ryc = False
+                                        rzc = False
+                                        txc = True
+                                        tyc = True
+                                        tzc = True
+                                    elif ((txc and tyc) or (txc and tzc) or (tyc and tzc)) and \
+                                        (rxc_max > 0.2 or ryc_max > 0.2 or rzc_max > 0.2):
+                                        rxc = rxc_max > 0.2
+                                        ryc = ryc_max > 0.2
+                                        rzc = rzc_max > 0.2
+                                        if (rxc and ryc) or (rxc and rzc) or (ryc and rzc):
+                                            rxc = True
+                                            ryc = True
+                                            rzc = True
+                                            txc = True
+                                            tyc = True
+                                            tzc = True
+                                        else:
+                                            rxc = False
+                                            ryc = False
+                                            rzc = False
+                                            txc = True
+                                            tyc = True
+                                            tzc = True
+                                    else:
+                                        txc = False
+                                        tyc = False
+                                        tzc = False
+                            elif txc and tyc and tzc and (rxc or ryc or rzc) and not (rxc and ryc and rzc):
+                                txc_max = txcc.round(decimals=4).max()
+                                tyc_max = tycc.round(decimals=4).max()
+                                tzc_max = tzcc.round(decimals=4).max()
+                                txyz_max = max(txc_max, tyc_max, tzc_max)
+                                th = txyz_max / 5
+                                if txc_max < th:
+                                    txc = False
+                                if tyc_max < th:
+                                    tyc = False
+                                if tzc_max < th:
+                                    tzc = False
+                                if not (txc and tyc and tzc):
+                                    txc = txc_max > 0.01
+                                    tyc = tyc_max > 0.01
+                                    tzc = tzc_max > 0.01
+                                    rxc_max = rxcc.max()
+                                    ryc_max = rycc.max()
+                                    rzc_max = rzcc.max()
+                                    if ((txc and tyc) or (txc and tzc) or (tyc and tzc)) and not \
+                                            (rxc_max > 0.2 or ryc_max > 0.2 or rzc_max > 0.2):
+                                        rxc = False
+                                        ryc = False
+                                        rzc = False
+                                        txc = True
+                                        tyc = True
+                                        tzc = True
+                                    elif ((txc and tyc) or (txc and tzc) or (tyc and tzc)) and \
+                                            (rxc_max > 0.2 or ryc_max > 0.2 or rzc_max > 0.2):
+                                        rxc = rxc_max > 0.2
+                                        ryc = ryc_max > 0.2
+                                        rzc = rzc_max > 0.2
+                                        if (rxc and ryc) or (rxc and rzc) or (ryc and rzc):
+                                            rxc = True
+                                            ryc = True
+                                            rzc = True
+                                            txc = True
+                                            tyc = True
+                                            tzc = True
+                                        else:
+                                            rxc = False
+                                            ryc = False
+                                            rzc = False
+                                            txc = True
+                                            tyc = True
+                                            tzc = True
+                                    else:
+                                        txc = False
+                                        tyc = False
+                                        tzc = False
+                                else:
+                                    rxc = False
+                                    ryc = False
+                                    rzc = False
+                            elif (txc or tyc or tzc) and rxc and ryc and rzc:
+                                txc = False
+                                tyc = False
+                                tzc = False
+                    elif (rxc or ryc or rzc) and (txc or tyc or tzc):
+                        if rxc and ryc and rzc and txc and tyc and tzc:
+                            again = False
+                        elif cnt < 2:
+                            rxc_max = rxcc.max()
+                            ryc_max = rycc.max()
+                            rzc_max = rzcc.max()
+                            rxyz_max = max(rxc_max, ryc_max, rzc_max)
+                            th = rxyz_max / 5
+                            if rxc_max < th:
+                                rxc = False
+                            if ryc_max < th:
+                                ryc = False
+                            if rzc_max < th:
+                                rzc = False
+                            if (rxc and ryc and not rzc) or (rxc and rzc and not ryc) or (ryc and rzc and not rxc):
+                                check_r_later = True
+                            txc_max = txcc.max()
+                            tyc_max = tycc.max()
+                            tzc_max = tzcc.max()
+                            txyz_max = max(txc_max, tyc_max, tzc_max)
+                            th = txyz_max / 5
+                            if txc_max < th:
+                                txc = False
+                            if tyc_max < th:
+                                tyc = False
+                            if tzc_max < th:
+                                tzc = False
+                        elif cnt >= 2:
+                            again = False
+                            rxc_max = rxcc.max()
+                            ryc_max = rycc.max()
+                            rzc_max = rzcc.max()
+                            rsort = sorted([rxc_max, ryc_max, rzc_max])
+                            rrat = (rsort[2] - rsort[1]) / rsort[2]
+                            txc_max = txcc.max()
+                            tyc_max = tycc.max()
+                            tzc_max = tzcc.max()
+                            tsort = sorted([txc_max, tyc_max, tzc_max])
+                            trat = (tsort[2] - tsort[1]) / tsort[2]
+                            if rrat > trat:
+                                txc = False
+                                tyc = False
+                                tzc = False
+                            else:
+                                rxc = False
+                                ryc = False
+                                rzc = False
+                    else:
+                        again = False
                 change_positions = []
                 if rxc and ryc and rzc and txc and tyc and tzc:
                     tmp1['rt_change_type'] = ['jrt'] * int(tmp1.shape[0])
@@ -267,6 +683,8 @@ def get_rt_change_type(**keywords):
         df_new = df_new.loc[(df_new['poseIsStable'] != 0)]
     if 'filter_mostLikelyPose_stable' in keywords and keywords['filter_mostLikelyPose_stable']:
         df_new = df_new.loc[(df_new['mostLikelyPose_stable'] != 0)]
+    if 'data_file' in keywords:
+        df_new.to_pickle(keywords['data_file'])
     return df_new
 
 
@@ -654,6 +1072,7 @@ def get_best_comb_scenes_1(**keywords):
         # Write parameters
         alg_comb_bestl = b_mmean[ret['it_parameters']].to_numpy()
         if len(keywords['it_parameters']) != len(alg_comb_bestl):
+            em.release_lock()
             raise ValueError('Nr of refine algorithms does not match')
         alg_w = {}
         for i, val in enumerate(keywords['it_parameters']):
@@ -1225,6 +1644,7 @@ def get_best_comb_3d_scenes_1(**keywords):
         # Write parameters
         alg_comb_bestl = b_mmmean[ret['it_parameters']].to_numpy()
         if len(keywords['it_parameters']) != len(alg_comb_bestl):
+            em.release_lock()
             raise ValueError('Nr of refine algorithms does not match')
         alg_w = {}
         for i, val in enumerate(keywords['it_parameters']):
@@ -1254,11 +1674,29 @@ def calc_calib_delay(**keywords):
         raise ValueError('scene must be specified')
     if not isinstance(keywords['scene'], str):
         raise ValueError('Currently, only an evaluation on a single scene is supported')
-    if 'comb_rt' in keywords and keywords['comb_rt']:
-        from corr_pool_eval import combine_rt_diff2
-        data, keywords = combine_rt_diff2(keywords['data'], keywords)
-    else:
-        data = keywords['data']
+    is_calced = False
+    if 'data_file' in keywords:
+        df_filen = keywords['data_file'] + '.gz'
+        vars_filen = keywords['data_file'] + '.pkl'
+        if os.path.exists(df_filen) and os.path.exists(vars_filen):
+            is_calced = True
+            df_new = pd.read_pickle(df_filen)
+            with open(vars_filen, "rb") as pf:
+                keywords = pickle.load(pf)
+    if not is_calced:
+        if 'comb_rt' in keywords and keywords['comb_rt']:
+            from corr_pool_eval import combine_rt_diff2
+            data, keywords = combine_rt_diff2(keywords['data'], keywords)
+        else:
+            data = keywords['data']
+        if 'data_file' in keywords:
+            keywords1 = {}
+            for key in keywords:
+                if key != 'data':
+                    keywords1[key] = keywords[key]
+            with open(vars_filen, "wb") as vo:
+                pickle.dump(keywords1, vo, pickle.HIGHEST_PROTOCOL)
+
     keywords = prepare_io(**keywords)
     from statistics_and_plot import check_if_series, \
         short_concat_str, \
@@ -1282,63 +1720,72 @@ def calc_calib_delay(**keywords):
         split_large_labels, \
         handle_nans, \
         check_file_exists_rename
-    needed_cols = list(dict.fromkeys(keywords['data_separators'] +
-                                     keywords['it_parameters'] +
-                                     keywords['eval_on'] +
-                                     keywords['additional_data'] +
-                                     keywords['x_axis_column']))
-    df = data[needed_cols]
-    grpd_cols = keywords['data_separators'] + keywords['it_parameters']
-    df_grp = df.groupby(grpd_cols)
-    grp_keys = df_grp.groups.keys()
-    df_list = []
-    for grp in grp_keys:
-        tmp = df_grp.get_group(grp).copy(deep=True)
-        tmp.loc[:, keywords['eval_on'][0]] = tmp.loc[:, keywords['eval_on'][0]].abs()
-        #Check for the correctness of the change number
-        if int(tmp['rt_change_pos'].iloc[0]) != keywords['change_Nr']:
-            warnings.warn('Given frame number when extrinsics change doesnt match the estimated number. '
-                          'Taking estimated number.', UserWarning)
-            keywords['change_Nr'] = int(tmp['rt_change_pos'].iloc[0])
-        tmp1 = tmp.loc[tmp['Nr'] < keywords['change_Nr']]
-        min_val = tmp1[keywords['eval_on'][0]].min()
-        max_val = tmp1[keywords['eval_on'][0]].max()
-        rng80 = 0.8 * (max_val - min_val) + min_val
-        p1_stats = tmp1.loc[tmp1[keywords['eval_on'][0]] < rng80, keywords['eval_on']].describe()
-        th = p1_stats[keywords['eval_on'][0]]['mean'] + 2.576 * p1_stats[keywords['eval_on'][0]]['std']
-        test_rise = tmp.loc[((tmp[keywords['eval_on'][0]] > th) &
-                            (tmp['Nr'] >= keywords['change_Nr']) &
-                            (tmp['Nr'] < (keywords['change_Nr'] + 2)))]
-        if test_rise.empty:
-            fd = 0
-            fpos = keywords['change_Nr']
-        else:
-            tmp2 = tmp.loc[((tmp[keywords['eval_on'][0]] <= th) &
-                            (tmp['Nr'] >= keywords['change_Nr']))]
-            if check_if_series(tmp2):
-                fpos = tmp2['Nr']
-                fd = fpos - keywords['change_Nr']
-            elif tmp2.shape[0] == 1:
-                fpos = tmp2['Nr'].iloc[0]
-                fd = fpos - keywords['change_Nr']
+    if not is_calced:
+        needed_cols = list(dict.fromkeys(keywords['data_separators'] +
+                                         keywords['it_parameters'] +
+                                         keywords['eval_on'] +
+                                         keywords['additional_data'] +
+                                         keywords['x_axis_column']))
+        df = data[needed_cols]
+        grpd_cols = keywords['data_separators'] + keywords['it_parameters']
+        df_grp = df.groupby(grpd_cols)
+        grp_keys = df_grp.groups.keys()
+        df_list = []
+        for grp in grp_keys:
+            tmp = df_grp.get_group(grp).copy(deep=True)
+            tmp.loc[:, keywords['eval_on'][0]] = tmp.loc[:, keywords['eval_on'][0]].abs()
+            #Check for the correctness of the change number
+            if int(tmp['rt_change_pos'].iloc[0]) != keywords['change_Nr']:
+                warnings.warn('Given frame number when extrinsics change doesnt match the estimated number. '
+                              'Taking estimated number.', UserWarning)
+                keywords['change_Nr'] = int(tmp['rt_change_pos'].iloc[0])
+            tmp1 = tmp.loc[tmp['Nr'] < keywords['change_Nr']]
+            min_val = tmp1[keywords['eval_on'][0]].min()
+            max_val = tmp1[keywords['eval_on'][0]].max()
+            if np.isclose(0, max_val - min_val):
+                th = min_val
             else:
-                tmp2.set_index('Nr', inplace=True)
-                tmp_iter = tmp2.iterrows()
-                idx_old, _ = next(tmp_iter)
-                fpos = 0
-                for idx, _ in tmp_iter:
-                    if idx == idx_old + 1:
-                        fpos = idx_old
-                        break
-                if fpos > 0:
+                rng80 = 0.8 * (max_val - min_val) + min_val
+                p1_stats = tmp1.loc[tmp1[keywords['eval_on'][0]] < rng80, keywords['eval_on']].describe()
+                th = p1_stats[keywords['eval_on'][0]]['mean'] + 2.576 * p1_stats[keywords['eval_on'][0]]['std']
+            test_rise = tmp.loc[((tmp[keywords['eval_on'][0]] > th) &
+                                (tmp['Nr'] >= keywords['change_Nr']) &
+                                (tmp['Nr'] < (keywords['change_Nr'] + 2)))]
+            if test_rise.empty:
+                fd = 0
+                fpos = keywords['change_Nr']
+            else:
+                tmp2 = tmp.loc[((tmp[keywords['eval_on'][0]] <= th) &
+                                (tmp['Nr'] >= keywords['change_Nr']))]
+                if tmp2.empty:
+                    fpos = tmp['Nr'].max()
+                    fd = fpos - keywords['change_Nr']
+                elif check_if_series(tmp2):
+                    fpos = tmp2['Nr']
+                    fd = fpos - keywords['change_Nr']
+                elif tmp2.shape[0] == 1:
+                    fpos = tmp2['Nr'].iloc[0]
                     fd = fpos - keywords['change_Nr']
                 else:
-                    fpos = tmp2.index[0]
-                    fd = fpos - keywords['change_Nr']
-        tmp['fd'] = [np.NaN] * int(tmp.shape[0])
-        tmp.loc[(tmp['Nr'] == fpos), 'fd'] = fd
-        df_list.append(tmp)
-    df_new = pd.concat(df_list, axis=0, ignore_index=False)
+                    tmp2.set_index('Nr', inplace=True)
+                    tmp_iter = tmp2.iterrows()
+                    idx_old, _ = next(tmp_iter)
+                    fpos = 0
+                    for idx, _ in tmp_iter:
+                        if idx == idx_old + 1:
+                            fpos = idx_old
+                            break
+                    if fpos > 0:
+                        fd = fpos - keywords['change_Nr']
+                    else:
+                        fpos = tmp2.index[0]
+                        fd = fpos - keywords['change_Nr']
+            tmp['fd'] = [np.NaN] * int(tmp.shape[0])
+            tmp.loc[(tmp['Nr'] == fpos), 'fd'] = fd
+            df_list.append(tmp)
+        df_new = pd.concat(df_list, axis=0, ignore_index=False)
+        if 'data_file' in keywords:
+            df_new.to_pickle(df_filen)
 
     gloss = add_to_glossary_eval(keywords['eval_on'])
     n_gloss_calced = True
@@ -1365,11 +1812,21 @@ def calc_calib_delay(**keywords):
             hist, bin_edges = np.histogram(tmp['fd'].dropna().values,
                                            bins=list(range(0, nr_max - keywords['change_Nr'] + 2)), density=False)
             fd_good = int(bin_edges[np.nonzero(hist >= possis1)[0][0]])
+            if fd_good == 0:
+                fd_good1 = 2
+            elif fd_good == nr_max:
+                fd_good = nr_max - 2
+                fd_good1 = nr_max
+            else:
+                fd_good1 = fd_good + 1
+                fd_good -= 1
             possis2 = max(1, int(round(0.005 * float(possis))))
             hist1 = hist[hist >= possis2]
             edges1 = bin_edges[np.nonzero(hist >= possis2)]
             hist_list.append(pd.DataFrame(data={'fd': edges1, 'count': hist1}, columns=['fd', 'count']).set_index('fd'))
-            par_stats_list.append(tmp.loc[tmp['fd'] == fd_good, keywords['it_parameters'] + ['fd']].describe())
+            par_stats_list.append(tmp.loc[((tmp['fd'] >= fd_good) &
+                                           (tmp['fd'] <= fd_good1)), keywords['it_parameters'] +
+                                          ['fd']].astype(float, errors='ignore').describe())
 
         df_hist = pd.concat(hist_list, axis=1, keys=grp_keys, ignore_index=False)
         keywords['units'].append(('fd', '/\\# of frames',))
@@ -1595,45 +2052,69 @@ def calc_calib_delay(**keywords):
                 p_mean.to_csv(index=True, sep=';', path_or_buf=f, header=True, na_rep='nan')
 
             _, use_limits, use_log, exp_value = get_limits_log_exp(p_mean, True, True, False, ['options_tex'] + fd_cols)
-            x_rows = handle_nans(p_mean, plots, True, 'xbar')
-            section_name = split_large_titles(section_name, 80)
-            enlarge_lbl_dist = check_legend_enlarge(p_mean, 'options_tex', len(plots), 'xbar')
-            exp_value = enl_space_title(exp_value, section_name, p_mean, 'options_tex',
-                                        len(plots), 'xbar')
 
-            tex_infos['sections'].append({'file': os.path.join(keywords['rel_data_path'], b_mean_name),
-                                          'name': section_name.replace('\\\\', ' '),
-                                          'title': section_name,
-                                          'title_rows': section_name.count('\\\\'),
-                                          'fig_type': 'xbar',
-                                          'plots': plots,
-                                          'label_y': 'Option value',  # Label of the value axis. For xbar it labels the x-axis
-                                          # Label/column name of axis with bars. For xbar it labels the y-axis
-                                          'label_x': 'Option',
-                                          # Column name of axis with bars. For xbar it is the column for the y-axis
-                                          'print_x': 'options_tex',
-                                          # Set print_meta to True if values from column plot_meta should be printed next to each bar
-                                          'print_meta': True,
-                                          'plot_meta': fd_cols,
-                                          # A value in degrees can be specified to rotate the text (Use only 0, 45, and 90)
-                                          'rotate_meta': 0,
-                                          'limits': None,
-                                          # If None, no legend is used, otherwise use a list
-                                          'legend': legend,
-                                          'legend_cols': 1,
-                                          'use_marks': False,
-                                          # The x/y-axis values are given as strings if True
-                                          'use_string_labels': True,
-                                          'use_log_y_axis': use_log,
-                                          'xaxis_txt_rows': max_txt_rows,
-                                          'enlarge_lbl_dist': enlarge_lbl_dist,
-                                          'enlarge_title_space': exp_value,
-                                          'large_meta_space_needed': True,
-                                          'is_neg': False,
-                                          'nr_x_if_nan': x_rows,
-                                          'caption': caption
-                                          })
-            tex_infos['sections'][-1]['legend_cols'] = calcNrLegendCols(tex_infos['sections'][-1])
+            nr_plots = len(plots)
+            exp_value_o = exp_value
+            if nr_plots <= 20:
+                nr_plots_i = [nr_plots]
+            else:
+                pp = math.floor(nr_plots / 20)
+                nr_plots_i = [20] * int(pp)
+                rp = nr_plots - pp * 20
+                if rp > 0:
+                    nr_plots_i += [nr_plots - pp * 20]
+            pcnt = 0
+            for i1, it1 in enumerate(nr_plots_i):
+                ps = plots[pcnt: pcnt + it1]
+                cl = legend[pcnt: pcnt + it1]
+                mc = fd_cols[pcnt: pcnt + it1]
+                pcnt += it1
+                if nr_plots > 20:
+                    sec_name1 = section_name + ' -- part ' + str(i + 1)
+                    cap_name1 = caption + ' -- part ' + str(i + 1)
+                else:
+                    sec_name1 = section_name
+                    cap_name1 = caption
+
+                x_rows = handle_nans(p_mean, ps, True, 'xbar')
+                sec_name1 = split_large_titles(sec_name1, 80)
+                enlarge_lbl_dist = check_legend_enlarge(p_mean, 'options_tex', len(ps), 'xbar')
+                exp_value = enl_space_title(exp_value_o, sec_name1, p_mean, 'options_tex',
+                                            len(ps), 'xbar')
+
+                tex_infos['sections'].append({'file': os.path.join(keywords['rel_data_path'], b_mean_name),
+                                              'name': sec_name1.replace('\\\\', ' '),
+                                              'title': sec_name1,
+                                              'title_rows': sec_name1.count('\\\\'),
+                                              'fig_type': 'xbar',
+                                              'plots': ps,
+                                              'label_y': 'Option value',  # Label of the value axis. For xbar it labels the x-axis
+                                              # Label/column name of axis with bars. For xbar it labels the y-axis
+                                              'label_x': 'Option',
+                                              # Column name of axis with bars. For xbar it is the column for the y-axis
+                                              'print_x': 'options_tex',
+                                              # Set print_meta to True if values from column plot_meta should be printed next to each bar
+                                              'print_meta': True,
+                                              'plot_meta': mc,
+                                              # A value in degrees can be specified to rotate the text (Use only 0, 45, and 90)
+                                              'rotate_meta': 0,
+                                              'limits': None,
+                                              # If None, no legend is used, otherwise use a list
+                                              'legend': cl,
+                                              'legend_cols': 1,
+                                              'use_marks': False,
+                                              # The x/y-axis values are given as strings if True
+                                              'use_string_labels': True,
+                                              'use_log_y_axis': use_log,
+                                              'xaxis_txt_rows': max_txt_rows,
+                                              'enlarge_lbl_dist': enlarge_lbl_dist,
+                                              'enlarge_title_space': exp_value,
+                                              'large_meta_space_needed': True,
+                                              'is_neg': False,
+                                              'nr_x_if_nan': x_rows,
+                                              'caption': cap_name1
+                                              })
+                tex_infos['sections'][-1]['legend_cols'] = calcNrLegendCols(tex_infos['sections'][-1])
 
         base_out_name = 'tex_stats' + base_name
         rendered_tex = template.render(title=tex_infos['title'],
@@ -1687,6 +2168,7 @@ def calc_calib_delay(**keywords):
         # Write parameters
         alg_comb_bestl = df_mmean.to_numpy()
         if len(keywords['it_parameters']) != len(alg_comb_bestl):
+            em.release_lock()
             raise ValueError('Nr of refine algorithms does not match')
         alg_w = {}
         for i, val in enumerate(keywords['it_parameters']):
@@ -1997,6 +2479,7 @@ def get_ml_acc(**keywords):
                       strToLower(combine_str_for_title(keywords['meta_it_pars'])) + '.'
             exp_value = enl_space_title(exp_value_l or exp_value_r, section_name, df4, it,
                                         4, 'ybar')
+            row_cnt = df4.shape[0]
             tex_infos1['sections'].append({'file': reltex_name,
                                            # Name of the whole section
                                            'name': section_name.replace('\\\\', ' '),
@@ -2058,7 +2541,8 @@ def get_ml_acc(**keywords):
                                            'nr_x_if_nan': x_rows,
                                            'caption': caption,
                                            'enlarge_lbl_dist': enlarge_lbl_dist,
-                                           'enlarge_title_space': exp_value
+                                           'enlarge_title_space': exp_value,
+                                           'row_cnt': row_cnt
                                            })
             tex_infos1['sections'][-1]['legend_cols'] = calcNrLegendCols(tex_infos['sections'][-1])
 
@@ -2208,6 +2692,7 @@ def get_ml_acc(**keywords):
                       strToLower(combine_str_for_title(keywords['meta_it_pars'])) + '.'
             exp_value = enl_space_title(exp_value_l or exp_value_r, section_name, df5, it,
                                         4, 'ybar')
+            row_cnt = df5.shape[0]
             tex_infos1['sections'].append({'file': reltex_name,
                                            # Name of the whole section
                                            'name': section_name.replace('\\\\', ' '),
@@ -2269,7 +2754,8 @@ def get_ml_acc(**keywords):
                                            'nr_x_if_nan': x_rows,
                                            'caption': caption,
                                            'enlarge_lbl_dist': enlarge_lbl_dist,
-                                           'enlarge_title_space': exp_value
+                                           'enlarge_title_space': exp_value,
+                                           'row_cnt': row_cnt
                                            })
             tex_infos1['sections'][-1]['legend_cols'] = calcNrLegendCols(tex_infos['sections'][-1])
 
@@ -2315,6 +2801,7 @@ def get_ml_acc(**keywords):
                 # Write parameters
                 alg_comb_bestl = df6[keywords['it_parameters']].to_numpy()
                 if len(keywords['it_parameters']) != len(alg_comb_bestl):
+                    em.release_lock()
                     raise ValueError('Nr of refine algorithms does not match')
                 alg_w = {}
                 for i, val in enumerate(keywords['it_parameters']):
@@ -2532,6 +3019,7 @@ def get_best_stability_pars(**keywords):
         enlarge_lbl_dist = check_legend_enlarge(tmp4, keywords['data_separators'][1], 3, 'xbar',
                                                 label_x.count('\\') + 1, not is_numeric)
         section_name = split_large_titles(section_name, 80)
+        row_cnt = tmp4.shape[0]
         tex_infos['sections'].append({'file': os.path.join(keywords['rel_data_path'], b_mean_name),
                                       # Name of the whole section
                                       'name': section_name.replace('\\\\', ' '),
@@ -2593,7 +3081,8 @@ def get_best_stability_pars(**keywords):
                                       'nr_x_if_nan': x_rows,
                                       'caption': caption,
                                       'enlarge_lbl_dist': enlarge_lbl_dist,
-                                      'enlarge_title_space': False
+                                      'enlarge_title_space': False,
+                                      'row_cnt': row_cnt
                                       })
         section_name = 'Smallest median R \\& t error differences between default and ' \
                        'most likely pose errors based on lowest and highest mean ' + \
@@ -2677,7 +3166,8 @@ def get_best_stability_pars(**keywords):
                                       'nr_x_if_nan': x_rows,
                                       'caption': caption,
                                       'enlarge_lbl_dist': enlarge_lbl_dist,
-                                      'enlarge_title_space': False
+                                      'enlarge_title_space': False,
+                                      'row_cnt': row_cnt
                                       })
         tex_infos['sections'][-1]['legend_cols'] = calcNrLegendCols(tex_infos['sections'][-1])
         section_name = 'Smallest combined median R \\& t error differences between default and ' \
@@ -2761,7 +3251,8 @@ def get_best_stability_pars(**keywords):
                                       'nr_x_if_nan': x_rows,
                                       'caption': caption,
                                       'enlarge_lbl_dist': enlarge_lbl_dist,
-                                      'enlarge_title_space': False
+                                      'enlarge_title_space': False,
+                                      'row_cnt': row_cnt
                                       })
     template = ji_env.get_template('usac-testing_2D_plots_2y_axis.tex')
     rendered_tex = template.render(title=tex_infos['title'],
@@ -2799,6 +3290,7 @@ def get_best_stability_pars(**keywords):
         # Write parameters
         alg_comb_bestl = mean_pars.to_numpy()
         if len(keywords['it_parameters']) != len(alg_comb_bestl):
+            em.release_lock()
             raise ValueError('Nr of refine algorithms does not match')
         alg_w = {}
         for i, val in enumerate(keywords['it_parameters']):
@@ -2889,10 +3381,10 @@ def get_best_robust_pool_pars(**keywords):
         for i, it in enumerate(it_cols):
             options_tex.append('options_tex' + str(i))
             if len(it) > 1:
-                df[options_tex[-1]] = [', '.join(['{:.3f}'.format(float(val)) for _, val in row.iteritems()])
+                df[options_tex[-1]] = [', '.join(['{:.3f}'.format(float(val)) if is_number(val) else val for _, val in row.iteritems()])
                                        for _, row in df[it].iterrows()]
             else:
-                df[options_tex[-1]] = ['{:.3f}'.format(float(val))
+                df[options_tex[-1]] = ['{:.3f}'.format(float(val)) if is_number(val) else val
                                        for _, val in df[it[0]].iteritems()]
     else:
         x_axis = keywords['data_separators'][0]
@@ -2903,10 +3395,10 @@ def get_best_robust_pool_pars(**keywords):
         it_cols = [keywords['it_parameters']]
         options_tex = ['options_tex']
         if len(it_cols[0]) > 1:
-            df[options_tex[-1]] = [', '.join(['{:.3f}'.format(float(val)) for _, val in row.iteritems()])
+            df[options_tex[-1]] = [', '.join(['{:.3f}'.format(float(val)) if is_number(val) else val for _, val in row.iteritems()])
                                    for _, row in df[it_cols[0]].iterrows()]
         else:
-            df[options_tex[-1]] = ['{:.3f}'.format(float(val))
+            df[options_tex[-1]] = ['{:.3f}'.format(float(val)) if is_number(val) else val
                                    for _, val in df[it_cols[0][0]].iteritems()]
     base_out_name = 'min_rt_error_vs_' + short_concat_str(keywords['data_separators']) + 'for_pars_' + \
                     short_concat_str(keywords['it_parameters'])
@@ -3025,13 +3517,14 @@ def get_best_robust_pool_pars(**keywords):
             # Write parameters
             alg_comb_bestl = [val_max]
             if len(keywords['it_parameters']) != len(alg_comb_bestl):
+                em.release_lock()
                 raise ValueError('Nr of refine algorithms does not match')
             alg_w = {}
             for i, val in enumerate(keywords['it_parameters']):
-                alg_w[val] = int(alg_comb_bestl[i])
+                alg_w[val] = int(alg_comb_bestl[i]) if is_number(alg_comb_bestl[i]) else alg_comb_bestl[i]
             alg_counts = {}
             for idx, val in df_cnt.iteritems():
-                alg_counts[int(idx)] = int(val)
+                alg_counts[int(idx) if is_number(idx) else idx] = int(val)
             yaml.dump({main_parameter_name: {'Algorithm': alg_w,
                                              'value_count': alg_counts}},
                       stream=fo, Dumper=NoAliasDumper, default_flow_style=False)
@@ -3061,10 +3554,11 @@ def get_best_robust_pool_pars(**keywords):
                     # Write parameters
                     alg_comb_bestl = [alg_counts_sort[0][0]]
                     if len(keywords['it_parameters']) != len(alg_comb_bestl):
+                        em.release_lock()
                         raise ValueError('Nr of refine algorithms does not match')
                     alg_w = {}
                     for i, val in enumerate(keywords['it_parameters']):
-                        alg_w[val] = int(alg_comb_bestl[i])
+                        alg_w[val] = int(alg_comb_bestl[i]) if is_number(alg_comb_bestl[i]) else alg_comb_bestl[i]
                     yaml.dump({main_parameter_name: {'Algorithm': alg_w,
                                                      'value_count': alg_counts}},
                               stream=fo, Dumper=NoAliasDumper, default_flow_style=False)
@@ -3183,7 +3677,7 @@ def calc_calib_delay_noPar(**keywords):
         tmp1 = tmp.loc[tmp['Nr'] < keywords['change_Nr']]
         min_val = tmp1[keywords['eval_on'][0]].min()
         max_val = tmp1[keywords['eval_on'][0]].max()
-        rng80 = 0.8 * (max_val - min_val) + min_val
+        rng80 = 0.9 * (max_val - min_val) + min_val
         p1_stats = tmp1.loc[tmp1[keywords['eval_on'][0]] < rng80, keywords['eval_on']].describe()
         th = p1_stats[keywords['eval_on'][0]]['mean'] + 2.576 * p1_stats[keywords['eval_on'][0]]['std']
         test_rise = tmp.loc[((tmp[keywords['eval_on'][0]] > th) &
@@ -3200,6 +3694,9 @@ def calc_calib_delay_noPar(**keywords):
                 fd = fpos - keywords['change_Nr']
             elif tmp2.shape[0] == 1:
                 fpos = tmp2['Nr'].iloc[0]
+                fd = fpos - keywords['change_Nr']
+            elif tmp2.empty:
+                fpos = tmp['Nr'].max()
                 fd = fpos - keywords['change_Nr']
             else:
                 tmp2.set_index('Nr', inplace=True)

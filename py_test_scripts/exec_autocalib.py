@@ -1,8 +1,7 @@
 """
 Execute autocalibration using different parameters and all generated sequences within a given folder.
 """
-import numpy as np
-import sys, re, argparse, os, pandas, subprocess as sp
+import sys, re, numpy as np, argparse, os, pandas, subprocess as sp
 import ruamel.yaml as yaml
 import multiprocessing
 import warnings
@@ -328,6 +327,7 @@ def start_autocalib(csv_cmd_file, executable, cpu_cnt, message_path, output_path
         results = [pool.apply_async(autocalib, t) for t in cmds]
 
         for r in results:
+            time_out_cnt = 0
             while 1:
                 sys.stdout.flush()
                 try:
@@ -339,6 +339,12 @@ def start_autocalib(csv_cmd_file, executable, cpu_cnt, message_path, output_path
                         cnt_dot = 0
                     sys.stdout.write('.')
                     cnt_dot = cnt_dot + 1
+                    time_out_cnt += 1
+                    if time_out_cnt > 18100:
+                        res = 4
+                        print('Timeout for executing python process for starting autocalib reached.')
+                        pool.terminate()
+                        break
                 except ChildProcessError:
                     res = 1
                     break
@@ -415,15 +421,23 @@ def autocalib(cmd, data, message_path, mess_base_name, nr_call):
     timeout = 36000
     if '--RobMethod' in cmd:
         if 'RANSAC' == cmd[cmd.index('--RobMethod') + 1]:
-            timeout = 36000
+            if '--stereoRef' in cmd:
+                timeout = 7200
+            else:
+                timeout = 36000
         elif 'USAC' == cmd[cmd.index('--RobMethod') + 1]:
             isUSAC = True
         else:
-            timeout = 18000
+            if '--stereoRef' in cmd:
+                timeout = 3600
+            else:
+                timeout = 18000
     else:
         isUSAC = True
     if isUSAC:
-        if '--cfgUSAC' in cmd:
+        if '--stereoRef' in cmd:
+            timeout = 1800
+        elif '--cfgUSAC' in cmd:
             usacpars = cmd[cmd.index('--cfgUSAC') + 1]
             if int(usacpars[4]) == 1:
                 timeout = 18000
@@ -438,10 +452,13 @@ def autocalib(cmd, data, message_path, mess_base_name, nr_call):
             timeout += 800
     if '--refineRT_stereo' in cmd:
         if int(cmd[cmd.index('--refineRT_stereo') + 1][0]) > 4:
-            timeout += 2000
+            timeout += 1000
     if '--refineRT' in cmd:
         if int(cmd[cmd.index('--refineRT') + 1][0]) > 4:
-            timeout += 2000
+            if '--stereoRef' in cmd:
+                timeout += 450
+            else:
+                timeout += 2000
     base = mess_base_name
     errmess = os.path.join(message_path, 'stderr_' + base + '.txt')
     stdmess = os.path.join(message_path, 'stdout_' + base + '.txt')

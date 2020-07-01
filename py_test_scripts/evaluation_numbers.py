@@ -13,7 +13,7 @@ def get_available_evals():
                        [list(range(1, 6)), list(range(1, 5))],
                        [list(range(1, 10))],
                        [list(range(1, 4)), list(range(1, 5))],
-                       [list(range(1, 11)), list(range(11, 14)), list(range(14, 16))],
+                       [list(range(1, 11)) + [16], list(range(11, 14)), list(range(14, 16))],
                        [list(range(1, 6)), list(range(6, 11)), list(range(11, 15)), list(range(15, 25)),
                         list(range(25, 29)), list(range(29, 38))],
                        [list(range(1, 9))]]
@@ -349,7 +349,8 @@ def get_used_eval_cols(test_name, test_nr):
                                        't_GT_n_angDiff', 'R_GT_n_diff_roll_deg', 'R_GT_n_diff_pitch_deg',
                                        'R_GT_n_diff_yaw_deg', 't_GT_n_elemDiff_tx', 't_GT_n_elemDiff_ty',
                                        't_GT_n_elemDiff_tz', 'Nr', 'linRefinement_us', 'bundleAdjust_us',
-                                       'robEstimationAndRef_us', 'stereoRefine_us', 'kpDistr']}
+                                       'robEstimationAndRef_us', 'stereoRefine_us', 'kpDistr', 'accumCorrs',
+                                       'nrCorrs_GT']}
     cols_sel = test_cols[test_name]
     if test_nr is not None:
         return cols_sel[str(test_nr)]
