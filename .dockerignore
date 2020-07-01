@@ -3,12 +3,17 @@ thirdparty
 ci/tmp
 ci/thirdparty/eigen-eigen-3.3.7
 ci/thirdparty/eigen-eigen-323c052e1731
+ci/thirdparty/boost_1_71_0
 ci/thirdparty/boost_1_72_0
+ci/thirdparty/libyaml
 ci/thirdparty/opencv-4.2.0
 ci/thirdparty/opencv_contrib-4.2.0
 ci/opencv-4.2.0
 ci/opencv_contrib-4.2.0
 ci/thirdparty/pcl-1.9.1
+ci/thirdparty/pcl-1.11.0
+ci/thirdparty/pyyaml
+ci/thirdparty/vtk_8_2_0
 ci/thirdparty/clapack-3.2.1/lib
 ci/thirdparty/clapack-3.2.1/build/linux
 ci/thirdparty/clapack-3.2.1/build/linux_debug

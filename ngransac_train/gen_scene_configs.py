@@ -7,7 +7,7 @@ import sys, re, numpy as np, argparse, os, pandas as pd
 
 
 def gen_configs(input_file_name, img_overlap_range, kp_min_dist_range, kpAccRange, img_path, store_path,
-                both_kp_err_types, imgIntNoiseMeanRange, imgIntNoiseStdRange):
+                both_kp_err_types, imgIntNoiseMeanRange, imgIntNoiseStdRange, load_path):
     path, fname = os.path.split(input_file_name)
     base = ''
     ending = ''
@@ -73,6 +73,7 @@ def gen_configs(input_file_name, img_overlap_range, kp_min_dist_range, kpAccRang
                             datac['img_pref'].append('/')
                             datac['store_path'].append(store_path)
                             datac['scene_exists'].append(0)
+                            datac['load_path'].append(load_path)
                             datac['parSetNr'].append(cnt)
                             cnt = cnt + 1
                     fnew = 'imov_%.2f' % imrv
@@ -89,6 +90,7 @@ def gen_configs(input_file_name, img_overlap_range, kp_min_dist_range, kpAccRang
                     datac['img_pref'].append('/')
                     datac['store_path'].append(store_path)
                     datac['scene_exists'].append(0)
+                    datac['load_path'].append(load_path)
                     datac['parSetNr'].append(cnt)
                     cnt = cnt + 1
                 elif inmr is not None:
@@ -110,6 +112,7 @@ def gen_configs(input_file_name, img_overlap_range, kp_min_dist_range, kpAccRang
                             datac['img_pref'].append('/')
                             datac['store_path'].append(store_path)
                             datac['scene_exists'].append(0)
+                            datac['load_path'].append(load_path)
                             datac['parSetNr'].append(cnt)
                             cnt = cnt + 1
                 else:
@@ -127,6 +130,7 @@ def gen_configs(input_file_name, img_overlap_range, kp_min_dist_range, kpAccRang
                     datac['img_pref'].append('/')
                     datac['store_path'].append(store_path)
                     datac['scene_exists'].append(0)
+                    datac['load_path'].append(load_path)
                     datac['parSetNr'].append(cnt)
                     cnt = cnt + 1
 
@@ -241,6 +245,9 @@ def main():
                         help='Path to images')
     parser.add_argument('--store_path', type=str, required=True,
                         help='Storing path for generated scenes and matches')
+    parser.add_argument('--load_path', type=str, required=False,
+                        help='Optional loading path for generated scenes and matches. '
+                             'If not provided, store_path is used.')
     args = parser.parse_args()
     if not os.path.isfile(args.filename):
         raise ValueError('File ' + args.filename + ' holding scene configuration file names does not exist')
@@ -312,8 +319,13 @@ def main():
         raise ValueError("Path for storing sequences does not exist")
     if len(os.listdir(args.store_path)) != 0:
         raise ValueError("Path for storing sequences is not empty")
+    if args.load_path:
+        if not os.path.exists(args.load_path):
+            raise ValueError("Path for loading sequences does not exist")
+    else:
+        args.load_path = args.store_path
     ret = gen_configs(args.filename, args.img_overlap_range, args.kp_min_dist_range, args.kpAccRange, args.img_path, args.store_path,
-                      args.both_kp_err_types, args.imgIntNoiseMeanRange, args.imgIntNoiseStdRange)
+                      args.both_kp_err_types, args.imgIntNoiseMeanRange, args.imgIntNoiseStdRange, args.load_path)
     sys.exit(ret)
 
 

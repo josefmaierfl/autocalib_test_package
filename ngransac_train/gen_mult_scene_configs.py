@@ -7,7 +7,10 @@ from shutil import copyfile
 
 
 def gen_configs(input_path, path_confs_out, img_overlap_range, kp_min_dist_range, kpAccRange, img_path, store_path,
-                both_kp_err_types, imgIntNoiseMeanRange, imgIntNoiseStdRange):
+                both_kp_err_types, imgIntNoiseMeanRange, imgIntNoiseStdRange, load_path):
+    use_load_path = False
+    if load_path:
+        use_load_path = True
     #Load file names
     files_i = os.listdir(input_path)
     if len(files_i) == 0:
@@ -71,6 +74,10 @@ def gen_configs(input_path, path_confs_out, img_overlap_range, kp_min_dist_range
                         os.mkdir(store_path_new)
                     except FileExistsError:
                         raise ValueError('Directory ' + store_path_new + ' already exists')
+                    if use_load_path:
+                        load_path_n = load_path
+                    else:
+                        load_path_n = store_path_new
                     #Generate new config files
                     pyfilepath = os.path.dirname(os.path.realpath(__file__))
                     pyfilename = os.path.join(pyfilepath, 'gen_scene_configs.py')
@@ -111,7 +118,8 @@ def gen_configs(input_path, path_confs_out, img_overlap_range, kp_min_dist_range
                         if both_kp_err_types:
                             cmdline += ['--both_kp_err_types']
                         cmdline += ['--img_path', img_path,
-                                    '--store_path', store_path_new]
+                                    '--store_path', store_path_new,
+                                    '--load_path', load_path_n]
                         retcode = sp.run(cmdline, shell=False, check=True).returncode
                         if retcode < 0:
                             print("Child was terminated by signal", -retcode, file=sys.stderr)
@@ -159,6 +167,9 @@ def main():
                         help='Path to images')
     parser.add_argument('--store_path', type=str, required=True,
                         help='Storing path for generated scenes and matches')
+    parser.add_argument('--load_path', type=str, required=False,
+                        help='Optional loading path for generated scenes and matches. '
+                             'If not provided, store_path is used.')
     args = parser.parse_args()
     if not os.path.exists(args.path):
         raise ValueError('Directory ' + args.path + ' holding template scene configuration files does not exist')
@@ -227,9 +238,12 @@ def main():
         raise ValueError("Image path does not exist")
     if not os.path.exists(args.store_path):
         raise ValueError("Path for storing sequences does not exist")
+    if args.load_path:
+        if not os.path.exists(args.load_path):
+            raise ValueError("Path for loading sequences does not exist")
     try:
         ret = gen_configs(args.path, args.path_confs_out, args.img_overlap_range, args.kp_min_dist_range, args.kpAccRange, args.img_path,
-                          args.store_path, args.both_kp_err_types, args.imgIntNoiseMeanRange, args.imgIntNoiseStdRange)
+                          args.store_path, args.both_kp_err_types, args.imgIntNoiseMeanRange, args.imgIntNoiseStdRange, args.load_path)
     except FileExistsError:
         warnings.warn(sys.exc_info()[0], UserWarning)
         sys.exit(1)

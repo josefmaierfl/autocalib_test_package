@@ -3,7 +3,8 @@
 #Download NGRANSAC
 git clone https://github.com/vislearn/ngransac.git
 SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-NGRANSAC_DIR="${SOURCE_DIR}/ngransac"
+mv "${SOURCE_DIR}/ngransac" "${SOURCE_DIR}/ngransac_git"
+NGRANSAC_DIR="${SOURCE_DIR}/ngransac_git"
 
 #Copy into working directory
 #cp -R ${NGRANSAC_DIR}/. ${SOURCE_DIR}/

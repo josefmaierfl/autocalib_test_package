@@ -62,9 +62,9 @@ fi
 
 # Download and install Miniconda
 set +e
-curl "https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
+curl "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
 if [ $? -ne 0 ]; then
-    curl "http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
+    curl "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
 fi
 set -e
 
