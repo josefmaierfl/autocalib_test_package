@@ -816,7 +816,7 @@ def processSequences(cmd_l, parSetNr, message_path, used_cpus, loaded = False):
                 data_set = data['parSetNr' + str(int(parSetNr - 1))]
                 break
             except:
-                if loaded:
+                if loaded or (cnt1 >= 20 and cnt1 % 20 == 0):
                     print('Waiting for parSetNr ', int(parSetNr - 1))
                 cnt1 = cnt1 + 1
                 if cnt1 < cnt1max:
@@ -867,7 +867,7 @@ def processSequences(cmd_l, parSetNr, message_path, used_cpus, loaded = False):
     result = None
     while cnt3 > 0:
         try:
-            sp.run(cmd_l, stdout=messf, stderr=cerrf, check=True, timeout=7200)
+            sp.run(cmd_l, stdout=messf, stderr=cerrf, check=True, timeout=10800)
             result = [cmd_l, parSetNr]
             cnt3 = 0
         except sp.CalledProcessError as e:

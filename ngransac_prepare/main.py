@@ -52,7 +52,7 @@ def gen_scenes(gen_dirs_config_f, executable, message_path, cpu_use):
     pyfilename = os.path.join(pyfilepath, 'create_scenes.py')
     cmdline = ['python', pyfilename, '--path', gen_dirs_config_f, '--nrCPUs', str(cpu_use),
                '--executable', executable, '--message_path', message_path]
-    tout = int(3024000 / cpu_use)
+    tout = 259200#int(3024000 / cpu_use)
     try:
         ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
                      check=True, timeout=tout).returncode
