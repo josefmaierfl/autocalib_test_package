@@ -11,6 +11,7 @@ cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 set(CMAKE_MODULE_PATH  "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+include(CheckCXXCompilerFlag)
 include(GenerateExportHeader)
 include(ExternalProject)
 include(WriteCompilerDetectionHeader)
@@ -56,6 +57,7 @@ option(OPTION_SELF_CONTAINED "Create a self-contained install with all dependenc
 option(OPTION_BUILD_TESTS    "Build tests."                                           ON)
 option(OPTION_BUILD_DOCS     "Build documentation."                                   OFF)
 option(OPTION_BUILD_EXAMPLES "Build examples."                                        ON)
+option(OPENMP_ENABLED "Whether to enable OpenMP parallelization"                      ON)
 
 
 #

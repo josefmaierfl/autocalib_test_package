@@ -1,20 +1,26 @@
-/**********************************************************************************************************
-FILE: helper_funcs.cpp
-
-PLATFORM: Windows 7, MS Visual Studio 2015, OpenCV 3.2
-
-CODE: C++
-
-AUTOR: Josef Maier, AIT Austrian Institute of Technology
-
-DATE: March 2018
-
-LOCATION: TechGate Vienna, Donau-City-Stra�e 1, 1220 Vienna
-
-VERSION: 1.0
-
-DISCRIPTION: This file provides some helper functions.
-**********************************************************************************************************/
+//Released under the MIT License - https://opensource.org/licenses/MIT
+//
+//Copyright (c) 2019 AIT Austrian Institute of Technology GmbH
+//
+//Permission is hereby granted, free of charge, to any person obtaining
+//a copy of this software and associated documentation files (the "Software"),
+//to deal in the Software without restriction, including without limitation
+//the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//and/or sell copies of the Software, and to permit persons to whom the
+//Software is furnished to do so, subject to the following conditions:
+//
+//The above copyright notice and this permission notice shall be included
+//in all copies or substantial portions of the Software.
+//
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+//EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+//MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+//IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+//DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+//OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+//USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+//Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
 
 #include "helper_funcs.h"
 #include <chrono>
@@ -233,6 +239,85 @@ double getLineIntersect(const cv::Mat& b1, const cv::Mat& a2, const cv::Mat& b2)
 	Mat S1 = x.at<double>(0) * b1;
 	Mat S2 = a2 + x.at<double>(1) * b2;
 	return (S1.at<double>(2) + S2.at<double>(2)) / 2.0;
+}
+
+/*
+ * Calculates the angle between 2 directional vectors b0 = (a, b, c) and b1 of skew lines
+ */
+double getAngleSkewLines(const cv::Mat& b0, const cv::Mat& b1, bool useDegrees){
+    double rad = b0.dot(b1) / (cv::norm(b0) * cv::norm(b1));
+    if (rad > 1.){
+        return 0;
+    }else if(rad < -1.){
+        if(useDegrees){
+            return 180.;
+        }
+        return M_PI;
+    }
+    rad = std::acos(rad);
+    if(useDegrees){
+        return 180. * rad / M_PI;
+    }
+}
+
+/*
+ * Calculates the angle between viewing rays of 2 cameras using principal points p0 and p1, camera matrices K0 and K1,
+ * and relative pose R, t
+ */
+double getViewAngleRelativeCams(const cv::Mat& R, const cv::Mat& t,
+                                const cv::Mat& K1, bool useDegrees){
+    CV_Assert((K1.type() == CV_64FC1) && (K1.rows == 3) && (K1.cols == 3));
+    CV_Assert((t.type() == CV_64FC1) && (t.rows == 3) && (t.cols == 1));
+    cv::Mat p1 = (cv::Mat_<double>(3, 1) << K1.at<double>(0, 2), K1.at<double>(1, 2), 1.);
+    cv::Mat b0 = (cv::Mat_<double>(3, 1) << 0, 0, 1.);
+    cv::Mat a1, b1;
+    getLineCam2(R, t, K1, p1, a1, b1);
+    return getAngleSkewLines(b0, b1, useDegrees);
+}
+
+/*
+ * Calculates a relative pose [R, t] between cameras given two absolute poses [R0, t0] and [R1, t1] in the same world frame
+ */
+void getRelativeFromAbsPoses(const cv::Mat& R0, const cv::Mat& t0, const cv::Mat& R1, const cv::Mat& t1,
+                             cv::Mat& R, cv::Mat& t){
+    R = R1 * R0.t();
+    t = t1 - R * t0;
+}
+
+/*
+ * Calculates a relative pose [R, t] between cameras given two absolute poses [R0, t0] and [R1, t1] in the same world frame
+ */
+void getRelativeFromAbsPoses(const Eigen::Matrix3d& R0, const Eigen::Vector3d& t0, const Eigen::Matrix3d& R1, const Eigen::Vector3d& t1,
+                             Eigen::Matrix3d& R, Eigen::Vector3d& t){
+    R = R1 * R0.transpose();
+    t = t1 - R * t0;
+}
+
+/*
+ * Calculates the angle between viewing rays of 2 cameras using principal points p0 and p1, camera matrices K0 and K1,
+ * and absolute camera poses [R0, t0] and [R1, t1]
+ */
+double getViewAngleAbsoluteCams(const cv::Mat& R0, const cv::Mat& t0,
+                                const cv::Mat& K1, const cv::Mat& R1, const cv::Mat& t1, bool useDegrees){
+    cv::Mat R, t;
+    getRelativeFromAbsPoses(R0, t0, R1, t1, R, t);
+    return getViewAngleRelativeCams(R, t, K1, useDegrees);
+}
+
+/*
+ * Calculates the angle between viewing rays of 2 cameras using principal points p0 and p1, camera matrices K0 and K1,
+ * and absolute camera poses [R0, t0] and [R1, t1]
+ */
+double getViewAngleAbsoluteCams(const Eigen::Matrix3d& R0, const Eigen::Vector3d& t0,
+                                const Eigen::Matrix3d& K1, const Eigen::Matrix3d& R1, const Eigen::Vector3d& t1, bool useDegrees){
+    cv::Mat R, t, K1cv, R0cv, R1cv, t0cv, t1cv;
+    cv::eigen2cv(K1, K1cv);
+    cv::eigen2cv(R0, R0cv);
+    cv::eigen2cv(R1, R1cv);
+    cv::eigen2cv(t0, t0cv);
+    cv::eigen2cv(t1, t1cv);
+    getRelativeFromAbsPoses(R0cv, t0cv, R1cv, t1cv, R, t);
+    return getViewAngleRelativeCams(R, t, K1cv, useDegrees);
 }
 
 bool solveLinEqu(const cv::Mat& A, const cv::Mat& b, cv::Mat& x)
@@ -511,4 +596,59 @@ cv::Mat roundMat(const cv::Mat& m)
 	tmp.convertTo(tmp1, m.type());
 
 	return tmp1;
+}
+
+//Checks if the given matrix is an identity matrix
+bool isIdentityMat(const cv::Mat& m){
+    Mat diff = m - Mat::eye(m.size(), m.type());
+    double sum = cv::sum(diff)[0];
+    return nearZero(sum);
+}
+
+//Calculate the descriptor distance between 2 descriptors
+double getDescriptorDistance(const cv::Mat &descriptor1, const cv::Mat &descriptor2){
+    if(descriptor1.type() == CV_8U){
+        return norm(descriptor1, descriptor2, NORM_HAMMING);
+    }
+
+    return norm(descriptor1, descriptor2, NORM_L2);
+}
+
+FileStorage& operator << (FileStorage& fs, bool &value)
+{
+    if(value){
+        return (fs << 1);
+    }
+
+    return (fs << 0);
+}
+
+void operator >> (const FileNode& n, bool& value)
+{
+    int bVal;
+    n >> bVal;
+    if(bVal){
+        value = true;
+    }else{
+        value = false;
+    }
+}
+
+FileStorage& operator << (FileStorage& fs, int64_t &value)
+{
+    string strVal = std::to_string(value);
+    return (fs << strVal);
+}
+
+void operator >> (const FileNode& n, int64_t& value)
+{
+    string strVal;
+    n >> strVal;
+    value = std::stoll(strVal);
+}
+
+FileNodeIterator& operator >> (FileNodeIterator& it, int64_t & value)
+{
+    *it >> value;
+    return ++it;
 }

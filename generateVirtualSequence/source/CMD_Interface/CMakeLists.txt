@@ -7,6 +7,21 @@
 set(target virtualSequenceLib-CMD-interface)
 message(STATUS "${target}")
 
+#set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.71.0 REQUIRED COMPONENTS
+		thread
+		filesystem
+		regex
+		system)
+
+find_package(VTK 7.2 QUIET NO_MODULE)
+if(NOT VTK_FOUND)
+	find_package(VTK 8.2.0 REQUIRED NO_MODULE)
+endif()
+message(STATUS "VTK Version: ${VTK_VERSION}")
+message(STATUS "VTK Lib location: ${VTK_LIBRARIES}")
+
+find_package(Ceres REQUIRED)
 
 #
 # Sources
@@ -15,6 +30,7 @@ message(STATUS "${target}")
 set(sources
     main.cpp
 	argvparser.cpp
+	pose_partitioning.cpp
 )
 
 
@@ -50,6 +66,9 @@ target_include_directories(${target}
     PRIVATE
     ${DEFAULT_INCLUDE_DIRECTORIES}
     ${PROJECT_BINARY_DIR}/source/include
+	${Boost_INCLUDE_DIRS}
+	${VTK_USE_FILE}
+	${CERES_INCLUDE_DIRS}
 )
 
 
@@ -61,6 +80,9 @@ target_link_libraries(${target}
     PRIVATE
     ${DEFAULT_LIBRARIES}
     ${META_PROJECT_NAME}::generateVirtualSequenceLib
+	${Boost_LIBRARIES}
+	${VTK_LIBRARIES}
+	${CERES_LIBRARIES}
 #    gmock-dev
 )
 

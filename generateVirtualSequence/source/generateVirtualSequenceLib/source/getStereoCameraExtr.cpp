@@ -1,21 +1,26 @@
-/**********************************************************************************************************
-FILE: getStereoCameraExtr.cpp
-
-PLATFORM: Windows 7, MS Visual Studio 2015, OpenCV 3.2
-
-CODE: C++
-
-AUTOR: Josef Maier, AIT Austrian Institute of Technology
-
-DATE: February 2018
-
-LOCATION: TechGate Vienna, Donau-City-Stra�e 1, 1220 Vienna
-
-VERSION: 1.0
-
-DISCRIPTION: This file provides functionalities for generating optimal camera paramters given a disired
-overlap area ratio between the views and some restrictions on the camera parameters
-**********************************************************************************************************/
+//Released under the MIT License - https://opensource.org/licenses/MIT
+//
+//Copyright (c) 2019 AIT Austrian Institute of Technology GmbH
+//
+//Permission is hereby granted, free of charge, to any person obtaining
+//a copy of this software and associated documentation files (the "Software"),
+//to deal in the Software without restriction, including without limitation
+//the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//and/or sell copies of the Software, and to permit persons to whom the
+//Software is furnished to do so, subject to the following conditions:
+//
+//The above copyright notice and this permission notice shall be included
+//in all copies or substantial portions of the Software.
+//
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+//EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+//MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+//IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+//DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+//OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+//USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+//Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
 
 #include "getStereoCameraExtr.h"
 #include "helper_funcs.h"
@@ -592,7 +597,7 @@ int GenStereoPars::optParLM(int verbose)
 		cout << "Unable to reach desired result! Try different ranges and/or parameters." << endl;
 		err = -1;
 	}
-	if (ssq > 10.0)
+	if (ssq > 15.0)
 	{
 		cout << "Resulting parameters are not usable! Sum of squared residuals: " << ssq << endl;
 		err = -2;
@@ -1406,28 +1411,47 @@ void GenStereoPars::setCoordsForOpti()
 
 	if (horizontalCamAlign)
 	{
+        x_lb_max2.clear();
+        x_lb_min2.clear();
+        x_rt_max2.clear();
+        x_rt_min2.clear();
 		for (size_t i = 0; i < nrConditions; i++)
 		{
 			x_lb_max1[i] = (Mat_<double>(3, 1) << ((double)imgSize_.width + virtWidth[i]) / 2.0, (double)imgSize_.height / 2.0, 1.0);
 			x_lb_min1[i] = (Mat_<double>(3, 1) << ((double)imgSize_.width - virtWidth[i]) / 2.0, (double)imgSize_.height / 2.0, 1.0);
 			x_rt_max1[i] = (Mat_<double>(3, 1) << (double)imgSize_.width, (double)imgSize_.height / 2.0, 1.0);
 			x_rt_min1[i] = (Mat_<double>(3, 1) << 0, (double)imgSize_.height / 2.0, 1.0);
+
+            x_lb_max2.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+            x_lb_min2.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
+            x_rt_max2.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+            x_rt_min2.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
 		}
 
-		x_lb_max2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
-		x_lb_min2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
-		x_rt_max2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
-		x_rt_min2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
+//		x_lb_max2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+//		x_lb_min2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
+//		x_rt_max2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+//		x_rt_min2 = std::vector<cv::Mat>(nrConditions,(Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
 	}
 	else
 	{
-		x_lb_max1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
-		x_lb_min1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
-		x_rt_max1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
-		x_rt_min1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
+        x_lb_max1.clear();
+        x_lb_min1.clear();
+        x_rt_max1.clear();
+        x_rt_min1.clear();
+
+//		x_lb_max1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+//		x_lb_min1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
+//		x_rt_max1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+//		x_rt_min1 = std::vector<cv::Mat>(nrConditions, (Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
 
 		for (size_t i = 0; i < nrConditions; i++)
 		{
+            x_lb_max1.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+            x_lb_min1.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
+            x_rt_max1.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, (double)imgSize_.height, 1.0));
+            x_rt_min1.emplace_back((Mat_<double>(3, 1) << (double)imgSize_.width / 2.0, 0, 1.0));
+
 			x_lb_max2[i] = (Mat_<double>(3, 1) << ((double)imgSize_.width + virtWidth[i]) / 2.0, (double)imgSize_.height / 2.0, 1.0);
 			x_lb_min2[i] = (Mat_<double>(3, 1) << ((double)imgSize_.width - virtWidth[i]) / 2.0, (double)imgSize_.height / 2.0, 1.0);
 			x_rt_max2[i] = (Mat_<double>(3, 1) << (double)imgSize_.width, (double)imgSize_.height / 2.0, 1.0);

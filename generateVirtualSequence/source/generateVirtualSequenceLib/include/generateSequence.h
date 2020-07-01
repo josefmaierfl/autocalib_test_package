@@ -1,21 +1,26 @@
-/**********************************************************************************************************
-FILE: generateSequence.h
-
-PLATFORM: Windows 7, MS Visual Studio 2015, OpenCV 3.2
-
-CODE: C++
-
-AUTOR: Josef Maier, AIT Austrian Institute of Technology
-
-DATE: March 2018
-
-LOCATION: TechGate Vienna, Donau-City-Stra�e 1, 1220 Vienna
-
-VERSION: 1.0
-
-DISCRIPTION: This file provides functionalities for generating stereo sequences with correspondences given
-a view restrictions like depth ranges, moving objects, ...
-**********************************************************************************************************/
+//Released under the MIT License - https://opensource.org/licenses/MIT
+//
+//Copyright (c) 2019 AIT Austrian Institute of Technology GmbH
+//
+//Permission is hereby granted, free of charge, to any person obtaining
+//a copy of this software and associated documentation files (the "Software"),
+//to deal in the Software without restriction, including without limitation
+//the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//and/or sell copies of the Software, and to permit persons to whom the
+//Software is furnished to do so, subject to the following conditions:
+//
+//The above copyright notice and this permission notice shall be included
+//in all copies or substantial portions of the Software.
+//
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+//EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+//MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+//IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+//DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+//OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+//USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
+//Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
 
 #pragma once
 
@@ -76,30 +81,6 @@ enum GENERATEVIRTUALSEQUENCELIB_API depthClass
 	NEAR = 0x01,
 	MID = 0x02,
 	FAR = 0x04
-};
-
-enum GENERATEVIRTUALSEQUENCELIB_API vorboseType
-{
-	SHOW_INIT_CAM_PATH = 0x01,
-	SHOW_BUILD_PROC_MOV_OBJ = 0x02,
-	SHOW_MOV_OBJ_DISTANCES = 0x04,
-	SHOW_MOV_OBJ_3D_PTS = 0x08,
-	SHOW_MOV_OBJ_CORRS_GEN = 0x10,
-	SHOW_BUILD_PROC_STATIC_OBJ = 0x20,
-	SHOW_STATIC_OBJ_DISTANCES = 0x40,
-	SHOW_STATIC_OBJ_CORRS_GEN = 0x80,
-	SHOW_STATIC_OBJ_3D_PTS = 0x100,
-	SHOW_MOV_OBJ_MOVEMENT = 0x200,
-	SHOW_BACKPROJECT_OCCLUSIONS_MOV_OBJ = 0x400,
-	SHOW_BACKPROJECT_OCCLUSIONS_STAT_OBJ = 0x800,
-	SHOW_BACKPROJECT_MOV_OBJ_CORRS = 0x1000,
-	SHOW_STEREO_INTERSECTION = 0x2000,
-	SHOW_COMBINED_CORRESPONDENCES = 0x4000,
-	PRINT_WARNING_MESSAGES = 0x8000,
-	SHOW_IMGS_AT_ERROR = 0x10000,
-	SHOW_PLANES_FOR_HOMOGRAPHY = 0x20000,
-	SHOW_WARPED_PATCHES = 0x40000,
-	SHOW_PATCHES_WITH_NOISE = 0x80000
 };
 
 struct GENERATEVIRTUALSEQUENCELIB_API StereoSequParameters
@@ -477,7 +458,7 @@ class SequenceException : public std::exception
     std::string _msg;
 
 public:
-    explicit SequenceException(const std::string &msg) : _msg(msg) {}
+    explicit SequenceException(std::string msg) : _msg(std::move(msg)) {}
 
     const char *what() const noexcept override
     {
@@ -495,13 +476,21 @@ public:
 			std::vector<cv::Mat> t_,
 			StereoSequParameters & pars_,
 			bool filter_occluded_points_ = false,
-			uint32_t verbose = 0);
-    genStereoSequ(bool filter_occluded_points_ = false, uint32_t verbose_ = 0):
+			uint32_t verbose = 0,
+            const std::string &writeIntermRes_path_ = "");
+
+	genStereoSequ(bool filter_occluded_points_ = false, uint32_t verbose_ = 0, std::string writeIntermRes_path_ = ""):
     verbose(verbose_),
+    writeIntermRes_path(std::move(writeIntermRes_path_)),
     filter_occluded_points(filter_occluded_points_),
-    pars(StereoSequParameters()){};
+    pars(StereoSequParameters()){
+        long int seed = randSeed(rand_gen);
+        randSeed(rand2, seed);
+    };
+
     genStereoSequ(const genStereoSequ& gss):
             verbose(gss.verbose),
+            writeIntermRes_path(gss.writeIntermRes_path),
             filter_occluded_points(gss.filter_occluded_points),
             imgSize(gss.imgSize),
             K1(gss.K1),
@@ -578,6 +567,7 @@ public:
 
     genStereoSequ& operator=(const genStereoSequ& gss){
         verbose = gss.verbose;
+        writeIntermRes_path = gss.writeIntermRes_path;
         filter_occluded_points = gss.filter_occluded_points;
         imgSize = gss.imgSize;
         K1 = gss.K1;
@@ -660,6 +650,7 @@ protected:
 	bool startCalc_internal();
     double project3DError(const cv::Mat &x, const cv::Mat &X, const cv::Mat &Ki);
     bool checkCorrespondenceConsisty(const cv::Mat &x1, const cv::Mat &x2, const cv::Mat &X);
+    void setCamMats(const cv::Mat &K1, const cv::Mat &K2);
 
 private:
 	void constructCamPath();
@@ -790,11 +781,11 @@ private:
 	        bool useNearLeafSize = false,
 	        bool visRes = true,
 	        pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOccluded = nullptr);
-    bool filterNotVisiblePts(pcl::PointCloud<pcl::PointXYZ>::Ptr cloudIn,
+    bool filterNotVisiblePts(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloudIn,
                              std::vector<int> &cloudOut,
                              bool useNearLeafSize = false,
                              bool visRes = true,
-                             pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOccluded = nullptr);
+                             const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloudOccluded = nullptr);
 	void getMovObjPtsCam();
 	void getCamPtsFromWorld();
 	void visualizeCamPath();
@@ -865,9 +856,11 @@ private:
 	void calcDistortedIntrinsics();
 	void calcDisortedK(cv::Mat &Kd);
     bool checkCorr3DConsistency();
+    bool writeIntermediateImg(const cv::Mat &img, const std::string &filename);
 
 public:
 	uint32_t verbose = 0;
+    std::string writeIntermRes_path = "";
     //Enables or disables filtering of occluded points for back-projecting existing 3D-world coorindinates to the image plane
     //As filtering occluded points is very time-consuming it can be disabled
 	bool filter_occluded_points = false;
@@ -885,7 +878,6 @@ private:
 	double absCamVelocity;//in baselines from frame to frame
 
 	std::vector<size_t> nrTruePos;//Absolute number of true positive correspondences per frame
-	std::vector<size_t> nrTrueNeg;//Absolute number of true negative correspondences per frame
 	bool fixedNrCorrs = false;//If the inlier ratio and the absolute number of true positive correspondences are constant over all frames, the # of correspondences are as well const. and fixedNrCorrs = true
 	std::vector<cv::Mat> nrTruePosRegs;//Absolute number of true positive correspondences per image region and frame; Type CV_32SC1
 	std::vector<cv::Mat> nrCorrsRegs;//Absolute number of correspondences (TP+TN) per image region and frame; Type CV_32SC1
@@ -1012,6 +1004,7 @@ protected:
     std::vector<cv::Mat> t;
     size_t nrStereoConfs;//Number of different stereo camera configurations
     std::vector<size_t> nrCorrs;//Absolute number of correspondences (TP+TN) per frame
+    std::vector<size_t> nrTrueNeg;//Absolute number of true negative correspondences per frame
     std::vector<double> inlRat;//Inlier ratio for every frame
 	std::vector<Poses> absCamCoordinates;//Absolute coordinates of the camera centres (left or bottom cam of stereo rig) for every frame; Includes the rotation from the camera into world and the position of the camera centre C in the world: X_world  = R * X_cam + t (t corresponds to C in this case); X_cam = R^T * X_world - R^T * t
 	pcl::PointCloud<pcl::PointXYZ>::Ptr staticWorld3DPts;//Point cloud in the world coordinate system holding all generated 3D points
