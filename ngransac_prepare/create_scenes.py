@@ -810,13 +810,13 @@ def processSequences(cmd_l, parSetNr, message_path, used_cpus, loaded = False):
             return ['noExe']
         cnt1 = 0
         data_set = None
-        cnt1max = 20 + min(used_cpus, (parSetNr - 1)) * 20
+        cnt1max = 200 + min(used_cpus, (parSetNr - 1)) * 20
         while cnt1 < cnt1max:
             try:
                 data_set = data['parSetNr' + str(int(parSetNr - 1))]
                 break
             except:
-                if loaded or (cnt1 >= 20 and cnt1 % 20 == 0):
+                if loaded or (cnt1 >= 60 and cnt1 % 60 == 0):
                     print('Waiting for parSetNr ', int(parSetNr - 1))
                 cnt1 = cnt1 + 1
                 if cnt1 < cnt1max:
