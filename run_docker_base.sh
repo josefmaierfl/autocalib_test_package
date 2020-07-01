@@ -21,9 +21,31 @@ else
   exit 1
 fi
 
-SECOND_ARG="$2"
+if [ $# -ge 3 ]; then
+  SECOND_ARG="$2"
+  SECOND_ARG1="$3"
+else
+  SECOND_ARG=""
+fi
+if [ $# -ge 5 ]; then
+  THIRD_ARG="$4"
+  THIRD_ARG1="$5"
+else
+  THIRD_ARG=""
+fi
+if [ "${SECOND_ARG}" == "EXE" ] && [ "${THIRD_ARG}" == "RESDIR" ]; then
+  SECOND_ARG="RESDIR"
+  THIRD_ARG="EXE"
+  TMP=${SECOND_ARG1}
+  SECOND_ARG1=${THIRD_ARG1}
+  THIRD_ARG1=${TMP}
+elif [ "${SECOND_ARG}" == "EXE" ]; then
+  THIRD_ARG="EXE"
+  THIRD_ARG1=${SECOND_ARG1}
+  SECOND_ARG=""
+fi
 if [ "${SECOND_ARG}" == "RESDIR" ]; then
-  RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/$3"
+  RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/${SECOND_ARG1}"
   if [ -d ${RES_DIR} ]; then
     shift 2
   else
@@ -36,12 +58,27 @@ else
     mkdir ${RES_DIR}
   fi
 fi
+
+if [ "${THIRD_ARG}" == "EXE" ]; then
+  if [ "${THIRD_ARG1}" == "train" ]; then
+    SCRIPT="start_training.sh"
+    shift 2
+  elif [ "${THIRD_ARG1}" == "test" ]; then
+    SCRIPT="start_testing.sh"
+    shift 2
+  else
+    echo "Parameter EXE must follow train or test"
+    exit 1
+  fi
+else
+  SCRIPT="start_testing.sh"
+fi
 # -c $(echo "${@:2}")
 xhost +local:
 #docker run -v `pwd`/py_test_scripts:/app/py_test_scripts -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package:1.0 /bin/bash
 # docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${OUTDIR}:/app/output -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /bin/bash
 # docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /bin/bash
-docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /app/start_testing.sh "${@:2}"
+docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /app/${SCRIPT} "${@:2}"
 
 # Shut down if asked for
 #if [ $# -ne 0 ]; then

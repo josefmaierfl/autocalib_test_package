@@ -8,7 +8,7 @@ import ngransac
 
 from network import CNNet
 from dataset import SparseDataset
-import util
+import util, sys
 
 # parse command line arguments
 parser = util.create_parser(
@@ -50,8 +50,18 @@ if not os.path.exists(data_folder):
 	raise ValueError('Path ' + data_folder + ' does not exist')
 data_folder = [data_folder + '/']
 
+out_folder = os.path.join(opt.path, 'training_results')
+if not os.path.exists(out_folder):
+	os.mkdir(out_folder)
+
+av_cpus = os.cpu_count()
+if av_cpus:
+	av_cpus -= 2
+else:
+	av_cpus = 6
+
 trainset = SparseDataset(data_folder, opt.ratio, opt.nfeatures, opt.fmat, opt.nosideinfo)
-trainset_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=6, batch_size=opt.batchsize)
+trainset_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=av_cpus, batch_size=opt.batchsize)
 
 print("\nImage pairs: ", len(trainset), "\n")
 
@@ -68,7 +78,9 @@ iteration = 0
 
 # keep track of the training progress
 session_string = util.create_session_string('e2e', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
-train_log = open('log_%s.txt' % (session_string), 'w', 1)
+log_file = os.path.join(out_folder, 'log_%s.txt' % (session_string))
+net_file = os.path.join(out_folder, 'weights_%s.net' % (session_string))
+train_log = open(log_file, 'w', 1)
 
 # main training loop
 for epoch in range(0, opt.epochs):	
@@ -76,7 +88,7 @@ for epoch in range(0, opt.epochs):
 	print("=== Starting Epoch", epoch, "==================================")
 
 	# store the network every so often
-	torch.save(model.state_dict(), './weights_%s.net' % (session_string))
+	torch.save(model.state_dict(), net_file)
 
 	# main training loop in the current epoch
 	for correspondences, gt_F, gt_E, gt_R, gt_t, K1, K2, im_size1, im_size2 in trainset_loader:
@@ -194,3 +206,4 @@ for epoch in range(0, opt.epochs):
 		print("Iteration: ", iteration, "Loss: ", avg_loss)
 
 		iteration += 1
+sys.exit(0)

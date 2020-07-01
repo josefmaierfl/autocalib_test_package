@@ -1,5 +1,5 @@
 import numpy as np
-import math, os
+import math, os, sys
 
 import torch
 import torch.optim as optim
@@ -37,8 +37,18 @@ if not os.path.exists(data_folder):
 	raise ValueError('Path ' + data_folder + ' does not exist')
 data_folder = [data_folder + '/']
 
+out_folder = os.path.join(opt.path, 'training_results')
+if not os.path.exists(out_folder):
+	os.mkdir(out_folder)
+
+av_cpus = os.cpu_count()
+if av_cpus:
+	av_cpus -= 2
+else:
+	av_cpus = 6
+
 trainset = SparseDataset(data_folder, opt.ratio, opt.nfeatures, opt.fmat, opt.nosideinfo)
-trainset_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=6, batch_size=opt.batchsize)
+trainset_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=av_cpus, batch_size=opt.batchsize)
 
 print("\nImage pairs: ", len(trainset), "\n")
 
@@ -55,7 +65,9 @@ iteration = 0
 
 # keep track of the training progress
 session_string = util.create_session_string('init', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
-train_log = open('log_%s.txt' % (session_string), 'w', 1)
+log_file = os.path.join(out_folder, 'log_%s.txt' % (session_string))
+net_file = os.path.join(out_folder, 'weights_%s.net' % (session_string))
+train_log = open(log_file, 'w', 1)
 
 # in the initalization we optimize the KLDiv of the predicted distribution and the target distgribution (see paper supplement A, Eq. 12)
 distLoss = torch.nn.KLDivLoss(reduction='sum')
@@ -66,7 +78,7 @@ for epoch in range(0, opt.epochs):
 	print("=== Starting Epoch", epoch, "==================================")
 
 	# store the network every epoch
-	torch.save(model.state_dict(), './weights_%s.net' % (session_string))
+	torch.save(model.state_dict(), net_file)
 
 	# main training loop in the current epoch
 	for correspondences, gt_F, gt_E, gt_R, gt_t, K1, K2, im_size1, im_size2 in trainset_loader:
@@ -109,3 +121,4 @@ for epoch in range(0, opt.epochs):
 		iteration += 1
 		
 		del log_probs, probs, target_probs, loss
+sys.exit(0)
