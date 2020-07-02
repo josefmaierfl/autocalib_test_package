@@ -62,9 +62,11 @@ fi
 if [ "${THIRD_ARG}" == "EXE" ]; then
   if [ "${THIRD_ARG1}" == "train" ]; then
     SCRIPT="start_training.sh"
+    RES_DIRD="/app/results_train"
     shift 2
   elif [ "${THIRD_ARG1}" == "test" ]; then
     SCRIPT="start_testing.sh"
+    RES_DIRD="/app/results"
     shift 2
   else
     echo "Parameter EXE must follow train or test"
@@ -72,13 +74,14 @@ if [ "${THIRD_ARG}" == "EXE" ]; then
   fi
 else
   SCRIPT="start_testing.sh"
+  RES_DIRD="/app/results"
 fi
 # -c $(echo "${@:2}")
 xhost +local:
 #docker run -v `pwd`/py_test_scripts:/app/py_test_scripts -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package:1.0 /bin/bash
 # docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${OUTDIR}:/app/output -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /bin/bash
-# docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /bin/bash
-docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /app/${SCRIPT} "${@:2}"
+# docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v `pwd`/ngransac_train:/app/ngransac_train -v ${RES_DIR}:${RES_DIRD} -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /bin/bash
+docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v `pwd`/ngransac_train:/app/ngransac_train -v ${RES_DIR}:${RES_DIRD} -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /app/${SCRIPT} "${@:2}"
 
 # Shut down if asked for
 #if [ $# -ne 0 ]; then

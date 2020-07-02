@@ -5,7 +5,7 @@ import subprocess as sp, os
 parser = util.create_parser(description = "Train a neural guidance network using correspondence "
                   "distance to a ground truth model to calculate target probabilities.")
 
-parser.add_argument('--path', '-p', required=True, help='Path to folders train and validate')
+parser.add_argument('--path', '-p', required=True, default='default', help='Path to folders train and validate')
 
 parser.add_argument('--variant_train', '-ve', default='train',	choices=['train', 'validate'],
                     help='subfolder of the dataset to use for training')
@@ -58,6 +58,14 @@ parser.add_argument('--refineTest', '-reft',
 opt = parser.parse_args()
 
 pyfilepath = os.path.dirname(os.path.realpath(__file__))
+if opt.path == 'default':
+    parent = os.path.dirname(pyfilepath)
+    res_folder = os.path.join(parent, 'results_train')
+    if os.path.exists(res_folder):
+        opt.path = res_folder
+    else:
+        print('Provide path', sys.stderr)
+        sys.exit(1)
 cmdline1 = ['--path', opt.path, '--nfeatures', str(opt.nfeatures), '--ratio', str(opt.ratio),
             '--threshold', str(opt.threshold), '--resblocks', str(opt.resblocks), '--batchsize', str(opt.batchsize)]
 if opt.fmat:

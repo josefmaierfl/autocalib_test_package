@@ -8,7 +8,7 @@ import ngransac
 import time
 
 from network import CNNet
-from dataset import SparseDataset
+from dataset_virtSequ import SparseDataset
 import util
 
 parser = util.create_parser(

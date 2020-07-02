@@ -6,7 +6,7 @@ import torch.optim as optim
 import ngransac
 
 from network import CNNet
-from dataset import SparseDataset
+from dataset_virtSequ import SparseDataset
 import util
 
 # parse command line arguments
