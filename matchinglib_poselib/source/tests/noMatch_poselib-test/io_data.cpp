@@ -33,6 +33,7 @@
 #include <functional>
 
 #include "alphanum.hpp"
+#include <boost/filesystem.hpp>
 
 //#include "PfeImgFileIO.h"
 //#include "PfeConv.h"
@@ -46,6 +47,21 @@ using namespace std;
 int makeFrameIdConsistent(std::vector<std::string> & filenamesl, std::vector<std::string> & filenamesr, std::size_t prefxPos1, std::size_t prefxPos2, bool bVerbose = false);
 
 /* --------------------- Functions --------------------- */
+
+std::string getFilenameFromPath(const std::string &name){
+    return boost::filesystem::path(name).filename().string();
+}
+
+std::string remFileExt(const std::string &name){
+    size_t lastindex = name.find_last_of('.');
+    string fname_new;
+    if(lastindex == std::string::npos){
+        fname_new = name;
+    }else {
+        fname_new = name.substr(0, lastindex);
+    }
+    return fname_new;
+}
 
 /* This function reads all stereo or 2 subsequent images from a given directory and stores their names into two vectors.
  *

@@ -531,6 +531,7 @@ struct calibPars{
     bool refineRTold;
     int BART;
     std::string RobMethod;
+    std::string ngransacModel;
     int Halign;
     poselib::ConfigUSAC cfg;
     double USACdegenTh;
@@ -554,6 +555,7 @@ struct calibPars{
     refineRTold(false),
     BART(0),
     RobMethod(""),
+    ngransacModel(""),
     Halign(0),
     cfg(poselib::ConfigUSAC()),
     USACdegenTh(0.85),
@@ -932,6 +934,7 @@ bool startEvaluation(ArgvParser& cmd)
             cerr << "Given model file " << ngransacModel << " for NGRANSAC does not exist. Using default model." << endl;
             ngransacModel = "";
         }else{
+            cp.ngransacModel = ngransacModel;
             ngransacModel = ngransacModel_file.string();
         }
     }
@@ -2568,6 +2571,7 @@ size_t getHashCalibPars(const calibPars &cp){
     ss << cp.autoTH;
     ss << cp.refineMethod;
     ss << cp.RobMethod;
+    if(!cp.ngransacModel.empty()) ss << cp.ngransacModel;
     ss << cp.Halign;
     ss << cp.cfg.imgSize.height;
     ss << cp.cfg.imgSize.width;
@@ -2791,7 +2795,11 @@ void writeTestingParameters(cv::FileStorage &fs,
 
     fs << "stereoRef" << cp.stereoRef;
     fs << "th" << cp.th;
-    fs << "RobMethod" << cp.RobMethod;
+    if(cp.ngransacModel.empty() || cp.RobMethod != "NGRANSAC") {
+        fs << "RobMethod" << cp.RobMethod;
+    }else{
+        fs << "RobMethod" << (cp.RobMethod + "_" + cp.ngransacModel);
+    }
     fs << "USAC_parameters" << "{";
     fs << "th_pixels" << cp.cfg.th_pixels;
     fs << "USACInlratFilt" << ((cp.USACInlratFilt == 0) ? "GMS":"VFC");

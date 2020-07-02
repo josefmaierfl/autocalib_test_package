@@ -9,7 +9,7 @@
 
  DATE: September 2015
 
- LOCATION: TechGate Vienna, Donau-City-Straße 1, 1220 Vienna
+ LOCATION: TechGate Vienna, Donau-City-Straï¿½e 1, 1220 Vienna
 
  VERSION: 1.0
 
@@ -25,6 +25,11 @@
 //#include "opencv2/highgui/highgui.hpp"
 
 //#include "PfeImgFileIO.h"
+
+//Return only the filename with extension from a string made of path + filename
+std::string getFilenameFromPath(const std::string &name);
+//Remove extension from filename
+std::string remFileExt(const std::string &name);
 
 //This function reads all stereo or 2 subsequent images from a given directory and stores their names into two vectors.
 int loadStereoSequence(std::string filepath, std::string fileprefl, std::string fileprefr,
