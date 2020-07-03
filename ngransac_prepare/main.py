@@ -411,16 +411,11 @@ def main():
                         help='Optional directory for writing configuration files. If not available, '
                              'the directory is derived from argument \'path\' if '
                              'option \'complete_res_path\' is not provided.')
-    parser.add_argument('--skip_gen_sc_conf', type=str, nargs='+', required=False,
-                        help='List of test names for which the generation of configuration files out of '
-                             'initial configuration files should be skipped as they are already available. '
-                             'Possible tests: usac-testing, correspondence_pool, robustness, usac_vs_autocalib; '
-                             'Format: test1 test2 ...')
-    parser.add_argument('--skip_crt_sc', type=str, nargs='+', required=False,
-                        help='List of test names for which the creation of scenes '
-                             'should be skipped as they are already available. '
-                             'Possible tests: usac-testing, correspondence_pool, robustness, usac_vs_autocalib; '
-                             'Format: test1 test2 ...')
+    parser.add_argument('--skip_gen_sc_conf', type=bool, nargs='?', required=False, default=False, const=True,
+                        help='Skip the generation of configuration files out of '
+                             'initial configuration files as they are already available.')
+    parser.add_argument('--skip_crt_sc', type=bool, nargs='?', required=False, default=False, const=True,
+                        help='Skip creation of scenes as they are already available.')
     parser.add_argument('--crt_sc_dirs_file', type=str, required=False,
                         help='Optional (only used when scene creation process failed for entire directory/ies): '
                              'File holding directory names which include configuration files to generate '
