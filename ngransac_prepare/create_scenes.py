@@ -214,8 +214,6 @@ def retry_cmds_from_file(file_name, nr_cpus, message_path):
                 else:
                     cont = False
                 continue
-            if not os.path.exists(confd):
-                raise ValueError("Directory " + confd + " does not exist.")
             cmds.append(confd.split(' '))
             confd = fi.readline()
             if confd:
