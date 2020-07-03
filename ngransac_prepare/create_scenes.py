@@ -5,6 +5,7 @@ import sys, re, numpy as np, math, argparse, os, pandas, time, subprocess as sp
 import ruamel.yaml as yaml
 import multiprocessing
 import warnings
+import shutil
 # We must import this explicitly, it is not imported by the top-level
 # multiprocessing module.
 import multiprocessing.pool
@@ -335,6 +336,7 @@ def retry_cmds_from_file(file_name, nr_cpus, message_path):
                     break
             if cnt == 0:
                 raise ValueError('No sequence available in ' + ovs_f + '. The whole directery should be processed.')
+            cnt_max1 = cnt
             ovcf = os.path.join(i, 'config_files.csv')
             confs_list = []
             if not os.path.exists(ovcf):
@@ -346,6 +348,14 @@ def retry_cmds_from_file(file_name, nr_cpus, message_path):
                 sys.stdout.flush()
                 continue
 
+            parSetDel = []
+            for j in cmds_ordered[i]:
+                # fname = os.path.basename(j[8])
+                sequ_row = cf.loc[cf['conf_file'] == j[8]]
+                if sequ_row.empty or sequ_row.shape[0] != 1:
+                    raise ValueError('Unable to locate config file ' + j[8] + ' in overview file ' + ovcf)
+                parSetDel.append(int(sequ_row['parSetNr']))
+            cnt = delParsets(parSetDel, cnt_max1, ovs_f)
             for j in cmds_ordered[i]:
                 # fname = os.path.basename(j[8])
                 sequ_row = cf.loc[cf['conf_file'] == j[8]]
@@ -421,6 +431,55 @@ def retry_cmds_from_file(file_name, nr_cpus, message_path):
                 cmd_fails_tmp.append(' '.join(map(str, r)))
             fo.write('\n'.join(cmd_fails_tmp))
     return ret
+
+
+def delParsets(parSetDel, cnt_max, ovs_f):
+    changeTo = {}
+    for i in range(0, cnt_max):
+        i1 = 0
+        for j in parSetDel:
+            if i > j:
+                i1 += 1
+            elif i == j:
+                i1 = -1
+                break
+        if i1 > 0:
+            changeTo[str(i)] = str(i - i1)
+    if not changeTo:
+        return cnt_max
+    name, ext = os.path.splitext(ovs_f)
+    name_tmp = name + '_tmp' + ext
+    del_dirs = []
+    with open(name_tmp, 'w') as fo:
+        with open(ovs_f, 'r') as fi:
+            li = fi.readline()
+            skipuntilnext = False
+            while li:
+                parsObj = re.match(r'(\s*parSetNr)([0-9]+):', li)
+                if parsObj:
+                    parSetNr = int(parsObj.group(2))
+                    if parSetNr in parSetDel:
+                        skipuntilnext = True
+                    elif parsObj.group(2) in changeTo:
+                        fo.write(parsObj.group(1) + changeTo[parsObj.group(2)] + ':\n')
+                        skipuntilnext = False
+                    else:
+                        fo.write(li)
+                        skipuntilnext = False
+                elif skipuntilnext:
+                    hashObj = re.match(r'\s*hashSequencePars:\s*\"([0-9]+)\"', li)
+                    if hashObj:
+                        del_dirs.append(hashObj.group(1))
+                else:
+                    fo.write(li)
+                li = fi.readline()
+    os.remove(ovs_f)
+    os.rename(name_tmp, ovs_f)
+    path = os.path.dirname(ovs_f)
+    for ddir in del_dirs:
+        d = os.path.join(path, ddir)
+        shutil.rmtree(d, ignore_errors=True)
+    return cnt_max - len(parSetDel)
 
 
 class NoDaemonProcess(multiprocessing.Process):
@@ -817,7 +876,7 @@ def processSequences(cmd_l, parSetNr, message_path, used_cpus, loaded = False):
                 break
             except:
                 if loaded or (cnt1 >= 60 and cnt1 % 60 == 0):
-                    print('Waiting for parSetNr ', int(parSetNr - 1))
+                    print('Waiting (', int(cnt1 * 10), 'sec) for parSetNr', int(parSetNr - 1))
                 cnt1 = cnt1 + 1
                 if cnt1 < cnt1max:
                     time.sleep(10)
