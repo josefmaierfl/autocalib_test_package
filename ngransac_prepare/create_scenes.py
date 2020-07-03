@@ -225,7 +225,7 @@ def retry_cmds_from_file(file_name, nr_cpus, message_path):
     cmds_sequ = []
     cmds_match = []
     cmd_fails = []
-    for i in confd:
+    for i in cmds:
         if '--load_folder' in i:
             cmds_match.append(i)
         else:
@@ -307,6 +307,7 @@ def retry_cmds_from_file(file_name, nr_cpus, message_path):
 
     ret = 0
     if cmds_sequ:
+        print('Generating new sequences')
         folders = []
         # Get cmds with same config folder
         cmds_ordered = {}
