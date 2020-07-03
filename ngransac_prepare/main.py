@@ -178,7 +178,7 @@ def retry_scenes_gen_dir(filename, exec_sequ, message_path, cpu_use):
                '--nrCPUs', str(cpu_use), '--executable', exec_sequ, '--message_path', message_path]
     try:
         ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
-                     check=True, timeout=18000).returncode
+                     check=True, timeout=172800).returncode
     except sp.TimeoutExpired:
         logging.error('Timeout expired for generating sequences.', exc_info=True)
         ret = 98
@@ -198,7 +198,7 @@ def retry_scenes_gen_cmds(filename, message_path, cpu_use):
                '--nrCPUs', str(cpu_use), '--message_path', message_path]
     try:
         ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
-                     check=True, timeout=18000).returncode
+                     check=True, timeout=172800).returncode
     except sp.TimeoutExpired:
         logging.error('Timeout expired for generating sequences.', exc_info=True)
         ret = 98
