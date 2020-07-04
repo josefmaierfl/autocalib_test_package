@@ -98,3 +98,4 @@ webencodings
 widgetsnbextension
 mgzip
 cPython
+Cython

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 root_dir=`pwd`
 thirdparty_dir=${root_dir}/thirdparty
@@ -16,7 +16,11 @@ make install
 if [ $? -ne 0 ]; then
     exit 1
 fi
-pip install ruamel.yaml numpy --upgrade --force
-if [ $? -ne 0 ]; then
-    exit 1
-fi
+#cd ..
+#git clone https://github.com/yaml/pyyaml.git
+#cd pyyaml
+#python setup.py install
+##pip install ruamel.yaml --upgrade --force
+#if [ $? -ne 0 ]; then
+#    exit 1
+#fi

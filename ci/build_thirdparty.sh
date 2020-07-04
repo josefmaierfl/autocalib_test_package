@@ -29,13 +29,13 @@ ldconfig
 #-----------------------------------
 # libyaml
 #-----------------------------------
-cd ${root_dir}
-./build_libyaml.sh
+#cd ${root_dir}
+#./build_libyaml.sh
 
-if [ $? -ne 0 ]; then
-    exit 1
-fi
-ldconfig
+#if [ $? -ne 0 ]; then
+#    exit 1
+#fi
+#ldconfig
 
 #-----------------------------------
 # VTK

@@ -100,3 +100,4 @@ pathos
 beautifulsoup4
 mgzip
 cPython
+Cython

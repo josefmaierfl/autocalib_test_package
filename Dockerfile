@@ -50,6 +50,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libomp-dev ccache && apt-get clean
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libhdf5-dev libhdf5-serial-dev ccache && apt-get clean
 RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libmpc-dev && apt-get clean
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y libyaml-dev && apt-get clean
 
 ADD ci /ci
 RUN python -m pip install --upgrade pip setuptools wheel
@@ -58,6 +59,15 @@ RUN python -m pip install -r requirements.txt && rm requirements.txt
 #RUN python -m pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 python3 -m pip install -U
 RUN cd /ci && ./build_thirdparty.sh
 
+RUN cd /ci && ./build_libyaml.sh
+RUN cd /ci/thirdparty && git clone https://github.com/yaml/pyyaml.git && cd pyyaml && python setup.py install
+USER conan
+SHELL ["/usr/bin/env", "bash", "--login", "-c"]
+RUN pip --no-cache-dir install ruamel.yaml --force-reinstall
+RUN python -c "from ruamel.yaml import CLoader as Loader; print('Loaded CLoader!')"
+
+USER root
+SHELL ["/bin/bash", "--login", "-c"]
 COPY generateVirtualSequence /ci/tmp/generateVirtualSequence/
 COPY build_generateVirtualSequence.sh /ci/tmp/
 RUN cd /ci/tmp && ./build_generateVirtualSequence.sh
