@@ -849,7 +849,7 @@ def main():
                             print('Finished the following directories with errors:')
                         else:
                             print('Finished the following directories:')
-                        print('\n'.join(cmds[cnt][2]))
+                        print('\n'.join([a['sequDir'] for a in cmds[cnt][2]]))
                         print('\n')
                         break
                     except multiprocessing.TimeoutError:
