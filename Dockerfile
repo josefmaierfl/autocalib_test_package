@@ -212,6 +212,8 @@ RUN cp -r /ci/tmp/thirdparty /app/
 RUN cp -r /ci/tmp/tmp/. /app/
 COPY start_testing.sh /app/
 COPY start_training.sh /app/
+RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
+	export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y rsync && apt-get clean
 #RUN rm -r /ci
 
 RUN chown -R conan /app
