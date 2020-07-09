@@ -164,15 +164,15 @@ def main():
                         help='refine using the 8point algorithm on all inliers for testing, '
                              'only used for fundamental matrix estimation (-fmat)')
 
-    parser.add_argument('--nfeaturesMult', '-nfm', type='+', default=None, required=False,
+    parser.add_argument('--nfeaturesMult', '-nfm', type=int, nargs='+', default=None, required=False,
             help='Multiple values for option nfeaturesMult: fixes number of features by clamping/replicating, '
                  'set to -1 for dynamic feature count but then batchsize (-bs) has to be set to 1')
 
-    parser.add_argument('--noAndSideinfo', '-noas', type='?', const=True, default=False, required=False,
+    parser.add_argument('--noAndSideinfo', '-noas', type=bool, nargs='?', const=True, default=False, required=False,
             help='Both options (with and without sideinfo) are used: Do and do not provide side information '
                  '(matching ratios) to the network. The network should be trained and tested consistently.')
 
-    parser.add_argument('--multsessions', '-sids', type='+', default=None, required=False,
+    parser.add_argument('--multsessions', '-sids', type=str, nargs='+', default=None, required=False,
             help='custom session name appended to output files, useful to separate different runs of a script')
 
     parser.add_argument('--nrCPUs', type=int, required=False, default=-6,
