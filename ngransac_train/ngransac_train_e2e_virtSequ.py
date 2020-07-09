@@ -42,6 +42,11 @@ parser.add_argument('--model', '-m', default='',
 parser.add_argument('--refine', '-ref', action='store_true', 
 	help='refine using the 8point algorithm on all inliers, only used for fundamental matrix estimation (-fmat)')
 
+parser.add_argument('--nrCPUs', type=int, required=False, default=-6,
+                        help='Number of CPU cores for parallel processing. If a negative value is provided, '
+                             'the program tries to find the number of available CPUs on the system - if it fails, '
+                             'the absolute value of nrCPUs is used. Default: -6')
+
 opt = parser.parse_args()
 
 # construct folder that should contain pre-calculated correspondences
@@ -54,11 +59,14 @@ out_folder = os.path.join(opt.path, 'training_results')
 if not os.path.exists(out_folder):
 	os.mkdir(out_folder)
 
-av_cpus = os.cpu_count()
-if av_cpus:
-	av_cpus -= 2
+if opt.nrCPUs < 0:
+	av_cpus = os.cpu_count()
+	if av_cpus:
+		av_cpus -= 2
+	else:
+		av_cpus = abs(opt.nrCPUs)
 else:
-	av_cpus = 6
+	av_cpus = opt.nrCPUs
 
 trainset = SparseDataset(data_folder, opt.ratio, opt.nfeatures, opt.fmat, opt.nosideinfo)
 trainset_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=av_cpus, batch_size=opt.batchsize)
