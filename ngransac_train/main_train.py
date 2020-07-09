@@ -114,7 +114,7 @@ def main():
     parser = util.create_parser(description = "Train a neural guidance network using correspondence "
                       "distance to a ground truth model to calculate target probabilities.")
 
-    parser.add_argument('--path', '-p', required=True, default='default', help='Path to folders train and validate')
+    parser.add_argument('--path', '-p', required=False, default='default', help='Path to folders train and validate')
 
     parser.add_argument('--variant_train', '-ve', default='train',	choices=['train', 'validate'],
                         help='subfolder of the dataset to use for training')
