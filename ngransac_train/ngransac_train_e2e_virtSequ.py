@@ -57,7 +57,10 @@ data_folder = [data_folder + '/']
 
 out_folder = os.path.join(opt.path, 'training_results')
 if not os.path.exists(out_folder):
-	os.mkdir(out_folder)
+	try:
+		os.mkdir(out_folder)
+	except:
+		pass
 
 if opt.nrCPUs < 0:
 	av_cpus = os.cpu_count()

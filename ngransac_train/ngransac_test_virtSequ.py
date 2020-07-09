@@ -226,7 +226,11 @@ with torch.no_grad():
 
 	# write evaluation results to file
 	out_dir = os.path.join(opt.path, 'results')
-	if not os.path.isdir(out_dir): os.mkdir(out_dir)
+	if not os.path.isdir(out_dir):
+		try:
+			os.mkdir(out_dir)
+		except:
+			pass
 	outf = os.path.join(out_dir, '%s.txt' % (session_string))
 
 	with open(outf, 'w', 1) as f:
