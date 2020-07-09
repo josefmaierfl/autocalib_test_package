@@ -217,7 +217,7 @@ def main():
             sys.exit(1)
 
     if not opt.nfeaturesMult and not opt.noAndSideinfo:
-        ret = perform_training(pyfilepath, opt.model, opt.variant_train, opt.learningrateInit, opt.epochsInit,
+        res = perform_training(pyfilepath, opt.model, opt.variant_train, opt.learningrateInit, opt.epochsInit,
                                opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session, opt.path, opt.hyps_e2e,
                                opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                                opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, opt.nfeatures,
