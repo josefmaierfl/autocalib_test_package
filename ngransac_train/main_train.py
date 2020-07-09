@@ -205,6 +205,12 @@ def main():
         parent = os.path.dirname(pyfilepath)
         res_folder = os.path.join(parent, 'results_train')
         if os.path.exists(res_folder):
+            res_folder = os.path.join(res_folder, 'conversion_results')
+            if os.path.exists(res_folder):
+                opt.path = res_folder
+            else:
+                print('Provide path', sys.stderr)
+                sys.exit(1)
             opt.path = res_folder
         else:
             print('Provide path', sys.stderr)
