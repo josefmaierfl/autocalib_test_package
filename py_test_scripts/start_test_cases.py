@@ -159,6 +159,7 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
             raise ValueError('test_nr ' + str(test_nr) + ' is not supported for usac-testing')
     elif test_name == 'usac_vs_ransac':
         args += ['--refineRT', '0', '0']
+        # args += ['--refineRT', '2', '2']
         args += ['--RobMethod', 'USAC', 'RANSAC']
         args += ['--th', '0.6', '2.0', '0.2']
         args += ['--useGTCamMat']
@@ -170,7 +171,12 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
         args += ['--USACInlratFilt', str(pars['USACInlratFilt'])]
     elif test_name == 'ngransac':
         args += ['--refineRT', '0', '0']
+        # args += ['--refineRT', '2', '2']
         args += ['--RobMethod', 'NGRANSAC']
+        args += ['--ngransacModel', 'weights_e2e_E_orb_r1.00_',
+                 'weights_e2e_E_orb_r0.80_nfeat-1_noSideInfo',
+                 'weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo',
+                 'weights_e2e_E_orb_r0.80_nfeat3000_withSideInfo']
         args += ['--th', '0.6', '2.0', '0.2']
         args += ['--useGTCamMat']
     elif test_name == 'refinement_ba':
