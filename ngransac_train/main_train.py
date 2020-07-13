@@ -290,7 +290,10 @@ def main():
         cmds = []
         cnt = 0
         for features in opt.nfeaturesMult:
-            batchsize = (1 if features == -1 else opt.batchsize)
+            if features == -1:
+                batchsize = 1
+            else:
+                batchsize = opt.batchsize
             if not opt.noAndSideinfo:
                 cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
                              opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
