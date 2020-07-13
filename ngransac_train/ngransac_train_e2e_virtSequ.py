@@ -207,14 +207,21 @@ for epoch in range(0, opt.epochs):
 
 		avg_loss /= correspondences.size(0)
 
-		train_log.write('%d %f\n' % (iteration, avg_loss))
+		# train_log.write('%d %f\n' % (iteration, avg_loss))
 
 		# update model
 		torch.autograd.backward((log_probs), (log_probs_grad.cuda()))
 		optimizer.step() 
 		optimizer.zero_grad()
 
-		print("Iteration: ", iteration, "Loss: ", avg_loss)
+		# print("Iteration: ", iteration, "Loss: ", avg_loss)
+
+		if epoch % 4 == 0:
+			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", avg_loss)
+			train_log.write('%d %f\n' % (iteration, avg_loss))
+		elif iteration % 100 == 0:
+			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", avg_loss)
+			train_log.write('%d %f\n' % (iteration, avg_loss))
 
 		iteration += 1
 sys.exit(0)

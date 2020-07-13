@@ -25,7 +25,7 @@ class MyPool(multiprocessing.pool.Pool):
 def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsInit, fmat, orb, rootsift,
                      ratio, session, path, hyps_e2e, learningrate_e2e, epochs_e2e, samplecount, loss, refine_e2e,
                      variantTest, hypsTest, evalbinsize, refineTest, nfeatures, threshold, resblocks, batchsize,
-                     nosideinfo, nrCPUs):
+                     nosideinfo, nrCPUs, skipInit, skipTest, skipTraining):
     cmdline1 = ['--path', path, '--nfeatures', str(nfeatures), '--ratio', str(ratio), '--nrCPUs', str(nrCPUs),
                 '--threshold', str(threshold), '--resblocks', str(resblocks), '--batchsize', str(batchsize)]
     if fmat:
@@ -39,17 +39,18 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
     if session:
         cmdline1 += ['--session', session]
 
-    if not model:
+    if not skipInit:
         # Initialize weights
         pyfilename = os.path.join(pyfilepath, 'ngransac_train_init_virtSequ.py')
         cmdline = ['python', pyfilename, '--variant', variant_train,
                    '--learningrate', str(learningrateInit), '--epochs', str(epochsInit)]
         if cmdline1:
             cmdline += cmdline1
-
+        if len(model) > 0:
+            cmdline += ['--model', model]
         try:
             ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
-                         check=True, timeout=345600).returncode
+                         check=True, timeout=432000).returncode
         except sp.TimeoutExpired:
             print('Timeout expired for initialzing net weights.', sys.stderr)
             ret = 98
@@ -67,44 +68,48 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
         net_file = model
 
     # Perform e2e training
-    pyfilename = os.path.join(pyfilepath, 'ngransac_train_e2e_virtSequ.py')
-    cmdline = ['python', pyfilename, '--path', path, '--variant', variant_train, '--hyps', hyps_e2e,
-               '--learningrate', str(learningrate_e2e), '--epochs', str(epochs_e2e), '--model', net_file,
-               '--samplecount', str(samplecount), '--loss', loss]
-    if refine_e2e:
-        cmdline.append('--refine')
-    if cmdline1:
-        cmdline += cmdline1
-    try:
-        ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
-                     check=True, timeout=432000).returncode
-    except sp.TimeoutExpired:
-        print('Timeout expired for training network.', sys.stderr)
-        ret = 98
-    except Exception:
-        print('Failed to train network.', sys.stderr)
-        ret = 99
+    if not skipTraining:
+        pyfilename = os.path.join(pyfilepath, 'ngransac_train_e2e_virtSequ.py')
+        cmdline = ['python', pyfilename, '--path', path, '--variant', variant_train, '--hyps', hyps_e2e,
+                   '--learningrate', str(learningrate_e2e), '--epochs', str(epochs_e2e),
+                   '--samplecount', str(samplecount), '--loss', loss]
+        if len(net_file) > 0:
+            cmdline += ['--model', net_file]
+        if refine_e2e:
+            cmdline.append('--refine')
+        if cmdline1:
+            cmdline += cmdline1
+        try:
+            ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
+                         check=True, timeout=691200).returncode
+        except sp.TimeoutExpired:
+            print('Timeout expired for training network.', sys.stderr)
+            ret = 98
+        except Exception:
+            print('Failed to train network.', sys.stderr)
+            ret = 99
 
-    if ret != 0 and ret != 98:
-        return ret
+        if ret != 0 and ret != 98:
+            return ret
 
     # Perform testing
-    pyfilename = os.path.join(pyfilepath, 'ngransac_test_virtSequ.py')
-    cmdline = ['python', pyfilename, '--path', path, '--variant', variantTest, '--hyps', hypsTest,
-               '--model', net_file, '--evalbinsize', str(evalbinsize)]
-    if refineTest:
-        cmdline.append('--refine')
-    if cmdline1:
-        cmdline += cmdline1
-    try:
-        ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
-                     check=True, timeout=259200).returncode
-    except sp.TimeoutExpired:
-        print('Timeout expired for testing network.', sys.stderr)
-        ret = 98
-    except Exception:
-        print('Failed to test network.', sys.stderr)
-        ret = 99
+    if not skipTest:
+        pyfilename = os.path.join(pyfilepath, 'ngransac_test_virtSequ.py')
+        cmdline = ['python', pyfilename, '--path', path, '--variant', variantTest, '--hyps', hypsTest,
+                   '--model', net_file, '--evalbinsize', str(evalbinsize)]
+        if refineTest:
+            cmdline.append('--refine')
+        if cmdline1:
+            cmdline += cmdline1
+        try:
+            ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
+                         check=True, timeout=86400).returncode
+        except sp.TimeoutExpired:
+            print('Timeout expired for testing network.', sys.stderr)
+            ret = 98
+        except Exception:
+            print('Failed to test network.', sys.stderr)
+            ret = 99
 
     return ret
 
@@ -180,6 +185,19 @@ def main():
                              'the program tries to find the number of available CPUs on the system - if it fails, '
                              'the absolute value of nrCPUs is used. Default: -6')
 
+    parser.add_argument('--skipInit', '-sin', type=bool, nargs='?', const=True, default=False, required=False,
+                        help='If provided, initializing network weights is skipped.')
+
+    parser.add_argument('--skipTraining', '-str', type=bool, nargs='?', const=True, default=False, required=False,
+                        help='If provided, training network is skipped.')
+
+    parser.add_argument('--skipTest', '-ste', type=bool, nargs='?', const=True, default=False, required=False,
+                        help='If provided, initializing network weights is skipped.')
+
+    parser.add_argument('--multmodels', '-mmo', type=str, nargs='+', default=None, required=False,
+                        help='like option model: load a model to continue training; Multiple names (including path) '
+                             'can be provided for parallel training of multiple models')
+
     opt = parser.parse_args()
 
     if opt.nrCPUs > 72 or opt.nrCPUs == 0:
@@ -221,7 +239,8 @@ def main():
                                opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session, opt.path, opt.hyps_e2e,
                                opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                                opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, opt.nfeatures,
-                               opt.threshold, opt.resblocks, opt.batchsize, opt.nosideinfo, opt.nrCPUs)
+                               opt.threshold, opt.resblocks, opt.batchsize, opt.nosideinfo, opt.nrCPUs,
+                               opt.skipInit, opt.skipTest, opt.skipTraining)
     else:
         if not opt.nfeaturesMult:
             opt.nfeaturesMult = [opt.nfeatures]
@@ -238,49 +257,82 @@ def main():
                     tmp.append(a + '_withSideInfo')
                     tmp.append(a + '_noSideInfo')
                 opt.multsessions = tmp
+        if opt.multmodels:
+            mnames = []
+            for name in opt.multmodels:
+                name1 = os.path.basename(name)
+                name2, _ = os.path.splitext(name1)
+                tmp = None
+                for i, ss in enumerate(opt.multsessions):
+                    if ss in name2:
+                        tmp = (i, name)
+                        break
+                if tmp:
+                    mnames.append(tmp)
+            if mnames:
+                mnames.sort(key=lambda k: k[0])
+                tmp = []
+                cnt = 0
+                for i in range(0, len(opt.multsessions)):
+                    if mnames[cnt][0] == i:
+                        tmp.append(mnames[cnt][1])
+                        cnt += 1
+                    else:
+                        tmp.append('')
+                opt.multmodels = tmp
+            else:
+                raise ValueError('Cannot find corresponding session strings to given models.')
+        elif len(opt.model) > 0:
+            opt.multmodels = [opt.model] * nr_training
+        else:
+            opt.multmodels = [''] * nr_training
         cpu_part = int(math.ceil(cpu_use / nr_training))
         cmds = []
         cnt = 0
         for features in opt.nfeaturesMult:
             batchsize = 1 if features == -1 else opt.batchsize
             if not opt.noAndSideinfo:
-                cmds.append((pyfilepath, opt.model, opt.variant_train, opt.learningrateInit, opt.epochsInit,
-                               opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
-                               opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
-                               opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
-                               opt.threshold, opt.resblocks, batchsize, opt.nosideinfo, cpu_part))
+                cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
+                             opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
+                             opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
+                             opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
+                             opt.threshold, opt.resblocks, batchsize, opt.nosideinfo, cpu_part,
+                             opt.skipInit, opt.skipTest, opt.skipTraining))
             else:
-                cmds.append((pyfilepath, opt.model, opt.variant_train, opt.learningrateInit, opt.epochsInit,
+                cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
                              opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                              opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
-                             opt.threshold, opt.resblocks, batchsize, False, cpu_part))
+                             opt.threshold, opt.resblocks, batchsize, False, cpu_part,
+                             opt.skipInit, opt.skipTest, opt.skipTraining))
                 cnt += 1
-                cmds.append((pyfilepath, opt.model, opt.variant_train, opt.learningrateInit, opt.epochsInit,
+                cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
                              opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                              opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
-                             opt.threshold, opt.resblocks, batchsize, True, cpu_part))
+                             opt.threshold, opt.resblocks, batchsize, True, cpu_part,
+                             opt.skipInit, opt.skipTest, opt.skipTraining))
+            cnt += 1
         res = 0
-        cnt_dot = 0
+        # cnt_dot = 0
         with MyPool(processes=cpu_use) as pool:
             results = [pool.apply_async(perform_training, t) for t in cmds]
 
             for r in results:
                 time_out_cnt = 0
                 while 1:
-                    sys.stdout.flush()
+                    # sys.stdout.flush()
                     try:
-                        res += r.get(2.0)
+                        res += r.get(100.0)
                         break
                     except multiprocessing.TimeoutError:
-                        if cnt_dot >= 90:
-                            print()
-                            cnt_dot = 0
-                        sys.stdout.write('.')
-                        cnt_dot = cnt_dot + 1
+                        # if cnt_dot >= 90:
+                        #     print()
+                        #     cnt_dot = 0
+                        # sys.stdout.write('.')
+                        # cnt_dot = cnt_dot + 1
                         time_out_cnt += 1
-                        if time_out_cnt > 518400:
+                        if time_out_cnt > 12096:
                             res = 4
                             print('Timeout for executing python process for starting autocalib reached.')
                             pool.terminate()

@@ -126,8 +126,12 @@ for epoch in range(0, opt.epochs):
 		optimizer.step() 
 		optimizer.zero_grad()
 
-		print("Iteration: ", iteration, "Loss: ", float(loss))
-		train_log.write('%d %f\n' % (iteration, loss))
+		if epoch % 4 == 0:
+			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", float(loss))
+			train_log.write('%d %f\n' % (iteration, loss))
+		elif iteration % 100 == 0:
+			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", float(loss))
+			train_log.write('%d %f\n' % (iteration, loss))
 
 		iteration += 1
 		
