@@ -22,10 +22,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
-"""
 
-"""
-Global lock variable and initialization
+Description: Global lock variable and initialization
 """
 from NamedAtomicLock import NamedAtomicLock
 import warnings
