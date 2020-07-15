@@ -301,7 +301,8 @@ def main():
                 for i in range(0, len(opt.multsessions)):
                     if mnames[cnt][0] == i:
                         tmp.append(mnames[cnt][1])
-                        cnt += 1
+                        if cnt < len(mnames) - 1:
+                            cnt += 1
                     else:
                         tmp.append('')
                 opt.multmodels = tmp
