@@ -338,6 +338,9 @@ def main():
                              opt.threshold, opt.resblocks, batchsize, False, cpu_part,
                              opt.skipInit, opt.skipTest, opt.skipTraining))
                 cnt += 1
+                if features == 3000:
+                    cnt += 1
+                    continue
                 cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
                              opt.fmat, opt.orb, opt.rootsift, 1.0, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
