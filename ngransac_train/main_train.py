@@ -320,8 +320,12 @@ def main():
             else:
                 batchsize = opt.batchsize
             if not opt.noAndSideinfo:
+                if(opt.nosideinfo):
+                    ratio = 1.0
+                else:
+                    ratio = opt.ratio
                 cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
-                             opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
+                             opt.fmat, opt.orb, opt.rootsift, ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                              opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
                              opt.threshold, opt.resblocks, batchsize, opt.nosideinfo, cpu_part,
@@ -335,7 +339,7 @@ def main():
                              opt.skipInit, opt.skipTest, opt.skipTraining))
                 cnt += 1
                 cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
-                             opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
+                             opt.fmat, opt.orb, opt.rootsift, 1.0, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                              opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
                              opt.threshold, opt.resblocks, batchsize, True, cpu_part,
