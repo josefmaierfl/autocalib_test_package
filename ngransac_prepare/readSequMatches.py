@@ -75,13 +75,54 @@ def configure_logging(message_path, base_name, already_set=False):
     return excmess, log
 
 
+def get_list_from_str(value):
+    if isinstance(value, str):
+        tmp = value.strip()
+        if ' ' in tmp or '\n' in tmp:
+            tmp1 = tmp.split()
+            for i, elem in enumerate(tmp1):
+                tmp1[i] = convertTInitType(elem)
+                if i > 0 and type(tmp1[i]) != type(tmp1[i - 1]):
+                    return value
+            return tmp1
+        else:
+            return tmp
+    else:
+        return value
+
+
+def convertTInitType(value):
+    if isinstance(value, str):
+        if '"' in value:
+            return get_list_from_str(value.replace('"', ''))
+        else:
+            try:
+                tmp = int(value)
+                return tmp
+            except ValueError:
+                try:
+                    tmp = float(value)
+                    return tmp
+                except ValueError:
+                    return get_list_from_str(value)
+    else:
+        return value
+
+
 class XmlListConfig(list):
     def __init__(self, aList):
         for element in aList:
             if element:
                 # treat like dict
                 if len(element) == 1 or element[0].tag != element[1].tag:
-                    self.append(XmlDictConfig(element))
+                    aDict = XmlDictConfig(element)
+                    if 'type_id' in aDict and aDict['type_id'] == 'opencv-matrix':
+                        mat = np.array(aDict["data"])
+                        # mat = np.fromstring(aDict["data"], dtype=float, sep=' ')
+                        mat.resize(aDict["rows"], aDict["cols"])
+                        self.append(mat)
+                    else:
+                        self.append(aDict)
                 # treat like list
                 elif element[0].tag == element[1].tag:
                     self.append(XmlListConfig(element))
@@ -113,6 +154,7 @@ class XmlDictConfig(dict):
             if element:
                 # treat like dict - we assume that if the first two tags
                 # in a series are different, then they are all different.
+                is_list = False
                 if len(element) == 1 or element[0].tag != element[1].tag:
                     aDict = XmlDictConfig(element)
                 # treat like list - we assume that if the first two tags
@@ -121,11 +163,22 @@ class XmlDictConfig(dict):
                     # here, we put the list in dictionary; the key is the
                     # tag name the list elements all share in common, and
                     # the value is the list itself
-                    aDict = {element[0].tag: XmlListConfig(element)}
+                    if element[0].tag == '_':
+                        aDict = XmlListConfig(element)
+                        is_list = True
+                    else:
+                        aDict = {element[0].tag: XmlListConfig(element)}
                 # if the tag has attributes, add those to the dict
                 if element.items():
                     aDict.update(dict(element.items()))
-                self.update({element.tag: aDict})
+                # Check for OpenCV matrices
+                if not is_list and 'type_id' in aDict and aDict['type_id'] == 'opencv-matrix':
+                    mat = np.array(aDict["data"])
+                    # mat = np.fromstring(aDict["data"], dtype=float, sep=' ')
+                    mat.resize(aDict["rows"], aDict["cols"])
+                    self.update({element.tag: mat})
+                else:
+                    self.update({element.tag: aDict})
             # this assumes that if you've got an attribute in a tag,
             # you won't be having any text. This may or may not be a
             # good idea -- time will tell. It works for the way we are
@@ -135,7 +188,7 @@ class XmlDictConfig(dict):
             # finally, if there are no child tags and no attributes, extract
             # the text
             else:
-                self.update({element.tag: element.text})
+                self.update({element.tag: convertTInitType(element.text.strip())})
 
 
 def opencv_matrix_constructor(loader, node):
@@ -199,7 +252,7 @@ def readYamlOrXml(file, isSingleWrite=False):
             data = readOpenCVYaml(f_str, True, isSingleWrite)
     else:
         if is_xml:
-            tree = ElementTree.parse('your_file.xml')
+            tree = ElementTree.parse(file)
             root = tree.getroot()
             data = XmlDictConfig(root)
         else:
@@ -708,7 +761,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate configuration files and overview files for scenes by '
                                                  'varying the used inlier ratio and keypoint accuracy')
     parser.add_argument('--path', type=str, required=True,
-                        help='Directory holding template configuration files')
+                        help='Directory holding sequences and file sequInfos.yaml/yml/xml')
     parser.add_argument('--path_out', type=str, required=False,
                         help='Directory for storing converted data')
     parser.add_argument('--validatePort', type=float, required=False, default=0.2,
