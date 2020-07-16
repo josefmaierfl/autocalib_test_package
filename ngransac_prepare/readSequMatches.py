@@ -83,7 +83,9 @@ def get_list_from_str(value):
             for i, elem in enumerate(tmp1):
                 tmp1[i] = convertTInitType(elem)
                 if i > 0 and type(tmp1[i]) != type(tmp1[i - 1]):
-                    return value
+                    if not ((isinstance(tmp1[i], float) or isinstance(tmp1[i], int)) and
+                            (isinstance(tmp1[i - 1], float) or isinstance(tmp1[i - 1], int))):
+                        return value
             return tmp1
         else:
             return tmp
@@ -129,7 +131,7 @@ class XmlListConfig(list):
             elif element.text:
                 text = element.text.strip()
                 if text:
-                    self.append(text)
+                    self.append(convertTInitType(text))
 
 
 class XmlDictConfig(dict):
