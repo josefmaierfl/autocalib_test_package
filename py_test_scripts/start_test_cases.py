@@ -198,7 +198,7 @@ def choose_test(path_ov_file, executable, cpu_cnt, message_path, output_path, te
         # args += ['--refineRT', '2', '2']
         args += ['--RobMethod', 'NGRANSAC']
         args += ['--ngransacModel', 'weights_e2e_E_orb_r1.00_',
-                 'weights_e2e_E_orb_r0.80_nfeat-1_noSideInfo',
+                 'weights_e2e_E_orb_r1.00_nfeat-1_noSideInfo',
                  'weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo',
                  'weights_e2e_E_orb_r0.80_nfeat3000_withSideInfo']
         args += ['--th', '0.6', '2.0', '0.2']

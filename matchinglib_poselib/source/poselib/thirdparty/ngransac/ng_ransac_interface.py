@@ -44,11 +44,12 @@ import util
 from copy import deepcopy
 import eval_mutex as em
 import time
+import re
 from pathlib import Path
 from pynvml import *
 
 
-def start_ngransac(pts1, pts2, model_file, threshold=0.001, gpu_nr=-1, K1=None, K2=None):
+def start_ngransac(pts1, pts2, ratios, model_file, threshold=0.001, gpu_nr=-1, K1=None, K2=None):
     # pts1 & pts2 list of tuples with matching image locations
     gpu_mutex = em.Locking('gpu_mem_acqu')
     file_mutex = em.Locking('file_write')
@@ -69,6 +70,13 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, gpu_nr=-1, K1=None, 
         model_file = util.create_session_string('e2e', fmat, orb, rootsift, ratio, session)
         model_file = 'models/weights_' + model_file + '.net'
         # print("No model file specified. Inferring pre-trained model from given parameters:", model_file)
+    else:
+        mobj = re.search(r'_r([0-9\.]+)_', model_file)
+        if mobj:
+            ratio = float(mobj.group(1))
+        else:
+            ratio = 1.0
+        model_file = 'models/' + model_file
     resblocks = 12 # number of res blocks of the network
     hyps = 1000 # number of hypotheses, i.e. number of RANSAC iterations
     rec_mem = read_max_used_mem(file2_mutex, mfile)
@@ -127,9 +135,11 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, gpu_nr=-1, K1=None, 
             if gpu_nr < 0:
                 gpu_mutex.release_lock()
             # print("Successfully loaded model.")
-
-            ratios = np.array([[0] * len(pts1)])
-            ratios = np.expand_dims(ratios, 2)
+            if ratio < 0.999:
+                ratios1 = np.array([ratios])
+            else:
+                ratios1 = np.array([[0] * len(pts1)])
+            ratios1 = np.expand_dims(ratios1, 2)
             pts1 = np.array([deepcopy(pts1)])
             pts2 = np.array([deepcopy(pts2)])
 
@@ -139,7 +149,7 @@ def start_ngransac(pts1, pts2, model_file, threshold=0.001, gpu_nr=-1, K1=None, 
                 pts2 = cv2.undistortPoints(pts2, K2, None)
 
             # create data tensor of feature coordinates and matching ratios
-            correspondences = np.concatenate((pts1, pts2, ratios), axis=2)
+            correspondences = np.concatenate((pts1, pts2, ratios1), axis=2)
             correspondences = np.transpose(correspondences)
             correspondences = torch.from_numpy(correspondences).float()
             # print('Converted to torch')

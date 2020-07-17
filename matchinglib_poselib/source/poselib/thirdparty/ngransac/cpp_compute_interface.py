@@ -36,9 +36,9 @@ class Compute(ComputeInstance):
             if o.K1 or o.K2:
                 K1 = np.reshape(np.array(o.K1), (3, 3), order='C')
                 K2 = np.reshape(np.array(o.K2), (3, 3), order='C')
-                result = start_ngransac(o.pts1, o.pts2, o.model_file_name, o.threshold, o.gpu_nr, K1, K2)
+                result = start_ngransac(o.pts1, o.pts2, o.ratios, o.model_file_name, o.threshold, o.gpu_nr, K1, K2)
             else:
-                result = start_ngransac(o.pts1, o.pts2, o.model_file_name, o.threshold, o.gpu_nr)
+                result = start_ngransac(o.pts1, o.pts2, o.ratios, o.model_file_name, o.threshold, o.gpu_nr)
         except:
             e = sys.exc_info()
             print(str(e))

@@ -627,6 +627,7 @@ bool writeResultsOverview(const string &path,
                           const string &ovf_ext1part,
                           const calibPars &cp,
                           const string &resultsFileName);
+void calcRatios(const cv::Mat &descr1, const cv::Mat &descr2, const std::vector<float> &dists, std::vector<double> &ratios);
 
 int SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[])
 {
@@ -1706,6 +1707,7 @@ bool startEvaluation(ArgvParser& cmd)
     std::list<std::pair<int, int>> nrFeatures;
     std::list<std::vector<cv::DMatch>> matches_accum;
     std::list<std::vector<bool>> frameInliers_accum;
+    std::list<cv::Mat> descr1_accum, descr2_accum;
     int gpu_nr = -1;
     for(int i = 0; i < (int)filenamesMatches.size(); i++)
     {
@@ -1769,10 +1771,15 @@ bool startEvaluation(ArgvParser& cmd)
             }
 			//Extract coordinates from keypoints
 			vector<cv::Point2f> points1, points2;
+            cv::Mat descr1, descr2;
+            descr1.reserve(finalMatches.size());
+            descr2.reserve(finalMatches.size());
 			for (auto &j : finalMatches)
 			{
 				points1.push_back(kp1[j.queryIdx].pt);
 				points2.push_back(kp2[j.trainIdx].pt);
+                descr1.push_back(sm.frameDescriptors1.row(j.queryIdx));
+                descr2.push_back(sm.frameDescriptors2.row(j.trainIdx));
 			}
 
 			if (verbose > 3)
@@ -1799,6 +1806,8 @@ bool startEvaluation(ArgvParser& cmd)
                 matches_accum.push_back(finalMatches);
                 nrFeatures.emplace_back(std::make_pair((int)kp1.size(), (int)kp2.size()));
                 frameInliers_accum.push_back(sm.frameInliers);
+                descr1_accum.emplace_back(descr1.clone());
+                descr2_accum.emplace_back(descr2.clone());
 			    if (i >= accumCorrs){
                     nrFeatures.pop_front();
                     kp1_accum.pop_front();
@@ -1807,6 +1816,8 @@ bool startEvaluation(ArgvParser& cmd)
                     points2_accum.pop_front();
                     matches_accum.pop_front();
                     frameInliers_accum.pop_front();
+                    descr1_accum.pop_front();
+                    descr2_accum.pop_front();
 			    }
 			    ar[i].ransac_agg = (int)frameInliers_accum.size();
 			    if(kp1_accum.size() > 1) {
@@ -1817,8 +1828,12 @@ bool startEvaluation(ArgvParser& cmd)
                     auto m_it = matches_accum.begin();
                     auto nrf_it = nrFeatures.begin();
                     auto finl_it = frameInliers_accum.begin();
+                    auto descr1_it = descr1_accum.begin();
+                    auto descr2_it = descr2_accum.begin();
                     std::pair<int, int> zero_idx = *nrf_it;
                     std::vector<bool> frame_inl_tmp = *finl_it;
+                    descr1 = descr1_it->clone();
+                    descr2 = descr2_it->clone();
                     kp1 = *kp1_it;
                     kp2 = *kp2_it;
                     points1 = *p1_it;
@@ -1832,6 +1847,8 @@ bool startEvaluation(ArgvParser& cmd)
                         m_it++;
                         nrf_it++;
                         finl_it++;
+                        descr1_it++;
+                        descr2_it++;
                         kp1.insert(kp1.end(), kp1_it->begin(), kp1_it->end());
                         kp2.insert(kp2.end(), kp2_it->begin(), kp2_it->end());
                         points1.insert(points1.end(), p1_it->begin(), p1_it->end());
@@ -1845,10 +1862,21 @@ bool startEvaluation(ArgvParser& cmd)
                         zero_idx.first += nrf_it->first;
                         zero_idx.second += nrf_it->second;
                         frame_inl_tmp.insert(frame_inl_tmp.end(), finl_it->begin(), finl_it->end());
+                        cv::vconcat(descr1, *descr1_it, descr1);
+                        cv::vconcat(descr2, *descr2_it, descr2);
                     }
                     ar[i].calcInlRatGT(frame_inl_tmp);
                 }
 			}
+
+            std::vector<double> ratios;
+            if(cp.RobMethod == "NGRANSAC"){
+                vector<float> descrDists;
+                for (auto &j : finalMatches){
+                    descrDists.push_back(j.distance);
+                }
+                calcRatios(descr1, descr2, descrDists, ratios);
+            }
 
 			if (verbose > 1)
 			{
@@ -1960,7 +1988,7 @@ bool startEvaluation(ArgvParser& cmd)
 			}
 			else if(cp.RobMethod == "NGRANSAC"){
 			    int inliers = 0;
-                inliers = py_interface.call_ngransac(ngransacModel, th, points1, points2, E, mask, gpu_nr);
+                inliers = py_interface.call_ngransac(ngransacModel, th, points1, points2, ratios, E, mask, gpu_nr);
                 if(inliers < 0){
                     failNr++;
                     if ((float)failNr / (float)filenamesRt.size() < 0.5f)
@@ -3288,6 +3316,25 @@ FileStorage& operator << (FileStorage& fs, bool &value)
     }
 
     return (fs << 0);
+}
+
+void calcRatios(const cv::Mat &descr1, const cv::Mat &descr2, const std::vector<float> &dists, std::vector<double> &ratios){
+    bool use_hamming = descr1.type() == CV_8UC1;
+    ratios.clear();
+    for(int i = 0; i < descr1.rows; ++i){
+        auto di2 = DBL_MAX;
+        auto di1 = static_cast<double>(dists[i]);
+        for(int j = 0; j < descr2.rows; ++j){
+            double di3 = 0;
+            if(use_hamming){
+                di3 = cv::norm(descr1.row(i), descr2.row(j), cv::NORM_HAMMING);
+            }else{
+                di3 = cv::norm(descr1.row(i), descr2.row(j), cv::NORM_L2);
+            }
+            if(di1 < di3 && di3 < di2) di2 = di3;
+        }
+        ratios.emplace_back((di1 + 1e-8) / (di2 + 1e-8));
+    }
 }
 
 /** @function main */

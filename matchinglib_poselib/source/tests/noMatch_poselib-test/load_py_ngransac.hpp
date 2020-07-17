@@ -90,41 +90,44 @@ std::vector<double> mat2vec(const cv::Mat &data){
 }
 
 struct Py_input{
-        std::string model_file_name;
-        double threshold;
-        bp::list pts1, pts2;
-        bp::list K1, K2;
-        int gpu_nr;
+    std::string model_file_name;
+    double threshold;
+    bp::list pts1, pts2;
+    bp::list ratios;
+    bp::list K1, K2;
+    int gpu_nr;
 
-        Py_input(const std::string &model_file_name_,
-                const double &threshold_,
-                const std::vector<cv::Point2f> &pts1_,
-                const std::vector<cv::Point2f> &pts2_,
-                const int &gpu_nr_,
-                cv::InputArray &K1_ = cv::noArray(),
-                cv::InputArray &K2_ = cv::noArray()):
-                model_file_name(model_file_name_),
-                threshold(threshold_),
-                gpu_nr(gpu_nr_){
-            std::vector<bp::tuple> pts1__ = vecCvPoints2vecPyTuple(pts1_);
-            std::vector<bp::tuple> pts2__ = vecCvPoints2vecPyTuple(pts2_);
-            pts1 = std_vector_to_py_list(pts1__);
-            pts2 = std_vector_to_py_list(pts2__);
+    Py_input(const std::string &model_file_name_,
+            const double &threshold_,
+            const std::vector<cv::Point2f> &pts1_,
+            const std::vector<cv::Point2f> &pts2_,
+            const std::vector<double> &ratios_,
+            const int &gpu_nr_,
+            cv::InputArray &K1_ = cv::noArray(),
+            cv::InputArray &K2_ = cv::noArray()):
+            model_file_name(model_file_name_),
+            threshold(threshold_),
+            gpu_nr(gpu_nr_){
+        std::vector<bp::tuple> pts1__ = vecCvPoints2vecPyTuple(pts1_);
+        std::vector<bp::tuple> pts2__ = vecCvPoints2vecPyTuple(pts2_);
+        pts1 = std_vector_to_py_list(pts1__);
+        pts2 = std_vector_to_py_list(pts2__);
+        ratios = std_vector_to_py_list(ratios_);
 
-            if(!K1_.empty() && !K2_.empty()) {
-                std::vector<double> K1__ = mat2vec(K1_.getMat());
-                std::vector<double> K2__ = mat2vec(K2_.getMat());
-                K1 = std_vector_to_py_list(K1__);
-                K2 = std_vector_to_py_list(K2__);
-            }
+        if(!K1_.empty() && !K2_.empty()) {
+            std::vector<double> K1__ = mat2vec(K1_.getMat());
+            std::vector<double> K2__ = mat2vec(K2_.getMat());
+            K1 = std_vector_to_py_list(K1__);
+            K2 = std_vector_to_py_list(K2__);
         }
+    }
 
-        Py_input(){
-            model_file_name = "";
-            threshold = 0.001;
-            gpu_nr = -1;
-        }
-    };
+    Py_input(){
+        model_file_name = "";
+        threshold = 0.001;
+        gpu_nr = -1;
+    }
+};
 
 struct Py_output{
     unsigned int nr_inliers;
@@ -186,6 +189,7 @@ public:
                       const double &threshold,
                       const std::vector<cv::Point2f> &points1,
                       const std::vector<cv::Point2f> &points2,
+                      const std::vector<double> &ratios,
                       cv::Mat &model,
                       cv::Mat &mask,
                       int &gpu_nr,

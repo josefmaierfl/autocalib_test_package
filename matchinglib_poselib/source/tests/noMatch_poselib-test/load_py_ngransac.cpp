@@ -32,6 +32,7 @@ BOOST_PYTHON_MODULE(ComputeFramework)
             .def_readonly("threshold", &Py_input::threshold)
             .def_readonly("pts1", &Py_input::pts1)
             .def_readonly("pts2", &Py_input::pts2)
+            .def_readonly("ratios", &Py_input::ratios)
             .def_readonly("gpu_nr", &Py_input::gpu_nr)
             .def_readonly("K1", &Py_input::K1)
             .def_readonly("K2", &Py_input::K2)
@@ -90,6 +91,7 @@ int ngransacInterface::call_ngransac(const std::string &model_file_name,
                                      const double &threshold,
                                      const std::vector<cv::Point2f> &points1,
                                      const std::vector<cv::Point2f> &points2,
+                                     const std::vector<double> &ratios,
                                      cv::Mat &model,
                                      cv::Mat &mask,
                                      int &gpu_nr,
@@ -99,7 +101,7 @@ int ngransacInterface::call_ngransac(const std::string &model_file_name,
         return -1;
     }
     try {
-        data = Py_input(model_file_name, threshold, points1, points2, gpu_nr, K1, K2);
+        data = Py_input(model_file_name, threshold, points1, points2, ratios, gpu_nr, K1, K2);
         bp::object compute = compute_module();
         bp::object py_out = compute.attr("compute")(data);
         bp::list model_ = bp::extract<bp::list>(py_out[0]);
