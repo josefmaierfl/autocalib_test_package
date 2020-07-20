@@ -2849,7 +2849,15 @@ void writeTestingParameters(cv::FileStorage &fs,
     if(cp.ngransacModel.empty() || cp.RobMethod != "NGRANSAC") {
         fs << "RobMethod" << cp.RobMethod;
     }else{
-        fs << "RobMethod" << (cp.RobMethod + "_" + cp.ngransacModel);
+        string tmp;
+        const string pre = "weights_e2e_";
+        size_t pos = cp.ngransacModel.find(pre);
+        if(pos != string::npos){
+            tmp = cp.ngransacModel.substr(pos + pre.size());
+        }else{
+            tmp = cp.ngransacModel;
+        }
+        fs << "RobMethod" << (cp.RobMethod + "_" + tmp);
     }
     fs << "USAC_parameters" << "{";
     fs << "th_pixels" << cp.cfg.th_pixels;
