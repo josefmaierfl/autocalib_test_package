@@ -95,7 +95,7 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
     # Perform e2e training
     if not skipTraining:
         pyfilename = os.path.join(pyfilepath, 'ngransac_train_e2e_virtSequ.py')
-        cmdline = ['python', pyfilename, '--path', path, '--variant', variant_train, '--hyps', hyps_e2e,
+        cmdline = ['python', pyfilename, '--path', path, '--variant', variant_train, '--hyps', str(hyps_e2e),
                    '--learningrate', str(learningrate_e2e), '--epochs', str(epochs_e2e),
                    '--samplecount', str(samplecount), '--loss', loss]
         if len(net_file) > 0:
@@ -370,7 +370,7 @@ def main():
                         time_out_cnt += 1
                         if time_out_cnt > 12096:
                             res = 4
-                            print('Timeout for executing python process for starting autocalib reached.')
+                            print('Timeout for executing python process for training ngransac.')
                             pool.terminate()
                             break
                     except ChildProcessError:
