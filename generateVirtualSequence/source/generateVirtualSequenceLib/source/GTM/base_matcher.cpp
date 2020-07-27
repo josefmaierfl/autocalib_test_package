@@ -51,10 +51,12 @@
 #include "GTM/inscribeRectangle.h"
 
 #include "imgFeatures.h"
+#include "GTM/nanoflannInterface.h"
 
 #if __linux__
 #if defined(USE_MANUAL_ANNOTATION)
 #include "QMessageBox"
+#include <QCoreApplication>
 #endif
 #else
 #include "winuser.h"
@@ -115,9 +117,12 @@ void findLocalMin(const Mat& patchL, const Mat& patchR, float quarterpatch, floa
  * string _imgsPath				Input  -> Path to the images which is necessary for loading and storing the ground truth matches
  *
  */
-baseMatcher::baseMatcher(std::string _featuretype, std::string _imgsPath, std::string _descriptortype,
-                         uint32_t verbose_, std::mt19937 *rand2_, bool refineGTM_) :
+baseMatcher::baseMatcher(std::string _featuretype, std::string _imgsPath, std::string _descriptortype, bool randGTMfolders_,
+                         uint32_t verbose_, std::mt19937 *rand2_, bool refineGTM_, bool only_MD_flow_, bool noPool_) :
         refineGTM(refineGTM_),
+        only_MD_flow(only_MD_flow_),
+        noPool(noPool_),
+        randGTMfolders(randGTMfolders_),
         rand2ptr(rand2_),
         verbose(verbose_),
         inlRatio(0),
@@ -197,6 +202,8 @@ int baseMatcher::filterInitFeaturesGT()
 	vector<size_t> border_dellistL; //Indices of keypoints in the left image that are too near at the border
 	auto h = static_cast<float>(flowGT.rows);
 	auto w = static_cast<float>(flowGT.cols);
+    auto h21 = static_cast<float>(imgs[1].rows);
+    auto w21 = static_cast<float>(imgs[1].cols);
 	vector<Mat> channelsFlow(3);
 	vector<std::pair<size_t, float>> nearest_dist, second_nearest_dist;
     leftInlier.clear();
@@ -717,9 +724,9 @@ int baseMatcher::filterInitFeaturesGT()
     {
         int x, y;
         float nfx, nfy;
-        channels21.emplace_back(Mat(flowGT.rows, flowGT.cols, CV_32FC1, -1.0));
-        channels21.emplace_back(Mat(flowGT.rows, flowGT.cols, CV_32FC1, -1.0));
-        channels21.emplace_back(Mat(flowGT.rows, flowGT.cols, CV_32FC1, -1.0));
+        channels21.emplace_back(Mat(imgs[1].rows, imgs[1].cols, CV_32FC1, -1.0));
+        channels21.emplace_back(Mat(imgs[1].rows, imgs[1].cols, CV_32FC1, -1.0));
+        channels21.emplace_back(Mat(imgs[1].rows, imgs[1].cols, CV_32FC1, -1.0));
         for(int v = 0; v < flowGT.rows; v++)
         {
             for(int u = 0; u < flowGT.cols; u++)
@@ -730,7 +737,7 @@ int baseMatcher::filterInitFeaturesGT()
                     nfy = channelsFlow[1].at<float>(v, u);
                     x = static_cast<int>(floor(static_cast<float>(u) + nfx + 0.5f));
                     y = static_cast<int>(floor(static_cast<float>(v) + nfy + 0.5f));
-                    if((x > 0) && (static_cast<float>(x) < w) && (y > 0) && (static_cast<float>(y) < h))
+                    if((x > 0) && (static_cast<float>(x) < w21) && (y > 0) && (static_cast<float>(y) < h21))
                     {
                         channels21[0].at<float>(static_cast<int>(y), static_cast<int>(x)) = -1.0f * nfx;
                         channels21[1].at<float>(static_cast<int>(y), static_cast<int>(x)) = -1.0f * nfy;
@@ -754,7 +761,7 @@ int baseMatcher::filterInitFeaturesGT()
                         {
                             x = u + dx;
                             y = v + dy;
-                            if((x > 0) && (static_cast<float>(x) < w) && (y > 0) && (static_cast<float>(y) < h))
+                            if((x > 0) && (static_cast<float>(x) < w21) && (y > 0) && (static_cast<float>(y) < h21))
                             {
                                 if(channels21[2].at<float>(y, x) > 0)
                                 {
@@ -918,7 +925,7 @@ int baseMatcher::filterInitFeaturesGT()
                     //		{
                     //			xd = hlp.x + dx;
                     //			yd = hlp.y + dy;
-                    //			if((xd > 0) && (xd < (int)w) && (yd > 0) && (yd < (int)h))
+                    //			if((xd > 0) && (xd < (int)w21) && (yd > 0) && (yd < (int)h21))
                     //			{
                     //				if(channels21[2].at<float>(yd, xd) == 0)
                     //					break;
@@ -2680,14 +2687,53 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 	cv::Size imgSize;
 	Mat img_tmp[2], img_exch[2];
 #if defined(USE_MANUAL_ANNOTATION)
+    const int selMult = 4;
     int patchsizeShow = 3 * patchsizeOrig;
     int patchSelectShow = selMult * patchsizeOrig;
-    const int selMult = 4;
 	int textheight = 100;//80;//30;
 	int bottomtextheight = 20;
     int maxHorImgSize = 800;
     int maxVerImgSize;
 	Mat composed;
+
+    vector<vector<double>> StaticSamplesizes; //Elements of 2nd vector: p, e, n
+    double p = 0.5, maxmaxSampleSize, sampleRatio0, minminSampleSize;
+    static int nrGTmatchesDataset = 0;
+    nrGTmatchesDataset += GTsi;
+    while(p >= 0.0001)
+    {
+        vector<double> oneSample(3);
+        oneSample[0] = p;
+        getMinSampleSize(nrGTmatchesDataset, oneSample[0], oneSample[1], oneSample[2]);
+        StaticSamplesizes.push_back(oneSample);
+        if(StaticSamplesizes.size() == 1)
+        {
+            maxmaxSampleSize = oneSample[2];
+            minminSampleSize = oneSample[2];
+        }
+        else if(maxmaxSampleSize < oneSample[2])
+        {
+            maxmaxSampleSize = oneSample[2];
+        }
+        else if(minminSampleSize > oneSample[2])
+        {
+            minminSampleSize = oneSample[2];
+        }
+        if(p > 0.1 + DBL_EPSILON)
+            p -= 0.1;
+        else if(p > 0.05 + DBL_EPSILON)
+            p -= 0.05;
+        else if(p > 0.01 + DBL_EPSILON)
+            p -= 0.01;
+        else if(p > 0.001 + DBL_EPSILON)
+            p -= 0.001;
+        else if(p > 0.0001 + DBL_EPSILON)
+            p -= 0.0001;
+        else
+            break;
+    }
+    sampleRatio0 = maxmaxSampleSize/(double)nrGTmatchesDataset;
+    samples = static_cast<int>(round(sampleRatio0 * static_cast<double>(GTsi)));
 #endif
 	Mat homoGT_exch;
 	vector<int> used_matches;
@@ -2695,6 +2741,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 	vector<std::pair<int,double>> wrongGTidxDist;
 	vector<Mat> channelsFlow(3);
 	static bool autoHestiSift = true;
+	const bool useKpSearch = true;
 	maxSampleSize = samples > GTsi ? GTsi:samples;
 
 	CV_Assert(!(patchsizeOrig % 16));
@@ -2778,7 +2825,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
     if(featureType == "SIFT"){
         detector = xfeatures2d::SIFT::create();
     }else if(featureType == "ORB"){
-        detector = cv::ORB::create(500, 1.2, 8, 31, 0, 4);
+        detector = cv::ORB::create(5000, 1.1, 24, 31, 0, 4);
     }else{
         cerr << "Only SIFT and ORB features are supported for refining GTM." << endl;
         return false;
@@ -2792,32 +2839,54 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
     if(featureType == "SIFT"){
         extractor = xfeatures2d::SIFT::create();
     }else{
-        extractor = cv::ORB::create(500, 1.2, 8, 31, 0, 4);
+        extractor = cv::ORB::create(5000, 1.1, 24, 31, 0, 4);
     }
 	if(extractor.empty())
 	{
 		cout << "Cannot create descriptor extractor!" << endl;
 		return false; //Cannot create descriptor extractor
 	}
+	vector<KeyPoint> kp1_all, kp2_all;
+	Mat descr1_all, descr2_all;
+	const float radius_kd = 2 * halfpatch * halfpatch;//1.414214f * halfpatch;
+    keyPointTreeInterface kdtree1(&kp1_all), kdtree2(&kp2_all);
+    KeypointDescriptorIndexer descrSearch1, descrSearch2;
+    if(flowGtIsUsed && autoHestiSift && useKpSearch){
+        kdtree1.buildInitialTree();
+        kdtree2.buildInitialTree();
+        detector->detect(img_tmp[0], kp1_all);//extract keypoints in the left patch
+        detector->detect(img_tmp[1], kp2_all);//extract keypoints in the right patch
+        extractor->compute(img_tmp[0], kp1_all, descr1_all);//compute descriptors for the keypoints
+        extractor->compute(img_tmp[1], kp2_all, descr2_all);//compute descriptors for the keypoints
+        kdtree1.addElements(0, kp1_all.size());
+        kdtree2.addElements(0, kp2_all.size());
+        descrSearch1 = KeypointDescriptorIndexer(kp1_all, descr1_all);
+        descrSearch2 = KeypointDescriptorIndexer(kp2_all, descr2_all);
+    }
+
+    vector<int> shuffledIdx(GTsi);
+    iota(shuffledIdx.begin(), shuffledIdx.end(), 0);
+    std::shuffle(shuffledIdx.begin(), shuffledIdx.end(), *rand2ptr);
 
 	if(maxSampleSize < GTsi) {
         srand(time(nullptr));
     }
-	for(int i = 0; i < maxSampleSize; i++)
+	for(int i = 0; i < GTsi; i++)
 	{
         int idx = i;
         if(maxSampleSize < GTsi) {
-            idx = rand2() % GTsi;
-            {
-                int j = 0;
-                while (j < (int) used_matches.size()) {
-                    idx = rand2() % GTsi;
-                    for (j = 0; j < (int) used_matches.size(); j++) {
-                        if (idx == used_matches[j])
-                            break;
-                    }
-                }
-            }
+            idx = shuffledIdx[i];
+//            idx = rand2() % GTsi;
+//            {
+//                int j = 0;
+//                while (j < (int) used_matches.size()) {
+//                    idx = rand2() % GTsi;
+//                    for (j = 0; j < (int) used_matches.size(); j++) {
+//                        if (idx == used_matches[j])
+//                            break;
+//                    }
+//                }
+//            }
             used_matches.push_back(idx);
         }
 
@@ -2841,23 +2910,50 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 				vector<cv::KeyPoint> lkpSift, rkpSift;
 				double angle_rot = 0, scale = 1.;
 				Mat D = Mat::ones(2,1, CV_64F), Rrot, Rdeform = Mat::eye(2,2,CV_64F);
-				mask = Mat::zeros(img_tmp[0].rows + patchsizeOrig, img_tmp[0].cols + patchsizeOrig, CV_8UC1);
-				mask(Rect(lkp.x, lkp.y, patchsizeOrig, patchsizeOrig)) = Mat::ones(patchsizeOrig, patchsizeOrig, CV_8UC1); //generate a mask to detect keypoints only within the image roi for the selected match
-				mask = mask(Rect(halfpatch, halfpatch, img_tmp[0].cols, img_tmp[0].rows));
-				detector->detect(img_tmp[0], lkpSift, mask);//extract SIFT keypoints in the left patch
+				if(!useKpSearch) {
+                    mask = Mat::zeros(img_tmp[0].rows + patchsizeOrig, img_tmp[0].cols + patchsizeOrig, CV_8UC1);
+                    mask(Rect(lkp.x, lkp.y, patchsizeOrig, patchsizeOrig)) = Mat::ones(patchsizeOrig, patchsizeOrig,
+                                                                                       CV_8UC1); //generate a mask to detect keypoints only within the image roi for the selected match
+                    mask = mask(Rect(halfpatch, halfpatch, img_tmp[0].cols, img_tmp[0].rows));
+                    detector->detect(img_tmp[0], lkpSift, mask);//extract SIFT keypoints in the left patch
+                }else{
+                    lkpSift.clear();
+                    std::vector<std::pair<size_t, float>> kd_result;
+                    kdtree1.radiusSearch(lkp, radius_kd, kd_result);
+                    for(auto &kdr: kd_result){
+                        lkpSift.push_back(kp1_all[kdr.first]);
+                    }
+				}
 				if(!lkpSift.empty())
 				{
-					mask = Mat::zeros(img_tmp[1].rows + patchsizeOrig, img_tmp[1].cols + patchsizeOrig, CV_8UC1);
-					mask(Rect(rkp.x, rkp.y, patchsizeOrig, patchsizeOrig)) = Mat::ones(patchsizeOrig, patchsizeOrig, CV_8UC1);
-					mask = mask(Rect(halfpatch, halfpatch, img_tmp[1].cols, img_tmp[1].rows));
-					detector->detect(img_tmp[1], rkpSift, mask);//extract SIFT keypoints in the right patch
+                    if(!useKpSearch) {
+                        mask = Mat::zeros(img_tmp[1].rows + patchsizeOrig, img_tmp[1].cols + patchsizeOrig, CV_8UC1);
+                        mask(Rect(rkp.x, rkp.y, patchsizeOrig, patchsizeOrig)) = Mat::ones(patchsizeOrig, patchsizeOrig,
+                                                                                           CV_8UC1);
+                        mask = mask(Rect(halfpatch, halfpatch, img_tmp[1].cols, img_tmp[1].rows));
+                        detector->detect(img_tmp[1], rkpSift, mask);//extract SIFT keypoints in the right patch
+                    }else{
+                        rkpSift.clear();
+                        std::vector<std::pair<size_t, float>> kd_result;
+                        kdtree2.radiusSearch(rkp, radius_kd, kd_result);
+                        for(auto &kdr: kd_result){
+                            rkpSift.push_back(kp2_all[kdr.first]);
+                        }
+                    }
 					if(!rkpSift.empty())
 					{
 						Mat ldescSift, rdescSift;
 						vector<vector<cv::DMatch>> matchesBf;
 						vector<cv::DMatch> matchesBfTrue;
-						extractor->compute(img_tmp[0], lkpSift, ldescSift);//compute descriptors for the SIFT keypoints
-						extractor->compute(img_tmp[1], rkpSift, rdescSift);//compute descriptors for the SIFT keypoints
+                        if(!useKpSearch) {
+                            extractor->compute(img_tmp[0], lkpSift,
+                                               ldescSift);//compute descriptors for the SIFT keypoints
+                            extractor->compute(img_tmp[1], rkpSift,
+                                               rdescSift);//compute descriptors for the SIFT keypoints
+                        }else{
+                            ldescSift = descrSearch1.getDescriptors(lkpSift);
+                            rdescSift = descrSearch2.getDescriptors(rkpSift);
+                        }
 						if(!lkpSift.empty() && !rkpSift.empty())
 						{
 							cv::BFMatcher matcher(NORM_L2, false);
@@ -2924,6 +3020,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 										rps.push_back(rkpSift[matchesBfTrue[k].trainIdx].pt);
 									}
 
+									bool additionalFilter = false;
 									if(matchesBfTrue.size() > 7) //Estimate a projective homography with RANSAC and remove outliers
 									{
 										Mat Hprmask;
@@ -2947,6 +3044,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 												lps = lps_tmp;
 												rps = rps_tmp;
 												msize = static_cast<int>(matchesBfTrue.size());
+                                                additionalFilter = true;
 											}
 										}
 									}
@@ -2996,17 +3094,23 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 											angle_rot = -1.0 * std::atan2(Rrot.at<double>(1,0), Rrot.at<double>(0,0)) * 180.0 / 3.14159265; //As sin, cos are defined counterclockwise, but cv::keypoint::angle is clockwise, multiply it with -1
 											double scalechange = scales_med / scale;
 											double rotchange = abs(angles_med - angle_rot);
-											if((scalechange > 1.1) || (1. / scalechange > 1.1))//Check the correctness of the scale and angle using the values from the homography and the SIFT keypoints
+                                            //Check the correctness of the scale and angle using the values from the homography and the SIFT keypoints
+											if((!additionalFilter && ((scalechange > 1.2) || (1. / scalechange > 1.2))) ||
+                                                    (additionalFilter && ((scalechange > 1.5) || (1. / scalechange > 1.5))))
 											{
 												if(rotchange < 11.25)
 												{
-													if((scale < 2.) && (scalechange < 2.))
-														scale = abs(1. - scale) < abs(1. - scales_med) ? scale : scales_med;
-													scale = (scale > 1.2) || (scale < 0.8) ? 1.0:scale;
+													if(scalechange < 2.) {
+                                                        scale = abs(1. - scale) < abs(1. - scales_med) ? scale
+                                                                                                       : scales_med;
+                                                    }else {
+                                                        scale = 1.;
+                                                    }
+//													scale = (scale > 1.2) || (scale < 0.8) ? 1.0:scale;
 
-													if(angles_med * angle_rot > 0)//angles should have the same direction
+													if(angles_med * angle_rot > 0 || (nearZero(angles_med, 5.) && nearZero(angle_rot, 5.)))//angles should have the same direction
 													{
-														if(abs(angle_rot) > abs(angles_med))
+														if(abs(angle_rot) > 1.2 * abs(angles_med))
 															angle_rot = (angle_rot + angles_med) / 2.0;
 													}
 													else
@@ -3382,7 +3486,22 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 //#endif
 		}else {
 #if defined(USE_MANUAL_ANNOTATION)//If defined, found GT matches can be additionally annotated manually
-            autoManualAnno.push_back('M');
+		    if(i < maxSampleSize) {
+                autoManualAnno.push_back('M');
+            }else{
+                stringstream ss;
+                distances.push_back(0);
+                autoManualAnno.push_back('U');
+                errvecs.emplace_back(0, 0);
+                matchesGT_idx.push_back(idx);
+                perfectMatches.emplace_back(rkp, lkp);
+                std::vector<int> validityValGT_tmp;
+                calcErrorToSpatialGT(perfectMatches.back().first, perfectMatches.back().second, channelsFlow, flowGtIsUsed,
+                                     errvecsGT, validityValGT_tmp, homoGT, lkp, rkp);
+                distancesGT.push_back(std::sqrt(errvecsGT.back().x * errvecsGT.back().x + errvecsGT.back().y * errvecsGT.back().y));
+                validityValGT.push_back(-1);
+                continue;
+		    }
             stringstream ss;
 #ifndef _DEBUG
             ss << "Diff: " << diffdist;
@@ -3519,18 +3638,18 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 #endif
             putText(composed, str.c_str(), cv::Point2d(patchSelectShow + 5, maxVerImgSize + textheight + patchsizeShow + 10), FONT_HERSHEY_SIMPLEX | FONT_ITALIC, 0.4, cv::Scalar(0, 0, 255));
 
-            str = "Press 'space' to accept the estimated or selected (preferred, if available) location, 'e' for the estimated, and 'i' for the initial location. Hit 'n' if not matchable, 's' to skip the match, and";
+            str = "Press 'space' to accept the estimated or selected (preferred, if available) location, 'e' for the estimated, and 'i' for the initial location. Hit 'n' if not matchable, 'j' to skip the match, and";
             putText(composed, str.c_str(), cv::Point2d(15, 15), FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
 #if LEFT_TO_RIGHT
-            str = "ESC to stop testing. To specify a new matching position, click at the desired position inside the area of 'left equal hist - select pt'. To refine the location, use the arrow keys.";
+            str = "ESC or 'q' to stop testing. To specify a new matching position, click at the desired position inside the area of 'left equal hist - select pt'. To refine the location, use the arrow or w, a, s,";
 #else
-            str = "ESC to stop testing. To specify a new matching position, click at the desired position inside the area of 'right equal hist - select pt'. To refine the location, use the arrow keys.";
+            str = "ESC or 'q' to stop testing. To specify a new matching position, click at the desired position inside the area of 'right equal hist - select pt'. To refine the location, use the arrow or w, a, s,";
 #endif
             putText(composed, str.c_str(), cv::Point2d(15, 35), FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
 #if LEFT_TO_RIGHT
-            str = "To select a new patch for manual refinement at a different location, hold 'Strg' while clicking at the desired center position inside the left image 'I1'. Press 'h' for more options.";
+            str = "and d keys. To select a new patch for manual refinement at a different location, hold 'Strg' while clicking at the desired center position inside the left image 'I1'. Press 'h' for more options.";
 #else
-            str = "To select a new patch for manual refinement at a different location, hold 'Strg' while clicking at the desired center position inside the left image 'I2'. Press 'h' for more options.";
+            str = "and d keys. To select a new patch for manual refinement at a different location, hold 'Strg' while clicking at the desired center position inside the left image 'I2'. Press 'h' for more options.";
 #endif
             putText(composed, str.c_str(), cv::Point2d(15, 55), FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
             {
@@ -3540,10 +3659,14 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                 putText(composed, str.c_str(), cv::Point2d(15, 73), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
             }
 
-            cv::namedWindow("GT match");
+            string windowName = "GT match";
+            cv::namedWindow(windowName, WINDOW_NORMAL | WINDOW_KEEPRATIO | WINDOW_GUI_EXPANDED);
+		    cv::resizeWindow(windowName, composed.size());
+            cv::setWindowProperty(windowName, WND_PROP_TOPMOST, 1);
             cv::Point2f winPos = cv::Point2f(-FLT_MAX, -FLT_MAX), winPos2 = cv::Point2f(-FLT_MAX, -FLT_MAX), winPosOld = cv::Point2f(-FLT_MAX, -FLT_MAX);
-            cv::setMouseCallback("GT match", on_mouse_click, (void*)(&winPos) );
-            cv::imshow("GT match",composed);
+            cv::setMouseCallback(windowName, on_mouse_click, (void*)(&winPos) );
+            cv::imshow(windowName,composed);
+            bool isAlive = cv::getWindowProperty(windowName, WND_PROP_VISIBLE) >= 1. - DBL_EPSILON;
             minmaxXY[0] = 0;//minX
             minmaxXY[1] = patchSelectShow;//maxX
             minmaxXY[2] = maxVerImgSize + textheight + patchsizeShow;//minY
@@ -3567,9 +3690,10 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
             shownLeftImgBorder[1] = maxHorImgSize;//maxX
             shownLeftImgBorder[2] = textheight;//minY
             shownLeftImgBorder[3] = textheight + maxVerImgSize;//maxY
+            //cout << cv::getBuildInformation() << endl;
             do
             {
-                c = cv::waitKey(30);
+                c = cv::waitKeyEx(30);
 
                 if(c != -1)
                     skey = getSpecialKeyCode(c);
@@ -3598,6 +3722,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                     msgBox.setText("Homography not available");
                                     msgBox.setInformativeText("The feature-based homography is not available for this match!");
                                     msgBox.exec();
+                                    QCoreApplication::processEvents();
 #else
                                     MessageBox(NULL, "The feature-based homography is not available for this match!", "Homography not available", MB_OK | MB_ICONINFORMATION);
 #endif
@@ -3620,10 +3745,11 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 #if __linux__
                                     QMessageBox msgBox;
                                     msgBox.setText("Manual homography estimation");
-                                    msgBox.setInformativeText("Select 4 matching points in each patch to generate a homography (in the order 1st left, 1st right, 2nd left, 2nd right, ...). They must not be on a line! To abort while selecting, press 'ESC'.\", \"Manual homography estimation");
+                                    msgBox.setInformativeText("Select 4 matching points in each patch to generate a homography (in the order 1st left, 1st right, 2nd left, 2nd right, ...). They must not be on a line! To abort while selecting, press 'ESC' or 'q'.\", \"Manual homography estimation");
                                     msgBox.exec();
+                                    QCoreApplication::processEvents();
 #else
-                                    MessageBox(NULL, "Select 4 matching points in each patch to generate a homography (in the order 1st left, 1st right, 2nd left, 2nd right, ...). They must not be on a line! To abort while selecting, press 'ESC'.", "Manual homography estimation", MB_OK | MB_ICONINFORMATION);
+                                    MessageBox(NULL, "Select 4 matching points in each patch to generate a homography (in the order 1st left, 1st right, 2nd left, 2nd right, ...). They must not be on a line! To abort while selecting, press 'ESC' or 'q'.", "Manual homography estimation", MB_OK | MB_ICONINFORMATION);
 #endif
                                     cv::cvtColor(patch_wdhist2[0], leftHist_color, cv::COLOR_GRAY2RGB);
                                     cv::resize(leftHist_color, composed(Rect(0, maxVerImgSize + textheight + patchsizeShow, patchSelectShow, patchSelectShow)), cv::Size(patchSelectShow, patchSelectShow), 0, 0, INTER_LANCZOS4);
@@ -3643,19 +3769,19 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                         str = "Select " + numstr[k] + " point";
                                         putText(composed, str.c_str(), cv::Point2d(5, maxVerImgSize + textheight + patchsizeShow + 10), FONT_HERSHEY_SIMPLEX | FONT_ITALIC, 0.4, cv::Scalar(0, 0, 255));
                                         winPos = cv::Point2f(-FLT_MAX, -FLT_MAX);
-                                        cv::imshow("GT match",composed);
+                                        cv::imshow(windowName,composed);
                                         bool lineardep = false;
                                         do
                                         {
                                             lineardep = false;
                                             while((winPos.x < minmaxXY[0]) || (winPos.x >= minmaxXY[1]) || (winPos.y < minmaxXY[2]) || (winPos.y >= minmaxXY[3]))
                                             {
-                                                c = cv::waitKey(30);
+                                                c = cv::waitKeyEx(30);
                                                 if(c != -1)
                                                     skey = getSpecialKeyCode(c);
                                                 else
                                                     skey = NONE;
-                                                if(skey == ESCAPE)
+                                                if(skey == ESCAPE || c == 'q')
                                                 {
                                                     skey = NONE;
                                                     c = -1;
@@ -3689,6 +3815,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                                     msgBox1.setText("Linear dependency");
                                                     msgBox1.setInformativeText("Selection is linear dependent - select a different one!");
                                                     msgBox1.exec();
+                                                    QCoreApplication::processEvents();
 #else
                                                     MessageBox(NULL, "Selection is linear dependent - select a different one!", "Linear dependency", MB_OK | MB_ICONINFORMATION);
 #endif
@@ -3705,17 +3832,17 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                             lps.back().x /= static_cast<float>(selMult);
                                             lps.back().y /= static_cast<float>(selMult);
 
-                                            putText(composed, str.c_str(), cv::Point2d(patchSelectShow + 5, maxVerImgSize + textheight + patchsizeShow + 10), CV_FONT_HERSHEY_SIMPLEX | CV_FONT_ITALIC, 0.4, cv::Scalar(0, 0, 255));
-                                            cv::imshow("GT match",composed);
+                                            putText(composed, str.c_str(), cv::Point2d(patchSelectShow + 5, maxVerImgSize + textheight + patchsizeShow + 10), FONT_HERSHEY_SIMPLEX | FONT_ITALIC, 0.4, cv::Scalar(0, 0, 255));
+                                            cv::imshow(windowName,composed);
                                         }
                                         while(((winPos.x < minmaxXYrp[0]) || (winPos.x >= minmaxXYrp[1]) || (winPos.y < minmaxXY[2]) || (winPos.y >= minmaxXY[3])) && noSkipmode)
                                         {
-                                            c = cv::waitKey(30);
+                                            c = cv::waitKeyEx(30);
                                             if(c != -1)
                                                 skey = getSpecialKeyCode(c);
                                             else
                                                 skey = NONE;
-                                            if(skey == ESCAPE)
+                                            if(skey == ESCAPE || c == 'q')
                                             {
                                                 skey = NONE;
                                                 c = -1;
@@ -3737,8 +3864,8 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                     }
                                     if(noSkipmode)
                                     {
-                                        cv::imshow("GT match",composed);
-                                        c = cv::waitKey(1300);
+                                        cv::imshow(windowName,composed);
+                                        c = cv::waitKeyEx(1300);
                                         Hmanual = cv::estimateAffine2D(lps, rps);//estimate an affine homography
                                         if(Hmanual.empty())
                                         {
@@ -3747,6 +3874,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                             msgBox1.setText("Homography not available");
                                             msgBox1.setInformativeText("It was not possible to estimate a homography from these correspondences!");
                                             msgBox1.exec();
+                                            QCoreApplication::processEvents();
 #else
                                             MessageBox(NULL, "It was not possible to estimate a homography from these correspondences!", "Homography not available", MB_OK | MB_ICONINFORMATION);
 #endif
@@ -3806,7 +3934,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     str = "right equal hist - select pt";
 #endif
                     putText(composed, str.c_str(), cv::Point2d(5, maxVerImgSize + textheight + patchsizeShow + 10), FONT_HERSHEY_SIMPLEX | FONT_ITALIC, 0.4, cv::Scalar(0, 0, 255));
-                    cv::imshow("GT match",composed);
+                    cv::imshow(windowName,composed);
                 }
 
                 if(autocalc2 > 0)//find a global minimum (best template match within patch) on the patches for manual selection
@@ -3998,13 +4126,13 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 
                         if(noIterRef || noIterRefProg)
                         {
-                            cv::imshow("GT match",composed);
+                            cv::imshow(windowName,composed);
                         }
                         else
                         {
                             if(autseait == 0)
                             {
-                                cv::imshow("GT match",composed);
+                                cv::imshow(windowName,composed);
                                 winPosOld = winPos;
                                 diffdist2Old = diffdist2;
                                 singleErrVec2Old = singleErrVec2;
@@ -4094,13 +4222,13 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                     winPosOld = winPos;
                                     diffdist2Old = diffdist2;
                                     singleErrVec2Old = singleErrVec2;
-                                    cv::imshow("GT match",composed);
-                                    c = cv::waitKey(100);
+                                    cv::imshow(windowName,composed);
+                                    c = cv::waitKeyEx(100);
                                     if(c != -1)
                                         skey = getSpecialKeyCode(c);
                                     else
                                         skey = NONE;
-                                    if(skey == ESCAPE)
+                                    if(skey == ESCAPE || c == 'q')
                                     {
                                         winPos = winPos2;
                                         noIterRef = true;
@@ -4172,7 +4300,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     composed(Rect(2 * patchSelectShow, maxVerImgSize + textheight + patchsizeShow, patchSelectShow, patchSelectShow)).setTo(0);
                     composed(Rect(3 * patchSelectShow, maxVerImgSize + textheight + patchsizeShow, patchSelectShow, patchSelectShow)).setTo(0);
                     composed(Rect(0, maxVerImgSize + textheight + patchsizeShow + patchSelectShow, composed.cols, bottomtextheight)).setTo(0);
-                    cv::imshow("GT match",composed);
+                    cv::imshow(windowName,composed);
 
                     pdiff[1] -= lkp;
                     winPos = cv::Point2f(-FLT_MAX, -FLT_MAX);
@@ -4189,7 +4317,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     noIterRef = false;
                 }
 
-                if(skey == ESCAPE)
+                if(skey == ESCAPE || c == 'q')
                 {
                     int answere;
 #if __linux__
@@ -4198,9 +4326,10 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     msgBox.setInformativeText("Are you sure? Reviewed matches of current image pair will be lost!");
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     answere = msgBox.exec();
+                    QCoreApplication::processEvents();
                     if(answere == QMessageBox::Yes)
                     {
-                        cv::destroyWindow("GT match");
+                        cv::destroyWindow(windowName);
                         return false;
                     }
                     else
@@ -4212,7 +4341,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     answere = MessageBox(NULL, "Are you sure? Reviewed matches of current image pair will be lost!", "Exit?", MB_YESNO | MB_DEFBUTTON1);
                     if(answere == IDYES)
                     {
-                        cv::destroyWindow("GT match");
+                        cv::destroyWindow(windowName);
                         return false;
                     }
                     else
@@ -4235,6 +4364,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     msgBox.setText("Activation of automatic minimum search");
                     msgBox.setInformativeText(QString::fromStdString(mbtext));
                     msgBox.exec();
+                    QCoreApplication::processEvents();
 #else
                     MessageBox(NULL, mbtext.c_str(), "Activation of automatic minimum search", MB_OK | MB_ICONINFORMATION);
 #endif
@@ -4254,6 +4384,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     msgBox.setText("Activation of automatic homography estimation");
                     msgBox.setInformativeText(QString::fromStdString(mbtext));
                     msgBox.exec();
+                    QCoreApplication::processEvents();
 #else
                     MessageBox(NULL, mbtext.c_str(), "Activation of automatic homography estimation", MB_OK | MB_ICONINFORMATION);
 #endif
@@ -4337,12 +4468,12 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                 }
 
 
-                if(c == 'a')
+                if(c == 'f')
                 {
                     int waitvalue = 1500;
                     do
                     {
-                        c = cv::waitKey(waitvalue);
+                        c = cv::waitKeyEx(waitvalue);
                         waitvalue = 5000;
                         if(c != -1)
                             skey = getSpecialKeyCode(c);
@@ -4358,26 +4489,27 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                                       "Original patch size\n 2 - Half the size\n 3 - Size dived by 4\n 4 - "
                                                       "Size dived by 8\n 5 - Size dived by 16\n Please press one of the "
                                                       "above mentioned buttons after clicking 'OK' within the next 5 "
-                                                      "seconds or abort by pressing 'ESC'. Otherwise this message is shown again.");
+                                                      "seconds or abort by pressing 'ESC' or 'q'. Otherwise this message is shown again.");
                             msgBox.exec();
+                            QCoreApplication::processEvents();
 #else
                             MessageBox(NULL, "Specify the minimal patch size factor (the optimal patch size is automatically "
                                              "chosen but is restricted to be larger than the given value) for finding the "
                                              "optimal matching position:\n 1 - Original patch size\n 2 - Half the size\n 3 - "
                                              "Size dived by 4\n 4 - Size dived by 8\n 5 - Size dived by 16\n Please press "
                                              "one of the above mentioned buttons after clicking 'OK' within the next 5 "
-                                             "seconds or abort by pressing 'ESC'. Otherwise this message is shown again.",
+                                             "seconds or abort by pressing 'ESC' or 'q'. Otherwise this message is shown again.",
                                              "Specify patch size", MB_OK | MB_ICONINFORMATION);
 #endif
                         }
-                        if(skey == ESCAPE)
+                        if(skey == ESCAPE || c == 'q')
                         {
                             skey = NONE;
                             c = -1;
                             break;
                         }
-                    }
-                    while((c != '1') && (c != '2') && (c != '3') && (c != '4') && (c != '5'));
+                        isAlive = cv::getWindowProperty(windowName, WND_PROP_VISIBLE) >= 1. - DBL_EPSILON;
+                    }while(isAlive && ((c != '1') && (c != '2') && (c != '3') && (c != '4') && (c != '5')));
 
                     if((c == '1') || (c == '2') || (c == '3') || (c == '4') || (c == '5'))
                     {
@@ -4396,7 +4528,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     msgBox.setInformativeText("If a new matching position is selected inside the area of "
                                               "'left equal hist - select pt', an local refinement is automatically "
                                               "started. If you want to cancel the local minimum search after manual "
-                                              "selection of the matching position, press 'ESC' to go back to the "
+                                              "selection of the matching position, press 'ESC' or 'q' to go back to the "
                                               "selected position or select a new position by clicking inside the "
                                               "area of 'left equal hist - select pt'. After aborting the local "
                                               "refinement or after it has finished, it is deactivated for further "
@@ -4412,20 +4544,21 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                               "select 4 matching positions in the left and right patch to estimate "
                                               "a homography (local refinement (see above) is started afterwards)"
                                               "\n '3' - Use the original patch\n\n Global refinement using 'left "
-                                              "equal hist - select pt' can be started by pressing 'a' followed "
+                                              "equal hist - select pt' can be started by pressing 'f' followed "
                                               "by '1' to '5'. The number specifies the minimal patch size for "
-                                              "optimization (For more details press 'a' and wait for a short "
+                                              "optimization (For more details press 'f' and wait for a short "
                                               "amount of time).\n\n The automatic homography estimation based on "
                                               "SIFT keypoints can be activated/deactivated for all remaining image "
                                               "pairs using 'k'.\n\n To scale the original left patch and display "
                                               "the result within 'left equal hist - select pt', press '+' or '-'. "
                                               "To rotate the original left patch, use the keys 'r' and 'l'.");
                     msgBox.exec();
+                    QCoreApplication::processEvents();
 #else
                     MessageBox(NULL, "If a new matching position is selected inside the area of 'left equal "
                                      "hist - select pt', an local refinement is automatically started. If you want "
                                      "to cancel the local minimum search after manual selection of the matching "
-                                     "position, press 'ESC' to go back to the selected position or select a new "
+                                     "position, press 'ESC' or 'q' to go back to the selected position or select a new "
                                      "position by clicking inside the area of 'left equal hist - select pt'. "
                                      "After aborting the local refinement or after it has finished, it is "
                                      "deactivated for further manual selections. If you want the local refinement "
@@ -4439,8 +4572,8 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                      "Manually select 4 matching positions in the left and right patch to estimate a "
                                      "homography (local refinement (see above) is started afterwards)\n '3' - "
                                      "Use the original patch\n\n Global refinement using 'left equal hist - select "
-                                     "pt' can be started by pressing 'a' followed by '1' to '5'. The number "
-                                     "specifies the minimal patch size for optimization (For more details press 'a' "
+                                     "pt' can be started by pressing 'f' followed by '1' to '5'. The number "
+                                     "specifies the minimal patch size for optimization (For more details press 'f' "
                                      "and wait for a short amount of time).\n\n The automatic homography estimation "
                                      "based on SIFT keypoints can be activated/deactivated for all remaining image "
                                      "pairs using 'k'.\n\n To scale the original left patch and display the result "
@@ -4453,7 +4586,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     msgBox.setText("Help");
                     msgBox.setInformativeText("If a new matching position is selected inside the area of 'right equal hist - select pt', "
                                               "an local refinement is automatically started. If you want to cancel the local minimum search after "
-                                              "manual selection of the matching position, press 'ESC' to go back to the selected position or "
+                                              "manual selection of the matching position, press 'ESC' or 'q' to go back to the selected position or "
                                               "select a new position by clicking inside the area of 'right equal hist - select pt'. After "
                                               "aborting the local refinement or after it has finished, it is deactivated for further manual "
                                               "selections. If you want the local refinement to start again from the current position, press 'Pos1'. "
@@ -4464,17 +4597,18 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                               "\n '1' - Use the homography generated by the found matches only\n '2' - Manually select "
                                               "4 matching positions in the left and right patch to estimate a homography (local refinement "
                                               "(see above) is started afterwards)\n '3' - Use the original patch\n\n Global refinement using "
-                                              "'right equal hist - select pt' can be started by pressing 'a' followed by '1' to '5'. "
-                                              "The number specifies the minimal patch size for optimization (For more details press 'a' "
+                                              "'right equal hist - select pt' can be started by pressing 'f' followed by '1' to '5'. "
+                                              "The number specifies the minimal patch size for optimization (For more details press 'f' "
                                               "and wait for a short amount of time).\n\n The automatic homography estimation based on "
                                               "SIFT keypoints can be activated/deactivated for all remaining image pairs using 'k'.\n\n "
                                               "To scale the original left patch and display the result within 'right equal hist - select pt', "
                                               "press '+' or '-'. To rotate the original left patch, use the keys 'r' and 'l'.");
                     msgBox.exec();
+                    QCoreApplication::processEvents();
 #else
                     MessageBox(NULL, "If a new matching position is selected inside the area of 'right equal hist - select pt', "
                          "an local refinement is automatically started. If you want to cancel the local minimum search after "
-                         "manual selection of the matching position, press 'ESC' to go back to the selected position or "
+                         "manual selection of the matching position, press 'ESC' or 'q' to go back to the selected position or "
                          "select a new position by clicking inside the area of 'right equal hist - select pt'. After "
                          "aborting the local refinement or after it has finished, it is deactivated for further manual "
                          "selections. If you want the local refinement to start again from the current position, press 'Pos1'. "
@@ -4485,8 +4619,8 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                          "\n '1' - Use the homography generated by the found matches only\n '2' - Manually select "
                          "4 matching positions in the left and right patch to estimate a homography (local refinement "
                          "(see above) is started afterwards)\n '3' - Use the original patch\n\n Global refinement using "
-                         "'right equal hist - select pt' can be started by pressing 'a' followed by '1' to '5'. "
-                         "The number specifies the minimal patch size for optimization (For more details press 'a' "
+                         "'right equal hist - select pt' can be started by pressing 'f' followed by '1' to '5'. "
+                         "The number specifies the minimal patch size for optimization (For more details press 'f' "
                          "and wait for a short amount of time).\n\n The automatic homography estimation based on "
                          "SIFT keypoints can be activated/deactivated for all remaining image pairs using 'k'.\n\n "
                          "To scale the original left patch and display the result within 'right equal hist - select pt', "
@@ -4496,11 +4630,12 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     c = -1;
                     skey = NONE;
                 }
-            }
-            while(((c == -1) || (skey == ARROW_UP) || (skey == ARROW_DOWN) || (skey == ARROW_LEFT) || (skey == ARROW_RIGHT) || (skey == POS1) || (c == 'm') || (c == 'h')) ||
-                  ((c != 's') && (c != 'i') && (c != 'e') && (c != 'n') && (skey != SPACE)));
+                isAlive = cv::getWindowProperty(windowName, WND_PROP_VISIBLE) >= 1. - DBL_EPSILON;
+            }while(isAlive && (((c == -1) || (skey == ARROW_UP) || (skey == ARROW_DOWN) || (skey == ARROW_LEFT) ||
+                                (skey == ARROW_RIGHT) || (skey == POS1) || (c == 'm') || (c == 'h')) ||
+                               ((c != 'j') && (c != 'i') && (c != 'e') && (c != 'n') && (skey != SPACE))));
 
-            if(c == 's')
+            if(c == 'j')
             {
                 autoManualAnno.pop_back();
                 skipped.push_back(i + static_cast<int>(skipped.size()));
@@ -4657,7 +4792,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     }
                 }
             }
-            cv::destroyWindow("GT match");
+            cv::destroyWindow(windowName);
 
             //Reestimate number of samples
             if(!falseGT.empty() && fullN && fullSamples && fullFails && (maxSampleSize < GTsi))
@@ -5172,12 +5307,16 @@ bool baseMatcher::calcGTM_MegaDepth(size_t &min_nrTP, int CeresCPUcnt){
         return false;
     }
     gtmdata.vecIdxRng_MegaDepth.first = static_cast<int>(gtmdata.matchesGTAll.size());
+    if(randGTMfolders){
+        std::shuffle(all_folders.begin(), all_folders.end(), *rand2ptr);
+    }
     for(auto &i: all_folders){
         const string md_sub_parentP = getParentPath(i.mdImgF);
         const string gtm_path = concatPath(md_sub_parentP, gtm_sub_folder);
         bool calcGTM = false;
         std::vector<std::pair<std::string, std::string>> imgNames_tmp;
         if(checkPathExists(gtm_path)){
+            if(only_MD_flow) continue;
             std::vector<std::string> gtm_filenames;
             if(!loadImageSequenceNew(gtm_path, "*" + gtm_ending, gtm_filenames, true)){
                 calcGTM = true;
@@ -5228,39 +5367,46 @@ bool baseMatcher::calcGTM_MegaDepth(size_t &min_nrTP, int CeresCPUcnt){
             try {
                 if (!convertMegaDepthData(i, mdFolders.flowSub, data, verbose, CeresCPUcnt)) {
                     cerr << "Unable to calculate GTM for MegaDepth subset " << i.mdDepth << endl;
-                    return false;
+                    continue;
                 }
             }catch (Exception &e) {
                 cerr << e.what() << endl;
                 return false;
             }
-            const string sub_dense = getFilenameFromPath(md_sub_parentP);
-            const string md_sub_parentP1 = getParentPath(md_sub_parentP);
-            const string sub_folders = getFilenameFromPath(md_sub_parentP1) + "/" + sub_dense;
-            size_t nrGts = data.size();
-            size_t idx = 0;
-            for(auto &md: data){
-                std::pair<std::string, std::string> imageNames = make_pair(md.img1_name, md.img2_name);
-                std::tuple<std::string, std::string, std::string> fileNames = make_tuple(md.img1_name, md.img2_name, "");
-                if(!calcRefineStoreGTM_KITTI_MD(fileNames, true, gtm_path, sub_folders,
-                                                static_cast<int>(nrGts - idx++), save_it, "MegaDepth", md.flow)){
+            if(!only_MD_flow) {
+                const string sub_dense = getFilenameFromPath(md_sub_parentP);
+                const string md_sub_parentP1 = getParentPath(md_sub_parentP);
+                const string sub_folders = getFilenameFromPath(md_sub_parentP1) + "/" + sub_dense;
+                size_t nrGts = data.size();
+                size_t idx = 0;
+                for (auto &md: data) {
+                    std::pair<std::string, std::string> imageNames = make_pair(md.img1_name, md.img2_name);
+                    std::tuple<std::string, std::string, std::string> fileNames = make_tuple(md.img1_name, md.img2_name,
+                                                                                             "");
+                    if (!calcRefineStoreGTM_KITTI_MD(fileNames, true, gtm_path, sub_folders,
+                                                     static_cast<int>(nrGts - idx++), save_it, "MegaDepth", md.flow)) {
+                        continue;
+                    }
+                    addGTMdataToPool();
+                    gtmdata.sum_TP_MegaDepth += positivesGT;
+                    gtmdata.sum_TN_MegaDepth += negativesGT;
+                    imgNames_tmp.emplace_back(move(imageNames));
+                }
+                if (imgNames_tmp.empty()) {
+                    cerr << "Unable to calculate GTM for MegaDepth subset " << i.mdDepth << endl;
                     continue;
                 }
-                addGTMdataToPool();
-                gtmdata.sum_TP_MegaDepth += positivesGT;
-                gtmdata.sum_TN_MegaDepth += negativesGT;
-                imgNames_tmp.emplace_back(move(imageNames));
+                gtmdata.sourceGT.insert(gtmdata.sourceGT.end(), imgNames_tmp.size(), 'M');
+                gtmdata.imgNamesAll.insert(gtmdata.imgNamesAll.end(),
+                                           make_move_iterator(imgNames_tmp.begin()),
+                                           make_move_iterator(imgNames_tmp.end()));
             }
-            if(imgNames_tmp.empty()){
-                cerr << "Unable to calculate GTM for MegaDepth subset " << i.mdDepth << endl;
-                return false;
-            }
-            gtmdata.sourceGT.insert(gtmdata.sourceGT.end(), imgNames_tmp.size(), 'M');
-            gtmdata.imgNamesAll.insert(gtmdata.imgNamesAll.end(),
-                                       make_move_iterator(imgNames_tmp.begin()), make_move_iterator(imgNames_tmp.end()));
         }
         if(gtmdata.sum_TP_MegaDepth >= min_nrTP){
             break;
+        }
+        if(noPool){
+            clearPoolVecs();
         }
     }
     gtmdata.vecIdxRng_MegaDepth.second = static_cast<int>(gtmdata.matchesGTAll.size());
@@ -5323,7 +5469,11 @@ bool baseMatcher::calcGTM_KITTI(size_t &min_nrTP){
     gtmdata.sum_TN_KITTI = 0;
     flowGtIsUsed = true;
     gtmdata.vecIdxRng_KITTI.first = static_cast<int>(gtmdata.matchesGTAll.size());
-    for(auto &i: GetKITTISubDirs()){
+    std::vector<kittiFolders> kittiSubDirs = GetKITTISubDirs();
+    if(randGTMfolders){
+        std::shuffle(kittiSubDirs.begin(), kittiSubDirs.end(), *rand2ptr);
+    }
+    for(auto &i: kittiSubDirs){
         string img1_path = concatPath(path, i.img1.sub_folder);
         if(!checkPathExists(img1_path)){
             cerr << "No folder " << img1_path << " found" << endl;
@@ -5398,6 +5548,9 @@ bool baseMatcher::calcGTM_KITTI(size_t &min_nrTP){
         }
         if(gtmdata.sum_TP_KITTI >= min_nrTP){
             break;
+        }
+        if(noPool){
+            clearPoolVecs();
         }
     }
     gtmdata.vecIdxRng_KITTI.second = static_cast<int>(gtmdata.matchesGTAll.size());
@@ -5898,7 +6051,11 @@ bool baseMatcher::getOxfordGTM(const std::string &path, size_t &min_nrTP){
     gtmdata.sum_TP_Oxford = 0;
     gtmdata.sum_TN_Oxford = 0;
     gtmdata.vecIdxRng_Oxford.first = static_cast<int>(gtmdata.matchesGTAll.size());
-    for(auto &sub: GetOxfordSubDirs()){
+    std::vector<std::string> oxfSubDirs = GetOxfordSubDirs();
+    if(randGTMfolders){
+        std::shuffle(oxfSubDirs.begin(), oxfSubDirs.end(), *rand2ptr);
+    }
+    for(auto &sub: oxfSubDirs){
         const string sub_path = concatPath(path, sub);
         const string gtm_path = concatPath(sub_path, gtm_sub_folder);
         std::vector<std::pair<std::string, std::string>> imgNames, imgNames_tmp;
@@ -5957,6 +6114,9 @@ bool baseMatcher::getOxfordGTM(const std::string &path, size_t &min_nrTP){
         if(gtmdata.sum_TP_Oxford >= min_nrTP){
             break;
         }
+        if(noPool){
+            clearPoolVecs();
+        }
     }
     gtmdata.vecIdxRng_Oxford.second = static_cast<int>(gtmdata.matchesGTAll.size());
     if(min_nrTP > gtmdata.sum_TP_Oxford){
@@ -5976,6 +6136,16 @@ void baseMatcher::addGTMdataToPool(){
     gtmdata.leftInlierAll.emplace_back(std::move(leftInlier));
     gtmdata.rightInlierAll.emplace_back(std::move(rightInlier));
     gtmdata.matchesGTAll.emplace_back(std::move(matchesGT));
+}
+
+void baseMatcher::clearPoolVecs(){
+    gtmdata.keypLAll.clear();
+    gtmdata.keypRAll.clear();
+    gtmdata.leftInlierAll.clear();
+    gtmdata.rightInlierAll.clear();
+    gtmdata.matchesGTAll.clear();
+    gtmdata.sourceGT.clear();
+    gtmdata.imgNamesAll.clear();
 }
 
 int baseMatcher::loadGTM(const std::string &gtm_path, const std::pair<std::string, std::string> &imageNames){
@@ -6461,10 +6631,30 @@ SpecialKeyCode getSpecialKeyCode(int & val){
         sk=NONE;
     }
 
-    if (sk == NONE)
-      val = (val&0xFF);
-    else
-      val = 0x00;
+    if (sk == NONE) {
+        val = (val & 0xFF);
+        switch (val) {
+            case 'w':
+                sk = ARROW_UP;
+                break;
+            case 'd':
+                sk = ARROW_RIGHT;
+                break;
+            case 's':
+                sk = ARROW_DOWN;
+                break;
+            case 'a':
+                sk = ARROW_LEFT;
+                break;
+            default:
+                sk = NONE;
+        }
+        if (sk != NONE){
+            val = 0x00;
+        }
+    }else {
+        val = 0x00;
+    }
 
     return (SpecialKeyCode)sk;
 }

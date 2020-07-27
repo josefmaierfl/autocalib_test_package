@@ -36,7 +36,7 @@
 #include "GTM/prepareMegaDepth.h"
 #include "boost/container_hash/hash.hpp"
 #include "helper_funcs.h"
-//#include "generateVirtualSequenceLib/generateVirtualSequenceLib_api.h"
+#include "generateVirtualSequenceLib/generateVirtualSequenceLib_api.h"
 
 /* --------------------------- Defines --------------------------- */
 
@@ -226,10 +226,7 @@ struct kittiFolders{
         folderPostF(folderPostF &&kf) noexcept :sub_folder(move(kf.sub_folder)), postfix(move(kf.postfix)){}
         folderPostF(std::initializer_list<std::string> kf):sub_folder(*kf.begin()), postfix(*(kf.begin() + 1)){}
         folderPostF(const folderPostF &kf) = default;
-        folderPostF& operator=(const folderPostF & kf){
-            sub_folder = kf.sub_folder;
-            postfix = kf.postfix;
-        }
+        folderPostF& operator=(const folderPostF & kf)= default;
     };
     folderPostF img1;
     folderPostF img2;
@@ -286,7 +283,7 @@ struct kittiFolders{
 
 class KeypointDescriptorIndexer{
 public:
-    explicit KeypointDescriptorIndexer(const std::vector<cv::KeyPoint> &keypoints, const cv::Mat &descriptors_):
+    KeypointDescriptorIndexer(const std::vector<cv::KeyPoint> &keypoints, const cv::Mat &descriptors_):
             descriptors(descriptors_.clone()){
         int nrRows = descriptors_.rows;
         CV_Assert(keypoints.size() == static_cast<size_t>(nrRows));
@@ -294,6 +291,8 @@ public:
             kpDescrMap.emplace(keypoints[i].pt, i);
         }
     }
+
+    KeypointDescriptorIndexer() = default;
 
     cv::Mat getDescriptors(const std::vector<cv::KeyPoint> &keypoints){
         std::unordered_map<cv::Point2f, int, KeyHasher, EqualTo>::iterator got;
@@ -342,7 +341,7 @@ private:
     cv::Mat descriptors;
 };
 
-class baseMatcher {
+class GENERATEVIRTUALSEQUENCELIB_API baseMatcher {
 public:
 	//VARIABLES --------------------------------------------
     GTMdata gtmdata;//Holds GTM over all loaded/calculated datasets
@@ -350,8 +349,9 @@ public:
 	//FUNCTION PROTOTYPES ----------------------------------------
 
 	//Constructor
-    baseMatcher(std::string _featuretype, std::string _imgsPath, std::string _descriptortype,
-                uint32_t verbose_ = 0, std::mt19937 *rand2_ = nullptr, bool refineGTM_ = true);
+    baseMatcher(std::string _featuretype, std::string _imgsPath, std::string _descriptortype, bool randGTMfolders_ = false,
+                uint32_t verbose_ = 0, std::mt19937 *rand2_ = nullptr, bool refineGTM_ = true,
+                bool only_MD_flow_ = false, bool noPool_ = false);
 
     GTMdata &&moveGTMdata(){
         return std::move(gtmdata);
@@ -381,6 +381,9 @@ private:
         std::string flowSub = "flow";//flow -> in depthImgPart
     } mdFolders;
     bool refineGTM = true;
+    bool only_MD_flow = false;
+    bool noPool = false;
+    bool randGTMfolders = false;
     annotImgPars quality;
     bool refinedGTMAvailable = false;
     std::mt19937 *rand2ptr;
@@ -435,6 +438,8 @@ private:
                             std::string &imgName1, std::string &imgName2);
     //Adds GTM from a single image pair to gtmdata (gtmdata.imgNamesAll is not added)
     void addGTMdataToPool();
+    //Clears all vectors in the GTM data pool "gtmdata"
+    void clearPoolVecs();
     //Checks if GTM for the Oxford dataset are available and if not calculates them
     bool getOxfordGTM(const std::string &path, size_t &min_nrTP);
     //Load image names of corresponding images and their homographies

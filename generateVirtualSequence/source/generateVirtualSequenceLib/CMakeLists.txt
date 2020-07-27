@@ -6,6 +6,15 @@
 option(USE_NON_FREE_CODE "use non free keypoint and descriptor types in the OpenCV library." ON)
 option(USE_MANUAL_ANNOTATION "Manual annotate GTM for detected inaccuracies."         OFF)
 
+if(USE_MANUAL_ANNOTATION)
+	ADD_DEFINITIONS(-DUSE_MANUAL_ANNOTATION)
+	message(STATUS "Using application in annotation mode!")
+endif()
+
+if(USE_NON_FREE_CODE)
+	ADD_DEFINITIONS(-DUSE_NON_FREE_CODE)
+endif()
+
 if(OPENMP_ENABLED)
 	find_package(OpenMP QUIET)
 endif()
@@ -109,7 +118,8 @@ set(sources
 	${source_path}/GTM/colmap/point3d.cc
 	${source_path}/GTM/colmap/track.cc
 	${source_path}/GTM/colmapBase.cpp
-	${source_path}/GTM/prepareMegaDepth.cpp)
+	${source_path}/GTM/prepareMegaDepth.cpp
+	${source_path}/GTM/nanoflannInterface.cpp)
 
 # Group source files
 set(header_group "Header Files (API)")
