@@ -3132,21 +3132,21 @@ void genStereoSequ::genDepthMaps() {
 //    }
 
     //Show the result
-//    if (verbose & (SHOW_BUILD_PROC_STATIC_OBJ | SHOW_STATIC_OBJ_DISTANCES | SHOW_STATIC_OBJ_3D_PTS)) {
-//        unsigned char clmul = 255 / 3;
-//        // Apply the colormap:
-//        Mat colorMapImg;
-//        applyColorMap(depthAreaMap * clmul, colorMapImg, cv::COLORMAP_RAINBOW);
-//        if(!writeIntermediateImg(colorMapImg, "static_object_depth_areas")){
-//            namedWindow("Static object depth areas", WINDOW_AUTOSIZE);
-//            imshow("Static object depth areas", colorMapImg);
-//            waitKey(0);
-//            if ((verbose & SHOW_STATIC_OBJ_DISTANCES) &&
-//            !(verbose & (SHOW_STATIC_OBJ_DISTANCES | SHOW_STATIC_OBJ_3D_PTS))) {
-//                destroyWindow("Static object depth areas");
-//            }
-//        }
-//    }
+    if (verbose & (SHOW_BUILD_PROC_STATIC_OBJ | SHOW_STATIC_OBJ_DISTANCES | SHOW_STATIC_OBJ_3D_PTS)) {
+        unsigned char clmul = 255 / 3;
+        // Apply the colormap:
+        Mat colorMapImg;
+        applyColorMap(depthAreaMap * clmul, colorMapImg, cv::COLORMAP_RAINBOW);
+        if(!writeIntermediateImg(colorMapImg, "static_object_depth_areas")){
+            namedWindow("Static object depth areas", WINDOW_AUTOSIZE);
+            imshow("Static object depth areas", colorMapImg);
+            waitKey(0);
+            if ((verbose & SHOW_STATIC_OBJ_DISTANCES) &&
+            !(verbose & (SHOW_STATIC_OBJ_DISTANCES | SHOW_STATIC_OBJ_3D_PTS))) {
+                destroyWindow("Static object depth areas");
+            }
+        }
+    }
 
     //Get final depth values for each depth region
     Mat depthMapNear, depthMapMid, depthMapFar;
@@ -3242,9 +3242,9 @@ void genStereoSequ::genDepthMaps() {
             destroyWindow("Normalized Static Obj Depth Near and Mid");
         }
     }
-//    if (!(verbose & SHOW_STATIC_OBJ_3D_PTS)) {
-//        destroyAllWindows();
-//    }
+    if (!(verbose & SHOW_STATIC_OBJ_3D_PTS)) {
+        destroyAllWindows();
+    }
 }
 
 //Get overlaps of filled areas (2 different) and remove them
@@ -9284,7 +9284,7 @@ void genStereoSequ::transPtsToWorld() {
                 pcl::PointXYZ((float) ptm.at<double>(0), (float) ptm.at<double>(1), (float) ptm.at<double>(2)));
     }
 
-    if ((verbose & SHOW_STATIC_OBJ_3D_PTS) && actFrameCnt > 195) {
+    if (verbose & SHOW_STATIC_OBJ_3D_PTS) {
         visualizeStaticObjPtCloud();
     }
     destroyAllWindows();
