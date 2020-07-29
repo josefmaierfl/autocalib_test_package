@@ -3666,10 +3666,11 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                 putText(composed, str.c_str(), cv::Point2d(15, 73), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
             }
 
-            string windowName = "GT match";
+            const string windowName = "GT match";
             cv::namedWindow(windowName, WINDOW_NORMAL | WINDOW_KEEPRATIO | WINDOW_GUI_EXPANDED);
 		    cv::resizeWindow(windowName, composed.size());
             cv::setWindowProperty(windowName, WND_PROP_TOPMOST, 1);
+            cv::setWindowProperty(windowName, WND_PROP_FULLSCREEN, 1);
             cv::Point2f winPos = cv::Point2f(-FLT_MAX, -FLT_MAX), winPos2 = cv::Point2f(-FLT_MAX, -FLT_MAX), winPosOld = cv::Point2f(-FLT_MAX, -FLT_MAX);
             cv::setMouseCallback(windowName, on_mouse_click, (void*)(&winPos) );
             cv::imshow(windowName,composed);
@@ -4337,7 +4338,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     if(answere == QMessageBox::Yes)
                     {
                         cv::destroyWindow(windowName);
-                        return false;
+                        exit(EXIT_SUCCESS);
                     }
                     else
                     {
@@ -4349,7 +4350,7 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                     if(answere == IDYES)
                     {
                         cv::destroyWindow(windowName);
-                        return false;
+                        exit(EXIT_SUCCESS);
                     }
                     else
                     {
@@ -4609,7 +4610,8 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                               "and wait for a short amount of time).\n\n The automatic homography estimation based on "
                                               "SIFT keypoints can be activated/deactivated for all remaining image pairs using 'k'.\n\n "
                                               "To scale the original left patch and display the result within 'right equal hist - select pt', "
-                                              "press '+' or '-'. To rotate the original left patch, use the keys 'r' and 'l'.");
+                                              "press '+' or '-'. To rotate the original left patch, use the keys 'r' and 'l'."
+                                              "\n\nUse key 'u' to toggle full screen mode on or off.");
 //                    msgBox->setAttribute( Qt::WA_DeleteOnClose );
 //                    msgBox->setDefaultButton(QMessageBox::Ok);
                     msgBox.exec();
@@ -4633,11 +4635,24 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                          "and wait for a short amount of time).\n\n The automatic homography estimation based on "
                          "SIFT keypoints can be activated/deactivated for all remaining image pairs using 'k'.\n\n "
                          "To scale the original left patch and display the result within 'right equal hist - select pt', "
-                         "press '+' or '-'. To rotate the original left patch, use the keys 'r' and 'l'.", "Help", MB_OK | MB_ICONINFORMATION);
+                         "press '+' or '-'. To rotate the original left patch, use the keys 'r' and 'l'."
+                         "\n\nUse key 'u' to toggle full screen mode on or off.", "Help", MB_OK | MB_ICONINFORMATION);
 #endif
 #endif
                     c = -1;
                     skey = NONE;
+                }
+
+                //Toggle full screen
+                if(c == 'u'){
+                    static bool fullscreen = true;
+                    if(fullscreen){
+                        fullscreen = false;
+                        cv::setWindowProperty(windowName, WND_PROP_FULLSCREEN, 0);
+                    }else{
+                        fullscreen = true;
+                        cv::setWindowProperty(windowName, WND_PROP_FULLSCREEN, 1);
+                    }
                 }
                 isAlive = cv::getWindowProperty(windowName, WND_PROP_VISIBLE) >= 1. - DBL_EPSILON;
             }while(isAlive && (((c == -1) || (skey == ARROW_UP) || (skey == ARROW_DOWN) || (skey == ARROW_LEFT) ||
