@@ -57,6 +57,7 @@
 #if defined(USE_MANUAL_ANNOTATION)
 #include "QMessageBox"
 #include <QCoreApplication>
+#include <QtWidgets/QApplication>
 #endif
 #else
 #include "winuser.h"
@@ -2818,6 +2819,12 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
 		maxHorImgSize = imgSize.width;
 		maxVerImgSize = imgSize.height;
     }
+#if __linux__
+    int argc = 1;
+    char argv[1] = {'s'};
+    char *argv1 = argv;
+    QApplication app(argc, &argv1);
+#endif
 #endif
 
 	//SIFT features & descriptors used for generating local homographies
@@ -4603,8 +4610,10 @@ bool baseMatcher::testGTmatches(int & samples, std::vector<std::pair<cv::Point2f
                                               "SIFT keypoints can be activated/deactivated for all remaining image pairs using 'k'.\n\n "
                                               "To scale the original left patch and display the result within 'right equal hist - select pt', "
                                               "press '+' or '-'. To rotate the original left patch, use the keys 'r' and 'l'.");
+//                    msgBox->setAttribute( Qt::WA_DeleteOnClose );
+//                    msgBox->setDefaultButton(QMessageBox::Ok);
                     msgBox.exec();
-                    QCoreApplication::processEvents();
+//                    QCoreApplication::processEvents();
 #else
                     MessageBox(NULL, "If a new matching position is selected inside the area of 'right equal hist - select pt', "
                          "an local refinement is automatically started. If you want to cancel the local minimum search after "
