@@ -2599,7 +2599,7 @@ bool genTemplateFile(const std::string &filename){
     fs.writeComment("Name of keypoint detector. The following types are supported: \n"
                         "FAST, MSER, ORB, BRISK, KAZE, AKAZE, STAR, MSD. \nIf non-free code is enabled "
                         "in the CMAKE project while building the code, SIFT and SURF are also available.");
-    fs << "keyPointType" << "BRISK";
+    fs << "keyPointType" << "ORB";
     fs.writeComment("Name of descriptor extractor. The following types are supported: \n"
                         "BRISK, ORB, KAZE, AKAZE, FREAK, DAISY, LATCH, BGM, BGM_HARD, BGM_BILINEAR, LBGM, "
                         "BINBOOST_64, BINBOOST_128, BINBOOST_256, VGG_120, VGG_80, VGG_64, VGG_48, RIFF, BOLD. \n"
@@ -2607,7 +2607,7 @@ bool genTemplateFile(const std::string &filename){
                         "are also available. AKAZE and KAZE descriptors might violate the used keypErrDistr "
                         "as they store specific information in the class_id "
                         "field of the keypoint which is not valid for a shifted keypoint position.");
-    fs << "descriptorType" << "FREAK";
+    fs << "descriptorType" << "ORB";
     fs.writeComment("Keypoint detector error (1) or error normal distribution (0). \nIf 1, the position "
                         "detected by the keypoint detector is used (which typically does not coincide with the "
                         "GT position. \nIf 0, an normal distributed (parameters from option keypErrDistr) "
