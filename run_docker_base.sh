@@ -20,16 +20,23 @@ else
   echo "First argument must be shutdown or live"
   exit 1
 fi
+shift 1
 
-if [ $# -ge 3 ]; then
-  SECOND_ARG="$2"
-  SECOND_ARG1="$3"
+USE_FULL_PATH=0
+if [ "$1" == "fullp" ]; then
+  USE_FULL_PATH=1
+  shift 1
+fi
+
+if [ $# -ge 2 ]; then
+  SECOND_ARG="$1"
+  SECOND_ARG1="$2"
 else
   SECOND_ARG=""
 fi
-if [ $# -ge 5 ]; then
-  THIRD_ARG="$4"
-  THIRD_ARG1="$5"
+if [ $# -ge 4 ]; then
+  THIRD_ARG="$3"
+  THIRD_ARG1="$4"
 else
   THIRD_ARG=""
 fi
@@ -45,7 +52,11 @@ elif [ "${SECOND_ARG}" == "EXE" ]; then
   SECOND_ARG=""
 fi
 if [ "${SECOND_ARG}" == "RESDIR" ]; then
-  RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/${SECOND_ARG1}"
+  if [ ${USE_FULL_PATH} -eq 0 ]; then
+    RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/${SECOND_ARG1}"
+  else
+    RES_DIR="${SECOND_ARG1}"
+  fi
   if [ -d ${RES_DIR} ]; then
     shift 2
   else
@@ -81,7 +92,7 @@ xhost +local:
 #docker run -v `pwd`/py_test_scripts:/app/py_test_scripts -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package:1.0 /bin/bash
 # docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v ${OUTDIR}:/app/output -v ${RES_DIR}:/app/results -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /bin/bash
 # docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v `pwd`/ngransac_train:/app/ngransac_train -v ${RES_DIR}:${RES_DIRD} -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /bin/bash
-docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v `pwd`/ngransac_train:/app/ngransac_train -v ${RES_DIR}:${RES_DIRD} -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /app/${SCRIPT} "${@:2}"
+docker run --gpus all -v `pwd`/images:/app/images:ro -v `pwd`/py_test_scripts:/app/py_test_scripts -v `pwd`/ngransac_train:/app/ngransac_train -v ${RES_DIR}:${RES_DIRD} -v ${RES_SV_DIR}:/app/res_save_compressed -it -v /tmp/.X11-unix/:/tmp/.X11-unix:ro ac_test_package_ngransac:1.0 /app/${SCRIPT} "$@"
 
 # Shut down if asked for
 #if [ $# -ne 0 ]; then

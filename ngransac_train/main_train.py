@@ -75,7 +75,7 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
             cmdline += ['--model', model]
         try:
             ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
-                         check=True, timeout=432000).returncode
+                         check=True, timeout=604800).returncode
         except sp.TimeoutExpired:
             print('Timeout expired for initialzing net weights.', sys.stderr)
             ret = 98
@@ -106,7 +106,7 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
             cmdline += cmdline1
         try:
             ret = sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
-                         check=True, timeout=691200).returncode
+                         check=True, timeout=1209600).returncode
         except sp.TimeoutExpired:
             print('Timeout expired for training network.', sys.stderr)
             ret = 98
@@ -368,7 +368,7 @@ def main():
                         # sys.stdout.write('.')
                         # cnt_dot = cnt_dot + 1
                         time_out_cnt += 1
-                        if time_out_cnt > 12096:
+                        if time_out_cnt > 19008:
                             res = 4
                             print('Timeout for executing python process for training ngransac.')
                             pool.terminate()

@@ -79,6 +79,7 @@ print("\nImage pairs: ", len(trainset), "\n")
 # create or load model
 model = CNNet(opt.resblocks)
 if len(opt.model) > 0:
+	print('Loading model :', opt.model)
 	model.load_state_dict(torch.load(opt.model))
 model = model.cuda()
 model.train()
