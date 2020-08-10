@@ -85,9 +85,12 @@ train_log = open(log_file, 'w', 1)
 distLoss = torch.nn.KLDivLoss(reduction='sum')
 
 # main training loop
+mean_loss_arr = []
 for epoch in range(0, opt.epochs):	
 
 	print("=== Starting Epoch", epoch, "==================================")
+	mean_loss = 0
+	it_cnt = 0
 
 	# store the network every epoch
 	torch.save(model.state_dict(), net_file)
@@ -135,6 +138,23 @@ for epoch in range(0, opt.epochs):
 			train_log.write('%d %f\n' % (iteration, loss))
 
 		iteration += 1
+		mean_loss += float(loss)
+		it_cnt += 1
 		
 		del log_probs, probs, target_probs, loss
+
+	mean_loss /= it_cnt
+	mean_loss_arr.append(mean_loss)
+	print(session_string, " - Epoch: ", epoch, "Mean loss: ", mean_loss)
+	if len(mean_loss_arr) > 1:
+		print(session_string, " - Epoch: ", epoch, "Mean loss diff to last epoch: ", mean_loss - mean_loss_arr[-2])
+		print("Mean loss of last epochs: ", mean_loss_arr)
+		if len(mean_loss_arr) > 5:
+			mld0 = mean_loss - mean_loss_arr[-6]
+			print(session_string, " - Epoch: ", epoch, "Mean loss diff to 5th epoch before this epoch: ", mld0)
+			if mld0 > -1e-3:
+				# store the network every so often
+				torch.save(model.state_dict(), net_file)
+				print("Loss does not seem to get smaller - aborting")
+				sys.exit(0)
 sys.exit(0)
