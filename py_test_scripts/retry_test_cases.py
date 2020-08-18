@@ -44,12 +44,12 @@ def main():
                              'the program tries to find the number of available CPUs on the system - if it fails, '
                              'the absolute value of nrCPUs is used. Default: 4')
     parser.add_argument('--executable', type=str, required=True,
-                        help='Executable of the autocalibration SW')
+                        help='Executable of the relative pose estimation framework')
     parser.add_argument('--message_path', type=str, required=True,
                         help='Storing path for text files containing error and normal mesages during the '
                              'generation process of scenes and matches')
     parser.add_argument('--output_path', type=str, required=True,
-                        help='Output path for results of the autocalibration')
+                        help='Output path for results of the relative pose estimation framework')
     parser.add_argument('--nrCall', type=int, required=True,
                         help='Number which specifies, how often these test cases where already called before. The '
                              'smallest possible value is 1. There shouldn\'t be a csv file '

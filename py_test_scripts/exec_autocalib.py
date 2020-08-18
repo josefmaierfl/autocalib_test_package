@@ -596,12 +596,12 @@ def main():
                              'the program tries to find the number of available CPUs on the system - if it fails, '
                              'the absolute value of nrCPUs is used. Default: 4')
     parser.add_argument('--executable', type=str, required=True,
-                        help='Executable of the autocalibration SW')
+                        help='Executable of the relative pose estimation framework')
     parser.add_argument('--message_path', type=str, required=True,
                         help='Storing path for text files containing error and normal mesages during the '
                              'generation process of scenes and matches')
     parser.add_argument('--output_path', type=str, required=True,
-                        help='Output path for results of the autocalibration')
+                        help='Output path for results of the relative pose estimation framework')
     parser.add_argument('--inlier_ratios', type=float, nargs='+', required=False,
                         help='Use only the given set of inlier ratios. If not provided, all available are used.')
     parser.add_argument('--kp_accs', type=float, nargs='+', required=False,

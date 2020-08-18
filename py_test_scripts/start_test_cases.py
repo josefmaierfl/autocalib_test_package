@@ -1585,7 +1585,7 @@ def main():
                              'the program tries to find the number of available CPUs on the system - if it fails, '
                              'the absolute value of nrCPUs is used. Default: 4')
     parser.add_argument('--executable', type=str, required=True,
-                        help='Executable of the autocalibration SW')
+                        help='Executable of the relative pose estimation framework')
     parser.add_argument('--message_path', type=str, required=True,
                         help='Storing path for text files containing error and normal messages while '
                              'testing. For every different test a '
