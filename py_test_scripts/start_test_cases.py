@@ -23,7 +23,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
 
-Description: Execute different test scenarios for the autocalibration based on name and test number in file
+Description: Execute different test scenarios for the relative pose estimation framework based on name and test number in file
 Autocalibration-Parametersweep-Testing.xlsx
 """
 import sys, re, argparse, os, warnings, time, subprocess as sp
@@ -1575,7 +1575,7 @@ def convert_autoc_pars_in_to_out(par_name, par_value):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Execute different test scenarios for the autocalibration based '
+    parser = argparse.ArgumentParser(description='Execute different test scenarios for the relative pose estimation framework based '
                                                  'on name and test number in file '
                                                  'Autocalibration-Parametersweep-Testing.xlsx')
     parser.add_argument('--path', type=str, required=True,

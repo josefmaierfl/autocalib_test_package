@@ -113,6 +113,27 @@ To change parameter `acceptBadStereoPars` instead of `imageOverlap`, comment lin
 
 Call `cd [cloned_repo_dir]/py_test_scripts && python change_user_interrupt_config.py -h` to show options.
 
+## gen_mult_scene_configs.py
+
+Loads initial configuration files (based on them multiple configuration files are generating by performing scene parameter sweeps on some parameters) for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) and builds a folder structure and an overview file for generating specific configuration and overview files for scenes by varying the used inlier ratio or inlier ratio change rate and keypoint accuracy.
+Depending on whether a parameter sweep on the inlier ratio or the inlier ratio change rate is performed, Python file [./py_test_scripts/gen_scene_configs.py](./py_test_scripts/gen_scene_configs.py) or [./py_test_scripts/gen_rob-test_scene_configs.py](./py_test_scripts/gen_rob-test_scene_configs.py) is called.
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python gen_mult_scene_configs.py -h` to show options.
+
+## gen_scene_configs.py
+
+Loads initial configuration files (based on them multiple configuration files are generating by performing scene parameter sweeps on some parameters) for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) and generates configuration files and overview files for scenes by varying the used inlier ratio and keypoint accuracy.
+This file is typically called by [./py_test_scripts/gen_mult_scene_configs.py](./py_test_scripts/gen_mult_scene_configs.py)
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python gen_scene_configs.py -h` to show options.
+
+## gen_rob-test_scene_configs.py
+
+Loads initial configuration files (based on them multiple configuration files are generating by performing scene parameter sweeps on some parameters) for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) and generates configuration files and overview files for scenes by varying the used inlier ratio change rate and keypoint accuracy.
+This file is typically called by [./py_test_scripts/gen_mult_scene_configs.py](./py_test_scripts/gen_mult_scene_configs.py)
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python gen_rob-test_scene_configs.py -h` to show options.
+
 ## communication.py
 
 Interface for sending SMS in case an error occurred or testing finished:
@@ -130,16 +151,46 @@ Loads multiple configuration files and generates scenes using [SemiRealSequence]
 
 Call `cd [cloned_repo_dir]/py_test_scripts && python create_scenes.py -h` to show options.
 
+## exec_autocalib.py
+
+Script for performing parameter sweeps on parameters of the [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib) library.
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python exec_autocalib.py -h` to show options.
+
+## retry_test_cases.py
+
+Used to execute different test scenarios for the relative pose estimation framework within the [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib) library that failed before.
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python retry_test_cases.py -h` to show options.
+
 ## eval_tests_main.py
 
 Holds function calls for each evaluation including used parameter values, informative texts, ... that are used to calculate statistics and evaluation results in addition to generate Latex and PDF files.
 
 Call `cd [cloned_repo_dir]/py_test_scripts && python eval_tests_main.py -h` to show options.
 
+## evaluation_numbers.py
+
+Holds number of evaluations, test names, folder and data structures, ... for all tests.
+
+## refinement_eval.py
+
+Specific filtering and evaluation functions based on already calculated statistics for testing results of various refinement algorithms and cost functions within the [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib) library.
 
 ## corr_pool_eval.py
 
-Specific filtering and evaluation functions based on already calculated statistics for testing results of various parameter settings on the feature match aggregation functionality of the continuous high accuracy stereo pose estimation and refinement framework of [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence).
+Specific filtering and evaluation functions based on already calculated statistics for testing results of various parameter settings on the feature match aggregation functionality of the continuous high accuracy stereo pose estimation and refinement framework of the [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib) library.
+
+## robustness_eval.py
+
+Specific filtering and evaluation functions based on already calculated statistics for testing results of various parameter settings on the robustness functionality of the continuous high accuracy stereo pose estimation and refinement framework of the [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib) library.
+
+## recompile_tex_no_author.py
+
+Loads all tex-files within a given directory including all sub-directories, deletes author information and builds PDFs.
+If option `--copy_only` is specified, all and only PDF documents are copied to the destination folder while preserving the folder structure.
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python recompile_tex_no_author.py -h` to show options.
 
 ## Testing Results <a name="results"></a>
 
