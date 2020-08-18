@@ -49,7 +49,7 @@ def gen_ciphered_text(pw_to_encrypt):
 
 def decrypt_token():
     pw = getpass.getpass(prompt='Password for sending messages: ', stream=sys.stderr)
-    hash = '$pbkdf2-sha256$29000$8D4HwJhTao1xTsnZW0upNQ$r4ISVPwlm89MBtgWmQRVUX04sgb.682xadR9rxhGPKE'
+    hash = 'PWhash'
     correct_pw = False
     while not correct_pw:
         correct_pw = pbkdf2_sha256.verify(pw, hash)
@@ -64,21 +64,20 @@ def decrypt_token():
     dk = hashlib.pbkdf2_hmac('sha256', pw.encode("utf-8"), salt, 100000, 32)
     key = base64.urlsafe_b64encode(dk)
     cipher_suite = Fernet(key)
-    ciphered_text = b'gAAAAABeFzW4gLCi9GK2_wDzK7H4xc2vgSUOlFrhbLjw2BOARjHJDcbTcc0uUeod3gduK8UXcWjIQd2hh3DWJitRy' \
-                    b'V0hmhVjad43NsU_hgxt_4qeW1BDhWNgN3CvOarouASPTUGEu7sZ'
+    ciphered_text = b'yourEncryptedToken'
     unciphered_text = cipher_suite.decrypt(ciphered_text).decode('utf-8')
     return True, unciphered_text
 
 
 def send_sms(text, token):
     # the following line needs your Twilio Account SID and Auth Token
-    client = Client("AC3d80a404e2b3a8f446015b766d97d74a", token)
+    client = Client("accountSID", token)
 
     # change the "from_" number to your Twilio number and the "to" number
     # to the phone number you signed up for Twilio with, or upgrade your
     # account to send SMS to any phone number
-    client.messages.create(to="+4369981197343",
-                           from_="+12512701072",
+    client.messages.create(to="your_phone_number",
+                           from_="your_twilio_account_phone_number",
                            body=text)
 
 

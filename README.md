@@ -65,7 +65,7 @@ For available options call `./run_docker_base.sh live -h`.
 
 ### gen_init_scenes.py <a name="gen_init_scenes"></a>
 
-Used to loads initial configuration files for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) and creates scenes which can be further used to extract information (relative poses of stereo cameras that should be equal for evaluations) that is needed for the final configuration files.
+Used to load initial configuration files (which define parameters that are not used for scene parameter sweeping but will be kept fixed) for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) and creates scenes which can be further used to extract information (relative poses of stereo cameras that should be equal for evaluations) that is needed for the final configuration files.
 
 The following steps should be performed:
 1. Create a directory that should hold your config files
@@ -86,7 +86,23 @@ Call `cd [cloned_repo_dir]/py_test_scripts && python extract_Rt.py -h` to show n
 
 ### change_distCamMat_config.py
 
+Changes configuration file parameter `distortCamMat` for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) within all configuration files for which the file name in a given directory contains the pattern `*_initial.[extension]`.
 
+Call `cd [cloned_repo_dir]/py_test_scripts && python change_distCamMat_config.py -h` to show options.
+
+### change_keyp_distr_config.py
+
+Changes configuration file parameter `corrsPerRegion` for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) within all configuration files for which the file name in a given directory contains the pattern `*_initial.[extension]`.
+Used parameter values must be edited within [./py_test_scripts/change_keyp_distr_config.py](./py_test_scripts/change_keyp_distr_config.py)
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python change_keyp_distr_config.py -h` to show options.
+
+### change_nrTP_config.py
+
+Changes configuration file parameter `truePosRange` for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) within all configuration files for which the file name in a given directory contains the pattern `[.*_kp-distr-(?:(?:half-img)|(?:1corn)|(?:equ))_depth-(?:F|(?:NM)|(?:NMF))_TP-([0-9to]+).*]_initial.[extension]`.
+The values for `truePosRange` are extracted from the file name using the regular expression shown above within brackets `[...]`.
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python change_nrTP_config.py -h` to show options.
 
 ## Testing Results <a name="results"></a>
 
