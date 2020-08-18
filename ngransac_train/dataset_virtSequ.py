@@ -3,7 +3,7 @@ import torch
 import os
 import cv2
 import math
-import util
+import util_virtSequ
 
 from torch.utils.data import Dataset
 
@@ -57,8 +57,8 @@ class SparseDataset(Dataset):
 
 		if self.fmat:
 			# for fundamental matrices, normalize image coordinates using the image size (network should be independent to resolution)
-			util.normalize_pts(pts1, im_size1)
-			util.normalize_pts(pts2, im_size2)
+			util_virtSequ.normalize_pts(pts1, im_size1)
+			util_virtSequ.normalize_pts(pts2, im_size2)
 		else:
 			#for essential matrices, normalize image coordinate using the calibration parameters
 			pts1 = cv2.undistortPoints(pts1, K1.numpy(), None)

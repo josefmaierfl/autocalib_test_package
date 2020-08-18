@@ -23,7 +23,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
 """
-import util, sys, math
+import util_virtSequ, sys, math
 import subprocess as sp, os
 import multiprocessing
 import multiprocessing.pool
@@ -86,7 +86,7 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
         if ret != 0 and ret != 98:
             return ret
 
-        session_string = util.create_session_string('init', fmat, orb, rootsift, ratio, session)
+        session_string = util_virtSequ.create_session_string('init', fmat, orb, rootsift, ratio, session)
         out_folder = os.path.join(path, 'training_results')
         net_file = os.path.join(out_folder, 'weights_%s.net' % (session_string))
     else:
@@ -141,7 +141,7 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
 
 def main():
     # parse command line arguments
-    parser = util.create_parser(description = "Train a neural guidance network using correspondence "
+    parser = util_virtSequ.create_parser(description = "Train a neural guidance network using correspondence "
                       "distance to a ground truth model to calculate target probabilities.")
 
     parser.add_argument('--path', '-p', required=False, default='default', help='Path to folders train and validate')

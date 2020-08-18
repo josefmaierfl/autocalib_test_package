@@ -9,9 +9,9 @@ import time
 
 from network import CNNet
 from dataset_virtSequ import SparseDataset
-import util
+import util_virtSequ
 
-parser = util.create_parser(
+parser = util_virtSequ.create_parser(
 	description = "Test NG-RANSAC on pre-calculated correspondences.")
 
 parser.add_argument('--path', '-p',
@@ -52,7 +52,7 @@ else:
 	# load a model, either directly provided by the user, or infer a pre-trained model from the command line parameters
 	model_file = opt.model
 	if len(model_file) == 0:
-		model_file = util.create_session_string('e2e', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
+		model_file = util_virtSequ.create_session_string('e2e', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
 		model_file = 'weights_' + model_file + '.net'
 		m_path = os.path.join(opt.path, 'training_results')
 		model_file = os.path.join(m_path, model_file)
@@ -131,8 +131,8 @@ with torch.no_grad():
 				# === CASE FUNDAMENTAL MATRIX =========================================
 
 				# restore pixel coordinates
-				util.denormalize_pts(correspondences[b, 0:2], im_size1[b])
-				util.denormalize_pts(correspondences[b, 2:4], im_size2[b])
+				util_virtSequ.denormalize_pts(correspondences[b, 0:2], im_size1[b])
+				util_virtSequ.denormalize_pts(correspondences[b, 2:4], im_size2[b])
 
 				F = torch.zeros((3, 3))
 
@@ -148,7 +148,7 @@ with torch.no_grad():
 				pts2 = correspondences[b,2:4].numpy()
 
 				# evaluation of F matrix via correspondences
-				valid, F1, epi_inliers, epi_error = util.f_error(pts1, pts2, F.numpy(), gt_F[b].numpy(), opt.threshold)
+				valid, F1, epi_inliers, epi_error = util_virtSequ.f_error(pts1, pts2, F.numpy(), gt_F[b].numpy(), opt.threshold)
 
 				if valid:
 					avg_F1 += F1
@@ -185,7 +185,7 @@ with torch.no_grad():
 			# evaluation of relative pose (essential matrix)
 			cv2.recoverPose(E, pts1, pts2, K, R, t, inliers)
 
-			dR, dT = util.pose_error(R, gt_R[b], t, gt_t[b])
+			dR, dT = util_virtSequ.pose_error(R, gt_R[b], t, gt_t[b])
 			pose_losses.append(max(float(dR), float(dT)))
 
 		avg_ransac_time += ransac_time /  opt.batchsize
@@ -196,7 +196,7 @@ with torch.no_grad():
 	 
 	# calculate AUC of pose losses
 	thresholds = [5, 10, 20]
-	AUC = util.AUC(losses = pose_losses, thresholds = thresholds, binsize = opt.evalbinsize)
+	AUC = util_virtSequ.AUC(losses = pose_losses, thresholds = thresholds, binsize = opt.evalbinsize)
 
 	print("\n=== Relative Pose Accuracy ===========================")
 	print("AUC for %ddeg/%ddeg/%ddeg: %.2f/%.2f/%.2f\n" % (thresholds[0], thresholds[1], thresholds[2], AUC[0], AUC[1], AUC[2]))
@@ -222,7 +222,7 @@ with torch.no_grad():
 			print("Mean Epi Error: %.2f" % mean_epi_err)
 			print("Median Epi Error: %.2f" % median_epi_err)
 
-	session_string = util.create_session_string('test', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
+	session_string = util_virtSequ.create_session_string('test', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
 
 	# write evaluation results to file
 	out_dir = os.path.join(opt.path, 'results')

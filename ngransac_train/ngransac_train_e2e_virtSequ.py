@@ -8,10 +8,10 @@ import ngransac
 
 from network import CNNet
 from dataset_virtSequ import SparseDataset
-import util, sys
+import util_virtSequ, sys
 
 # parse command line arguments
-parser = util.create_parser(
+parser = util_virtSequ.create_parser(
 	description = "Train a neural guidance network end-to-end using a task loss.")
 
 parser.add_argument('--path', '-p',
@@ -89,7 +89,7 @@ optimizer = optim.Adam(model.parameters(), lr=opt.learningrate)
 iteration = 0
 
 # keep track of the training progress
-session_string = util.create_session_string('e2e', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
+session_string = util_virtSequ.create_session_string('e2e', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
 log_file = os.path.join(out_folder, 'log_%s.txt' % (session_string))
 net_file = os.path.join(out_folder, 'weights_%s.net' % (session_string))
 train_log = open(log_file, 'w', 1)
@@ -147,8 +147,8 @@ for epoch in range(0, opt.epochs):
 
 					if s == 0: #denormalization is inplace, so do it for the first sample only
 						# restore pixel coordinates
-						util.denormalize_pts(correspondences[b, 0:2], im_size1[b])
-						util.denormalize_pts(correspondences[b, 2:4], im_size2[b])
+						util_virtSequ.denormalize_pts(correspondences[b, 0:2], im_size1[b])
+						util_virtSequ.denormalize_pts(correspondences[b, 2:4], im_size2[b])
 
 					# run NG-RANSAC
 					F = torch.zeros((3, 3))
@@ -162,7 +162,7 @@ for epoch in range(0, opt.epochs):
 
 					# compute fundamental matrix metrics if they are used as training signal
 					if opt.loss is not 'pose':
-						valid, F1, incount, epi_error = util.f_error(pts1, pts2, F.numpy(), gt_F[b].numpy(), opt.threshold)
+						valid, F1, incount, epi_error = util_virtSequ.f_error(pts1, pts2, F.numpy(), gt_F[b].numpy(), opt.threshold)
 					
 					# normalize correspondences using the calibration parameters for the calculation of pose errors
 					pts1 = cv2.undistortPoints(pts1.transpose(2, 1, 0), K1[b].numpy(), None)
@@ -196,7 +196,7 @@ for epoch in range(0, opt.epochs):
 					t = np.zeros((3,1))
 
 					cv2.recoverPose(E, pts1, pts2, K, R, t, inliers)
-					dR, dT = util.pose_error(R, gt_R[b], t, gt_t[b])
+					dR, dT = util_virtSequ.pose_error(R, gt_R[b], t, gt_t[b])
 					loss = max(float(dR), float(dT))
 						
 				log_prob_grads.append(gradients)

@@ -7,10 +7,10 @@ import ngransac
 
 from network import CNNet
 from dataset_virtSequ import SparseDataset
-import util
+import util_virtSequ
 
 # parse command line arguments
-parser = util.create_parser(
+parser = util_virtSequ.create_parser(
 	description = "Train a neural guidance network using correspondence distance to a ground truth model to calculate target probabilities.")
 
 parser.add_argument('--path', '-p',
@@ -76,7 +76,7 @@ optimizer = optim.Adam(model.parameters(), lr=opt.learningrate)
 iteration = 0
 
 # keep track of the training progress
-session_string = util.create_session_string('init', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
+session_string = util_virtSequ.create_session_string('init', opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session)
 log_file = os.path.join(out_folder, 'log_%s.txt' % (session_string))
 net_file = os.path.join(out_folder, 'weights_%s.net' % (session_string))
 train_log = open(log_file, 'w', 1)
@@ -109,8 +109,8 @@ for epoch in range(0, opt.epochs):
 
 				# === CASE FUNDAMENTAL MATRIX =========================================
 
-				util.denormalize_pts(correspondences[b, 0:2], im_size1[b])
-				util.denormalize_pts(correspondences[b, 2:4], im_size2[b])
+				util_virtSequ.denormalize_pts(correspondences[b, 0:2], im_size1[b])
+				util_virtSequ.denormalize_pts(correspondences[b, 2:4], im_size2[b])
 
 				ngransac.gtdist(correspondences[b], target_probs[b], gt_F[b], opt.threshold, True)
 			else:
