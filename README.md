@@ -52,6 +52,42 @@ All errors are logged to disk.
 Evaluations can be resumed at any point.
 For additional options run `./run_docker_base.sh live -h`
 
+## Python File Descriptions <a name="files"></a>
+
+Python files used for testing are located within [./py_test_scripts](./py_test_scripts).
+Every Python file offers its own command line interface for independent usage.
+
+### main.py
+
+[Main test file](./py_test_scripts/main.py) for starting and resuming evaluations (including generation of configuration files for parameter sweeps and scene creations with [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence)).
+It provides functionality for performing only specific tests, compressing results and logging information, specifying different working directories, ...
+For available options call `./run_docker_base.sh live -h`.
+
+### gen_init_scenes.py <a name="gen_init_scenes"></a>
+
+Used to loads initial configuration files for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) and creates scenes which can be further used to extract information (relative poses of stereo cameras that should be equal for evaluations) that is needed for the final configuration files.
+
+The following steps should be performed:
+1. Create a directory that should hold your config files
+2. Generate a template configuration file following instructions [here](https://github.com/josefmaierfl/SemiRealSequence#config-file)
+3. Rename the configuration file to `[your_file_name]_initial.[extension]`.
+4. Change configuration file parameters (excluding sweep parameters) based on your needs
+5. Repeat steps 2 to 5 for additional parameter sets
+6. Call `cd [cloned_repo_dir]/py_test_scripts && python gen_init_scenes.py -h` to show necessary options
+7. Call `cd [cloned_repo_dir]/py_test_scripts && python gen_init_scenes.py [options]` to start generating initial sequences
+8. Use Python file [extract_Rt.py](#extract_Rt) to copy calculated relative poses into final initial configuration files
+
+### extract_Rt.py <a name="extract_Rt"></a>
+
+Copies all stereo configurations from a generated scene (by [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence)) into a configuration file.
+Python file [gen_init_scenes.py](#gen_init_scenes) must be used in advance for generating scenes.
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python extract_Rt.py -h` to show necessary options.
+
+### change_distCamMat_config.py
+
+
+
 ## Testing Results <a name="results"></a>
 
 Coming soon
