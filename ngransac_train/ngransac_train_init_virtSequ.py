@@ -61,7 +61,11 @@ else:
 trainset = SparseDataset(data_folder, opt.ratio, opt.nfeatures, opt.fmat, opt.nosideinfo)
 trainset_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=av_cpus, batch_size=opt.batchsize)
 
-print("\nImage pairs: ", len(trainset), "\n")
+nr_img_pairs = len(trainset)
+print("\nImage pairs: ", nr_img_pairs, "\n")
+store_interm = nr_img_pairs + 1
+if nr_img_pairs > 20000:
+	store_interm = 10000
 
 # create or load model
 model = CNNet(opt.resblocks)
@@ -137,6 +141,9 @@ for epoch in range(0, opt.epochs):
 			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", float(loss))
 			train_log.write('%d %f\n' % (iteration, loss))
 
+		if iteration > 0 and iteration % store_interm == 0:
+			print("Storing network", session_string)
+			torch.save(model.state_dict(), net_file)
 		iteration += 1
 		mean_loss += float(loss)
 		it_cnt += 1
@@ -149,12 +156,16 @@ for epoch in range(0, opt.epochs):
 	if len(mean_loss_arr) > 1:
 		print(session_string, " - Epoch: ", epoch, "Mean loss diff to last epoch: ", mean_loss - mean_loss_arr[-2])
 		print("Mean loss of last epochs: ", mean_loss_arr)
-		if len(mean_loss_arr) > 5:
-			mld0 = mean_loss - mean_loss_arr[-6]
-			print(session_string, " - Epoch: ", epoch, "Mean loss diff to 5th epoch before this epoch: ", mld0)
+		if len(mean_loss_arr) > 7:
+			mld0 = mean_loss - mean_loss_arr[-8]
+			print(session_string, " - Epoch: ", epoch, "Mean loss diff to 7th epoch before this epoch: ", mld0)
 			if mld0 > -1e-3:
-				# store the network every so often
-				torch.save(model.state_dict(), net_file)
-				print("Loss does not seem to get smaller - aborting")
-				sys.exit(0)
+				m41 = sum(mean_loss_arr[-8:-4]) / 4
+				m42 = sum(mean_loss_arr[-4:]) / 4
+				mld1 = m42 - m41
+				if mld1 > -1e-3:
+					# store the network every so often
+					torch.save(model.state_dict(), net_file)
+					print("Loss does not seem to get smaller - aborting")
+					sys.exit(0)
 sys.exit(0)
