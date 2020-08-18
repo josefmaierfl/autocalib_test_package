@@ -55,7 +55,7 @@ For additional options run `./run_docker_base.sh live -h`
 ## Python File Descriptions <a name="files"></a>
 
 Python files used for testing are located within [./py_test_scripts](./py_test_scripts).
-Every Python file offers its own command line interface for independent usage.
+Most Python files offer their own command line interface for independent usage.
 
 ### main.py
 
@@ -103,6 +103,43 @@ Changes configuration file parameter `truePosRange` for [SemiRealSequence](https
 The values for `truePosRange` are extracted from the file name using the regular expression shown above within brackets `[...]`.
 
 Call `cd [cloned_repo_dir]/py_test_scripts && python change_nrTP_config.py -h` to show options.
+
+### change_user_interrupt_config.py
+
+Changes configuration file parameter `imageOverlap` for [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) within all configuration files for which the file name in a given directory contains the pattern `*_initial.[extension]`.
+Used parameter values must be edited within [./py_test_scripts/change_user_interrupt_config.py](./py_test_scripts/change_user_interrupt_config.py)
+
+To change parameter `acceptBadStereoPars` instead of `imageOverlap`, comment lines (`59: lobj = re.search('imageOverlap:', li)` and `62: fo.write('imageOverlap: 8.5000000000000004e-01\n')`) and uncomment lines (`58: #lobj = re.search('acceptBadStereoPars:', li)` and `61: #fo.write('acceptBadStereoPars: 1\n')`) within [./py_test_scripts/change_user_interrupt_config.py](./py_test_scripts/change_user_interrupt_config.py).
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python change_user_interrupt_config.py -h` to show options.
+
+## communication.py
+
+Interface for sending SMS in case an error occurred or testing finished:
+1. To use the interface, you need a [twilio](https://www.twilio.com/) account.
+2. If you have one, call function `gen_ciphered_text` providing your twilio account token and set a password. You can copy your token into the function argument of line 87, change line 85 to `encr = True` and call `cd [cloned_repo_dir]/py_test_scripts && python communication.py`. Don't forget the delete your inserted token later on.
+3. Set variable `hash` in line 52 of file [./py_test_scripts/communication.py](./py_test_scripts/communication.py) to the hash value of output `Hash value for later verification: [your_hash_value]`.
+4. Set variable `ciphered_text` in line 67 of file [./py_test_scripts/communication.py](./py_test_scripts/communication.py) to the encrypted text of output `Encrypted PW: [your_encrypted_text]`.
+5. Set your accound SID in line 74: `client = Client("accountSID", token)`
+6. Insert your phone number and your twilio account phone number in lines 79-80 in fields `your_phone_number` and `your_twilio_account_phone_number`. You also need to specify the country code like +1..., +49...
+7. To test if it works, change line 85 to `encr = False` and execute `cd [cloned_repo_dir]/py_test_scripts && python communication.py`
+
+## create_scenes.py
+
+Loads multiple configuration files and generates scenes using [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence).
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python create_scenes.py -h` to show options.
+
+## eval_tests_main.py
+
+Holds function calls for each evaluation including used parameter values, informative texts, ... that are used to calculate statistics and evaluation results in addition to generate Latex and PDF files.
+
+Call `cd [cloned_repo_dir]/py_test_scripts && python eval_tests_main.py -h` to show options.
+
+
+## corr_pool_eval.py
+
+Specific filtering and evaluation functions based on already calculated statistics for testing results of various parameter settings on the feature match aggregation functionality of the continuous high accuracy stereo pose estimation and refinement framework of [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence).
 
 ## Testing Results <a name="results"></a>
 

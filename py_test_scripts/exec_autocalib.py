@@ -23,7 +23,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
 
-Description: Execute autocalibration using different parameters and all generated sequences within a given folder.
+Description: Execute noMatch_poselib-test of matchinglib_poselib using different parameters and all generated sequences within a given folder.
 """
 import sys, re, numpy as np, argparse, os, pandas, subprocess as sp
 import ruamel.yaml as yaml
@@ -587,7 +587,7 @@ def write_cmd_csv(file, data):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Execute autocalibration using different parameters and all '
+    parser = argparse.ArgumentParser(description='Execute noMatch_poselib-test of matchinglib_poselib using different parameters and all '
                                                  'generated sequences within a given folder.')
     parser.add_argument('--path', type=str, required=True,
                         help='Directory holding file \'generated_dirs_config.txt\'')
