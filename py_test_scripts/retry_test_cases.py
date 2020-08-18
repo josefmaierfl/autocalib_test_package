@@ -23,7 +23,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Author: Josef Maier (josefjohann-dot-maier-at-gmail-dot-at)
 
-Description: Execute different test scenarios for the autocalibration that failed before
+Description: Execute different test scenarios for the relative pose estimation framework that failed before
 """
 import sys, re, argparse, os, warnings, time, subprocess as sp
 
@@ -34,7 +34,7 @@ def retry_test(csv_file, executable, cpu_cnt, message_path, output_path, nrCall)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Execute different test scenarios for the autocalibration '
+    parser = argparse.ArgumentParser(description='Execute different test scenarios for the relative pose estimation framework '
                                                  'that failed before by loading the necessary information from '
                                                  'a csv file.')
     parser.add_argument('--csv_file', type=str, required=True,
