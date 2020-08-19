@@ -52,7 +52,7 @@ The first argument of script file `run_docker_base.sh` must be `live` or `shutdo
 The latter shuts the system down after evaluations are finished or if an error occurred.
 
 All errors are logged to disk.
-Evaluations can be resumed at any point.
+Evaluations can be resumed at any point as long as processes were not killed by the user.
 For additional options run `./run_docker_base.sh live -h`
 
 ## Python File Descriptions <a name="files"></a>
