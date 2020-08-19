@@ -21,6 +21,9 @@ For a detailed description of the used GT-generation framework take a look at [S
 
 For a detailed description of the used pose estimation and refinement algorithms take a look at [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib).
 
+The testing framework makes use of parallel computing using all available CPU cores (can be adjusted using option `--nrCPUs`) to speed up testing.
+We used 72 CPUs for generating GT data and testing.
+
 ## Dependencies <a name="dependencies"></a>
 
 As all our evaluations were performed on [AWS](https://aws.amazon.com/), this framework is optimized for [Docker](https://docs.docker.com/get-docker/) usage.
