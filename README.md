@@ -50,6 +50,14 @@ All errors are logged to disk.
 Evaluations can be resumed at any point as long as processes were not killed by the user.
 For additional options run `./run_docker_base.sh live -h`
 
+A C++ interface to NG-RANSAC using [Boost.Python](https://www.boost.org/doc/libs/1_74_0/libs/python/doc/html/index.html) can be found in files
+* [./matchinglib_poselib/source/tests/noMatch_poselib-test/load_py_ngransac.hpp](./matchinglib_poselib/source/tests/noMatch_poselib-test/load_py_ngransac.hpp)
+* [./matchinglib_poselib/source/tests/noMatch_poselib-test/load_py_ngransac.cpp](./matchinglib_poselib/source/tests/noMatch_poselib-test/load_py_ngransac.cpp)
+* [./matchinglib_poselib/source/poselib/thirdparty/ngransac/cpp_compute_interface.py](./matchinglib_poselib/source/poselib/thirdparty/ngransac/cpp_compute_interface.py)
+* [./matchinglib_poselib/source/poselib/thirdparty/ngransac/ng_ransac_interface.py](./matchinglib_poselib/source/poselib/thirdparty/ngransac/ng_ransac_interface.py)
+
+For an example on how to use it see [./matchinglib_poselib/source/tests/noMatch_poselib-test/main.cpp](./matchinglib_poselib/source/tests/noMatch_poselib-test/main.cpp).
+
 ### Training of NG-RANSAC <a name="ngransac-train"></a>
 
 After generating GT data using [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) and data conversion (see [branch conversion](https://github.com/josefmaierfl/autocalib_test_package/tree/conversion)), training (initializing weights, end to end training, and testing) can be started by executing `./run_docker_base.sh [live/shutdown] [[fullp] [RESDIR <your_data_directory>]] EXE train [additional_options]`.
