@@ -30,7 +30,7 @@ Additional parameters of [SemiRealSequence configuration files](https://github.c
 5. Execute `./run_docker_base.sh [live/shutdown] [RESDIR <your_relative_directory>]` to start generating data
 
 The first argument of script file `run_docker_base.sh` must be `live` or `shutdown`.
-The latter shuts the system down after evaluations are finished or if an error occurred.
+The latter shuts the system down after data generation is finished or if an error occurred.
 
 All errors are logged to disk.
 Data generation can be resumed at any point as long as processes were not killed by the user.
