@@ -9,7 +9,7 @@
 
 ## Introduction <a name="introduction"></a>
 
-This framework is used to generate multiple semi-real GT datasets with [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) (a not installable version is included in this repository within [./generateVirtualSequence](./generateVirtualSequence)) which are further used to test various relative pose estimation and refinement algorithms from the [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib) library (a not installable version is included in this repository within [./matchinglib_poselib](./matchinglib_poselib)).
+This framework is used to generate multiple semi-real GT datasets utilizing [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) (a not installable version is included in this repository within [./generateVirtualSequence](./generateVirtualSequence)) which are further used to test various relative pose estimation and refinement algorithms from the [MATCHING- AND POSELIB](https://github.com/josefmaierfl/matchinglib_poselib) library (a not installable version is included in this repository within [./matchinglib_poselib](./matchinglib_poselib)).
 
 [SemiRealSequence](https://github.com/josefmaierfl/SemiRealSequence) is used to generate 3D scenes and sparse feature matches with specific properties like depth ranges of 3D point clouds, number of inliers, inlier ratios, spatial distributions of correspondences within the 2D image domain, keypoint repeatability errors, linear and abrupt changes in different GT camera pose parameters, ...
 
