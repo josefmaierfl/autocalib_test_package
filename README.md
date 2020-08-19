@@ -45,7 +45,7 @@ For each of afore mentioned evaluations, best performing parameter sets were use
 
 To start testing (all evaluations) perform the following steps:
 1. Create a folder `res_save_compressed` outside of this repository's main directory (`../res_save_compressed`)
-2. Create a folder `results` outside of this repository's main directory (`../results`) or provide option `RESDIR <your_directory>`  to script file `run_docker_base.sh` as second argument
+2. Create a folder `results` outside of this repository's main directory (`../results`) or provide option `RESDIR <your_relative_directory>` (relative directory to `[cloned_repo_dir]/..`) to script file `run_docker_base.sh` as second argument
 3. Execute `./run_docker_base.sh live` in the main directory of this repository
 
 The first argument of script file `run_docker_base.sh` must be `live` or `shutdown`.
