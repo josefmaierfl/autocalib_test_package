@@ -13,6 +13,11 @@ For details on how to use [SemiRealSequence](https://github.com/josefmaierfl/Sem
 
 For details on how to train and test [NG-RANSAC](https://github.com/josefmaierfl/autocalib_test_package/tree/ngransac), see [branch ngransac](https://github.com/josefmaierfl/autocalib_test_package/tree/ngransac).
 
+For details on how to convert data from SemiRealSequence into NG-RANSAC training format, take a look at [./ngransac_prepare/readSequMatches.py](./ngransac_prepare/readSequMatches.py).
+For available options call `cd [cloned_repo_dir]/ngransac_prepare && python readSequMatches.py -h`.
+
+For an example on how to create bulk configuration files, take a look at files [./ngransac_prepare/gen_mult_scene_configs.py](./ngransac_prepare/gen_mult_scene_configs.py) and [./ngransac_prepare/gen_scene_configs.py](./ngransac_prepare/gen_scene_configs.py).
+
 ## Dependencies <a name="dependencies"></a>
 
 As all our evaluations were performed on [AWS](https://aws.amazon.com/), this framework is optimized for [Docker](https://docs.docker.com/get-docker/) usage.
