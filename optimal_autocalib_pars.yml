@@ -1,0 +1,32 @@
+USACInlratFilt: 0
+absThRankingStable: 0.293205
+bart: 0
+bart_stereo: 1
+checkPoolPoseRobust: 2
+maxDist3DPtsZ: 130
+maxPoolCorrespondences: 4486
+maxRat3DPtsFar: 0.4
+minContStablePoses: 4
+minInlierRatSkip: 0.264
+minInlierRatioReInit: 0.541
+minNormDistStable: 0.48087
+minPtsDistance: 3.523
+refineRT:
+  - 2
+  - 2
+refineRT_stereo:
+  - 5
+  - 2
+relInlRatThLast: 0.308
+relInlRatThNew: 0.306
+relMinInlierRatSkip: 0.592
+robMFilt: USAC
+th: 1.6
+usac123:
+  - 3
+  - 1
+  - 1
+usac56:
+  - 2
+  - 0
+useRANSAC_fewMatches: False
