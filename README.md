@@ -14,6 +14,8 @@ For details on how to use [SemiRealSequence](https://github.com/josefmaierfl/Sem
 For details on how to train and test [NG-RANSAC](https://github.com/josefmaierfl/autocalib_test_package/tree/ngransac), see [branch ngransac](https://github.com/josefmaierfl/autocalib_test_package/tree/ngransac).
 
 For details on how to convert data from SemiRealSequence into NG-RANSAC training format, take a look at [./ngransac_prepare/readSequMatches.py](./ngransac_prepare/readSequMatches.py).
+This Python files supports **reading SemiRealSequence data in `*.yaml`, `*.xml`, `*.yaml.gz`, and `*.xml.gz` format**.
+Moreover, not only stereo poses and correspondences but also **relative frame-to-frame poses and correspondences** for both, first and second stereo cameras, are extracted from SemiRealSequence data.
 For available options call `cd [cloned_repo_dir]/ngransac_prepare && python readSequMatches.py -h`.
 
 For an example on how to create multiple configuration files by sweeping some parameters, take a look at files [./ngransac_prepare/gen_mult_scene_configs.py](./ngransac_prepare/gen_mult_scene_configs.py) and [./ngransac_prepare/gen_scene_configs.py](./ngransac_prepare/gen_scene_configs.py).
