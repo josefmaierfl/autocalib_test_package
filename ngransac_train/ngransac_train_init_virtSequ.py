@@ -95,6 +95,7 @@ for epoch in range(0, opt.epochs):
 	print("=== Starting Epoch", epoch, "==================================")
 	mean_loss = 0
 	it_cnt = 0
+	m100 = 0
 
 	# store the network every epoch
 	torch.save(model.state_dict(), net_file)
@@ -134,12 +135,22 @@ for epoch in range(0, opt.epochs):
 		optimizer.step() 
 		optimizer.zero_grad()
 
-		if epoch % 4 == 0:
+		m100 += loss
+		if it_cnt == 0:
 			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", float(loss))
 			train_log.write('%d %f\n' % (iteration, loss))
-		elif iteration % 100 == 0:
-			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", float(loss))
-			train_log.write('%d %f\n' % (iteration, loss))
+		elif it_cnt % 99 == 0:
+			m100 /= 100
+			print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Mean Loss: ", float(m100))
+			train_log.write('%d %f\n' % (iteration, m100))
+			m100 = 0
+
+		# if epoch % 4 == 0:
+		# 	print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", float(loss))
+		# 	train_log.write('%d %f\n' % (iteration, loss))
+		# elif iteration % 100 == 0:
+		# 	print(session_string, " - Epoch: ", epoch, "Iteration: ", iteration, "Loss: ", float(loss))
+		# 	train_log.write('%d %f\n' % (iteration, loss))
 
 		if iteration > 0 and iteration % store_interm == 0:
 			print("Storing network", session_string)

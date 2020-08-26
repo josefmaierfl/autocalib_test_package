@@ -27,4 +27,8 @@ python main.py --nrCPUs -72 --zip_new_folders --shutdown_afterwards --skip_gen_s
 ./run_docker_base.sh live RESDIR results_changing_Rt --nrCPUs -72 --zip_new_folders --cal_retry_file /app/results/testing_results/usac_vs_ransac/commands_and_parameters_unsuccessful_0.csv --cal_retry_nrCall 1
 
 
-./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --nrCPUs -16 --orb -r 0.8 -lri 0.01 -lre 0.00001 --nfeaturesMult -1 --noAndSideinfo --epochsInit 300 --epochs_e2e 300 --skipTest --multmodels /app/results_train/conversion_results/training_results/weights_init_E_orb_r0.80_nfeat-1_withSideInfo.net /app/results_train/conversion_results/training_results/weights_init_E_orb_r1.00_nfeat-1_noSideInfo.net
+./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --nrCPUs -16 --orb -r 0.8 -lri 0.001 -lre 0.0001 --nfeaturesMult -1 --noAndSideinfo --epochsInit 300 --epochs_e2e 300 --skipTest --multmodels /app/results_train/conversion_results/training_results/weights_init_E_orb_r0.80_nfeat-1_withSideInfo.net /app/results_train/conversion_results/training_results/weights_init_E_orb_r1.00_nfeat-1_noSideInfo.net
+
+./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --skipInit --nrCPUs -16 --orb -r 0.8 -lre 0.00001 --nfeaturesMult -1 --noAndSideinfo --epochs_e2e 300 --skipTest --multmodels /app/results_train/conversion_results/training_results/weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo.net /app/results_train/conversion_results/training_results/weights_e2e_E_orb_r1.00_nfeat-1_noSideInfo.net
+
+./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --skipInit --nrCPUs -8 --orb -r 1.0 -lre 0.00001 --nfeatures -1 -bs 1 -sid pretrained --epochs_e2e 300 --skipTest --model /app/results_train/conversion_results/training_results/weights_e2e_E_orb_r1.00_.net
