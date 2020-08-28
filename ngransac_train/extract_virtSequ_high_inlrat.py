@@ -58,26 +58,26 @@ for filename, pts1, pts2, gt_F, gt_R, gt_t, K1, K2, gt_res, gt_inliers, inl_cnt,
 		low.append(inlrat)
 
 if len(high) > 0:
-	mean_h = statistics.mean(high)
-	sd_h = statistics.stdev(high)
+	mean_h = round(statistics.mean(high), 3)
+	sd_h = round(statistics.stdev(high), 4)
 	mi_h = min(high)
-	ma_h = max(high)
-	q_h = [round(q, 3) for q in statistics.quantiles(high, n=4)]
-	err_mean_h = statistics.mean(errm)
-	err_sd_h = statistics.stdev(errm)
+	ma_h = round(max(high), 3)
+	q_h = [round(q, 3) for q in np.quantile(high, [0.25, 0.5, 0.75])]
+	err_mean_h = round(statistics.mean(errm), 4)
+	err_sd_h = round(statistics.stdev(errm), 4)
 	err_mi_h = min(errm)
-	err_ma_h = max(errm)
-	err_q_h = [round(q, 5) for q in statistics.quantiles(errm, n=4)]
+	err_ma_h = round(max(errm), 3)
+	err_q_h = [round(q, 5) for q in np.quantile(errm, [0.25, 0.5, 0.75])]
 else:
 	mean_h = sd_h = mi_h = ma_h = err_mean_h = err_sd_h = err_mi_h = err_ma_h = 0
 	q_h = err_q_h = [0] * 3
 
 if len(low) > 0:
-	mean_l = statistics.mean(low)
-	sd_l = statistics.stdev(low)
+	mean_l = round(statistics.mean(low), 4)
+	sd_l = round(statistics.stdev(low), 4)
 	mi_l = min(low)
-	ma_l = max(low)
-	q_l = [round(q, 3) for q in statistics.quantiles(low, n=4)]
+	ma_l = round(max(low), 3)
+	q_l = [round(q, 3) for q in np.quantile(low, [0.25, 0.5, 0.75])]
 else:
 	mean_l = sd_l = mi_l = ma_l = 0
 	q_l = [0] * 3
