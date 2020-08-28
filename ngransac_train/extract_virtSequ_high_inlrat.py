@@ -57,24 +57,30 @@ for filename, pts1, pts2, gt_F, gt_R, gt_t, K1, K2, gt_res, gt_inliers, inl_cnt,
 	else:
 		low.append(inlrat)
 
-mean_h = statistics.mean(high)
-mean_l = statistics.mean(low)
-# med_h = statistics.median(high)
-# med_l = statistics.median(low)
-sd_h = statistics.stdev(high)
-sd_l = statistics.stdev(low)
-mi_h = min(high)
-mi_l = min(low)
-ma_h = max(high)
-ma_l = max(low)
-q_h = [round(q, 3) for q in statistics.quantiles(high, n=4)]
-q_l = [round(q, 3) for q in statistics.quantiles(low, n=4)]
+if len(high) > 0:
+	mean_h = statistics.mean(high)
+	sd_h = statistics.stdev(high)
+	mi_h = min(high)
+	ma_h = max(high)
+	q_h = [round(q, 3) for q in statistics.quantiles(high, n=4)]
+	err_mean_h = statistics.mean(errm)
+	err_sd_h = statistics.stdev(errm)
+	err_mi_h = min(errm)
+	err_ma_h = max(errm)
+	err_q_h = [round(q, 5) for q in statistics.quantiles(errm, n=4)]
+else:
+	mean_h = sd_h = mi_h = ma_h = err_mean_h = err_sd_h = err_mi_h = err_ma_h = 0
+	q_h = err_q_h = [0] * 3
 
-err_mean_h = statistics.mean(errm)
-err_sd_h = statistics.stdev(errm)
-err_mi_h = min(errm)
-err_ma_h = max(errm)
-err_q_h = [round(q, 5) for q in statistics.quantiles(errm, n=4)]
+if len(low) > 0:
+	mean_l = statistics.mean(low)
+	sd_l = statistics.stdev(low)
+	mi_l = min(low)
+	ma_l = max(low)
+	q_l = [round(q, 3) for q in statistics.quantiles(low, n=4)]
+else:
+	mean_l = sd_l = mi_l = ma_l = 0
+	q_l = [0] * 3
 
 print('Accepted data:\n')
 print('Inlier ratio statistic:')
