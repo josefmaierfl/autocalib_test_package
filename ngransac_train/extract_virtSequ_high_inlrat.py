@@ -93,5 +93,3 @@ print('\n\nDismissed data:')
 print('Inlier ratio statistic:')
 print('Min:', mi_l, 'Max:', ma_l, 'Mean:', mean_l, 'Median:', q_l[1])
 print('StDev:', sd_l, 'q25:', q_l[0], 'q75:', q_l[2])
-
-print('Reprojection error statistic:\n')
