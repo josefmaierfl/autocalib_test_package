@@ -316,7 +316,7 @@ def estimate_available_cpus(nr_tasks, nr_cpus=-1, mult_proc=True):
     return cpu_use
 
 
-def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
+def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, minInlRat):
     for elem in sequ_dirs2:
         fs = os.listdir(elem['sequDir'])
         ending = '.yaml'
@@ -408,9 +408,9 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                     gt_inliers = (gt_res < 10)
                     inl_cnt = float(gt_inliers.sum())
                     inlrat = inl_cnt / float(pts1.shape[1])
-                    if inlrat < 0.05:
+                    if inlrat < 0.6 * elem['inlRat'][i]:
                         print('Stereo correspondences are corrupt', sys.stderr)
-                    else:
+                    elif inlrat > minInlRat:
                         name = name0 + 'pair_%d-1_%d-2.npy' % (i, i)
                         if cnt_tv < nr_train:
                             file = os.path.join(output_path_train, name)
@@ -482,6 +482,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                         gt_inliers = (gt_res < 10)
                         inl_cnt = float(gt_inliers.sum())
                         inlrat = inl_cnt / float(len(pts1))
+                        max_tn = max(int(round(float(len(pts1)) / minInlRat, 0)) - len(pts1), 0)
                         if inlrat < 0.6:
                             print('Frame to frame correspondences for cam1 are corrupt', sys.stderr)
                         else:
@@ -495,13 +496,14 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                             for j in range(0, len(idx3D2)):
                                 if j not in corrs2:
                                     tnidx2.append(j)
-                            if len(tnidx1) > 5 and len(tnidx2) > 5:
+                            if len(tnidx1) > 5 and len(tnidx2) > 5 and max_tn > 5:
                                 np.random.shuffle(tnidx1)
                                 np.random.shuffle(tnidx2)
                                 kp1tn = []
                                 kp2tn = []
                                 descr1tn = []
                                 descr2tn = []
+                                minlen = min(minlen, max_tn)
                                 for j in range(0, minlen):
                                     kp1tn.append(match[i - 1]['kp1'][tnidx1[j]])
                                     kp2tn.append(match[i]['kp1'][tnidx2[j]])
@@ -618,6 +620,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                         gt_inliers = (gt_res < 10)
                         inl_cnt = float(gt_inliers.sum())
                         inlrat = inl_cnt / float(len(pts1))
+                        max_tn = max(int(round(float(len(pts1)) / minInlRat, 0)) - len(pts1), 0)
                         if inlrat < 0.6:
                             print('Frame to frame correspondences for cam2 are corrupt', sys.stderr)
                         else:
@@ -631,7 +634,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                             for j in range(0, len(idx3D2)):
                                 if j not in corrs2:
                                     tnidx2.append(j)
-                            if len(tnidx1) < 5 or len(tnidx2) < 5:
+                            if len(tnidx1) < 5 or len(tnidx2) < 5 or max_tn < 5:
                                 continue
                             np.random.shuffle(tnidx1)
                             np.random.shuffle(tnidx2)
@@ -639,6 +642,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                             kp2tn = []
                             descr1tn = []
                             descr2tn = []
+                            minlen = min(minlen, max_tn)
                             for j in range(0, minlen):
                                 kp1tn.append(match[i - 1]['kp2'][tnidx1[j]])
                                 kp2tn.append(match[i]['kp2'][tnidx2[j]])
@@ -779,7 +783,9 @@ def main():
     parser.add_argument('--path_out', type=str, required=False,
                         help='Directory for storing converted data')
     parser.add_argument('--validatePort', type=float, required=False, default=0.2,
-                        help='Directory holding template configuration files')
+                        help='Data portion that should be used for testing')
+    parser.add_argument('--minInlRat', type=float, required=False, default=0.19,
+                        help='Minimum inlier ratio')
     parser.add_argument('--nrCPUs', type=int, required=False, default=4,
                         help='Number of CPU cores for parallel processing. If a negative value is provided, '
                              'the program tries to find the number of available CPUs on the system - if it fails, '
@@ -862,7 +868,8 @@ def main():
               'matchDirs': [],
               'keyPointType': [],
               'imgSize': (sequ_par_data['imgSize']['height'], sequ_par_data['imgSize']['width']),
-              'camPosesWrld': sequ_par_data['absCamCoordinates']}
+              'camPosesWrld': sequ_par_data['absCamCoordinates'],
+              'inlRat': sequ_par_data['inlRat']}
         for key in data:
             if 'parSetNr' not in key:
                 raise ValueError('File ' + f_match + ' holding information about matches is corrupt')
@@ -901,7 +908,7 @@ def main():
     max_procs = min(nr_dirs, cpu_use)
     if max_procs == 1:
         try:
-            read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train)
+            read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, args.minInlRat)
         except:
             e = sys.exc_info()
             print('Exception: ' + str(e))
@@ -916,13 +923,13 @@ def main():
             cnt = sum(cnts[il:i])
             nr_validate = int(round(args.validatePort * cnt))
             nr_train = cnt - nr_validate
-            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:i], nr_train))
+            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:i], nr_train, args.minInlRat))
             il = i
         if il < nr_dirs:
             cnt = sum(cnts[il:nr_dirs])
             nr_validate = int(round(args.validatePort * cnt))
             nr_train = cnt - nr_validate
-            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:nr_dirs], nr_train))
+            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:nr_dirs], nr_train, args.minInlRat))
         cmd_fails = []
         with MyPool(processes=max_procs) as pool:
             # results = pool.map(processDir, work_items)
