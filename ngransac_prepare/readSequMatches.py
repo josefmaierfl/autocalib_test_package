@@ -403,23 +403,31 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                 name0 = 'sequ-' + sequ_data_full[i]['hashSequ'] + '_mtch-' + match[i]['hashMtch'] + '_' + \
                         match[i]['keyPointType'] + '_'
                 if pts1.shape[1] > 10:
-                    name = name0 + 'pair_%d-1_%d-2.npy' % (i, i)
-                    if cnt_tv < nr_train:
-                        file = os.path.join(output_path_train, name)
+                    gt_F = getFundamentalMat(GT_R_Rel, GT_t_Rel, K1, K2)
+                    gt_res = epipolar_error(pts1, pts2, gt_F)
+                    gt_inliers = (gt_res < 10)
+                    inl_cnt = float(gt_inliers.sum())
+                    inlrat = inl_cnt / float(pts1.shape[1])
+                    if inlrat < 0.05:
+                        print('Stereo correspondences are corrupt', sys.stderr)
                     else:
-                        file = os.path.join(output_path_validate, name)
-                    np.save(file, [
-                        pts1.astype(np.float32),
-                        pts2.astype(np.float32),
-                        ratios.astype(np.float32),
-                        elem['imgSize'],
-                        elem['imgSize'],
-                        K1.astype(np.float32),
-                        K2.astype(np.float32),
-                        GT_R_Rel.astype(np.float32),
-                        GT_t_Rel.astype(np.float32)
-                    ])
-                    cnt_tv += 1
+                        name = name0 + 'pair_%d-1_%d-2.npy' % (i, i)
+                        if cnt_tv < nr_train:
+                            file = os.path.join(output_path_train, name)
+                        else:
+                            file = os.path.join(output_path_validate, name)
+                        np.save(file, [
+                            pts1.astype(np.float32),
+                            pts2.astype(np.float32),
+                            ratios.astype(np.float32),
+                            elem['imgSize'],
+                            elem['imgSize'],
+                            K1.astype(np.float32),
+                            K2.astype(np.float32),
+                            GT_R_Rel.astype(np.float32),
+                            GT_t_Rel.astype(np.float32)
+                        ])
+                        cnt_tv += 1
 
                 #Get frame to frame correspondences for cam1
                 if i > 0:
@@ -470,19 +478,11 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                                              np.array(elem['camPosesWrld'][i]['t']))
                         # Check for correctness
                         gt_F = getFundamentalMat(GT_R_Rel, GT_t_Rel, K1, K2)
-                        cnt = 0
-                        for pt1, pt2 in zip(pts1, pts2):
-                            pt1_ = np.ones((3, 1))
-                            pt1_[0, 0] = pt1[0]
-                            pt1_[1, 0] = pt1[1]
-                            pt2_ = np.ones((1, 3))
-                            pt2_[0, 0] = pt2[0]
-                            pt2_[0, 1] = pt2[1]
-                            err = abs(pt2_ @ gt_F @ pt1_)
-                            if err[0, 0] < 10:
-                                cnt += 1
-                        err_rat = cnt / len(pts1)
-                        if err_rat < 0.6:
+                        gt_res = epipolar_error(np.array([pts1]), np.array([pts2]), gt_F)
+                        gt_inliers = (gt_res < 10)
+                        inl_cnt = float(gt_inliers.sum())
+                        inlrat = inl_cnt / float(len(pts1))
+                        if inlrat < 0.6:
                             print('Frame to frame correspondences for cam1 are corrupt', sys.stderr)
                         else:
                             #Get TN
@@ -614,19 +614,11 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
 
                         # Check for correctness
                         gt_F = getFundamentalMat(GT_R_Rel, GT_t_Rel, K1, K2)
-                        cnt = 0
-                        for pt1, pt2 in zip(pts1, pts2):
-                            pt1_ = np.ones((3, 1))
-                            pt1_[0, 0] = pt1[0]
-                            pt1_[1, 0] = pt1[1]
-                            pt2_ = np.ones((1, 3))
-                            pt2_[0, 0] = pt2[0]
-                            pt2_[0, 1] = pt2[1]
-                            err = abs(pt2_ @ gt_F @ pt1_)
-                            if err[0, 0] < 10:
-                                cnt += 1
-                        err_rat = cnt / len(pts1)
-                        if err_rat < 0.6:
+                        gt_res = epipolar_error(np.array([pts1]), np.array([pts2]), gt_F)
+                        gt_inliers = (gt_res < 10)
+                        inl_cnt = float(gt_inliers.sum())
+                        inlrat = inl_cnt / float(len(pts1))
+                        if inlrat < 0.6:
                             print('Frame to frame correspondences for cam2 are corrupt', sys.stderr)
                         else:
                             # Get TN
@@ -728,6 +720,26 @@ def getFundamentalMat(R, t, K1, K2):
     gt_E = getEssentialMat(R, t)
     gt_F = np.linalg.inv(K2).transpose() @ gt_E @ np.linalg.inv(K1)
     return gt_F
+
+
+def getHomogeneousCoords(pts1, pts2):
+    num_pts = pts1.shape[1]
+    hom_pts1 = np.transpose(np.concatenate((pts1[0, :, :], np.ones((num_pts, 1))), axis=1))
+    hom_pts2 = np.transpose(np.concatenate((pts2[0, :, :], np.ones((num_pts, 1))), axis=1))
+    return hom_pts1, hom_pts2
+
+
+def epipolar_error_from_homo_coords(hom_pts1, hom_pts2, F):
+    """Compute the symmetric epipolar error."""
+    res = 1 / np.linalg.norm(F.T.dot(hom_pts2)[0:2], axis=0)
+    res += 1 / np.linalg.norm(F.dot(hom_pts1)[0:2], axis=0)
+    res *= abs(np.sum(hom_pts2 * np.matmul(F, hom_pts1), axis=0))
+    return res
+
+
+def epipolar_error(pts1, pts2, F):
+    hom_pts1, hom_pts2 = getHomogeneousCoords(pts1, pts2)
+    return epipolar_error_from_homo_coords(hom_pts1, hom_pts2, F)
 
 
 def calcRatios(descr1, descr2, dists):
