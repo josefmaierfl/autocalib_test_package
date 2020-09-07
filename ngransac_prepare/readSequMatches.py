@@ -431,6 +431,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
 
                 #Get frame to frame correspondences for cam1
                 if i > 0:
+                    rt_valid = False
                     idx3D2 = {}
                     nr_TP2 = len(sequ_data_full[i]['pt3Didx'])
                     if nr_TP2 < 10:
@@ -476,6 +477,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                         GT_t_Rel = np.matmul(np.array(elem['camPosesWrld'][i]['R']).transpose(),
                                              np.array(elem['camPosesWrld'][i - 1]['t']) -
                                              np.array(elem['camPosesWrld'][i]['t']))
+                        rt_valid = True
                         # Check for correctness
                         gt_F = getFundamentalMat(GT_R_Rel, GT_t_Rel, K1, K2)
                         gt_res = epipolar_error(np.array([pts1]), np.array([pts2]), gt_F)
@@ -608,6 +610,12 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                         ratios = calcRatios(descr1, descr2, dists)
                         K1 = np.array(sequ_data_full[i - 1]['K2'])
                         K2 = np.array(sequ_data_full[i]['K2'])
+                        if not rt_valid:
+                            GT_R_Rel = np.array(elem['camPosesWrld'][i]['R']).transpose() @ \
+                                       np.array(elem['camPosesWrld'][i - 1]['R'])
+                            GT_t_Rel = np.matmul(np.array(elem['camPosesWrld'][i]['R']).transpose(),
+                                                 np.array(elem['camPosesWrld'][i - 1]['t']) -
+                                                 np.array(elem['camPosesWrld'][i]['t']))
                         GT_R_Rel = np.array(sequ_data_full[i]['Rrel']) @ GT_R_Rel @ \
                                    np.array(sequ_data_full[i - 1]['Rrel']).transpose()
                         GT_t_Rel = np.array(sequ_data_full[i]['trel']) + \
