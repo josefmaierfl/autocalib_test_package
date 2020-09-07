@@ -359,7 +359,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train):
                     break
                 match_data = readYamlOrXml(mtchFile, True)
                 match_data_full1.append({'kp1': match_data['frameKeypoints1'],
-                                         'kp2': match_data['frameKeypoints1'],
+                                         'kp2': match_data['frameKeypoints2'],
                                          'descr1': match_data['frameDescriptors1'],
                                          'descr2': match_data['frameDescriptors2'],
                                          'matches': match_data['frameMatches'],
