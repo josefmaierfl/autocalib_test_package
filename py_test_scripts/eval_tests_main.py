@@ -2557,6 +2557,35 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                               figs_externalize=False,
                                               no_tex=False,
                                               cat_sort=False)
+            elif ev == 10:
+                fig_title_pre_str = 'Absolute Execution Times for Comparison of '
+                eval_columns = ['robEstimationAndRef_us']
+                units = [('robEstimationAndRef_us', '/$\\mu s$')]
+                it_parameters = ['matchesFilter_refineGMS',
+                                 'matchesFilter_refineVFC',
+                                 'matchesFilter_refineSOF']
+                ret += calcSatisticAndPlot_aggregate(data=data,
+                                                     store_path=output_path,
+                                                     tex_file_pre_str='plots_vfc_gms_sof_',
+                                                     fig_title_pre_str=fig_title_pre_str,
+                                                     eval_description_path='time',
+                                                     eval_columns=eval_columns,
+                                                     units=units,
+                                                     it_parameters=it_parameters,
+                                                     pdfsplitentry=None,
+                                                     filter_func=None,
+                                                     filter_func_args=None,
+                                                     special_calcs_func=None,
+                                                     special_calcs_args=None,
+                                                     calc_func=None,
+                                                     calc_func_args=None,
+                                                     compare_source=None,
+                                                     fig_type='ybar',
+                                                     use_marks=False,
+                                                     ctrl_fig_size=True,
+                                                     make_fig_index=True,
+                                                     build_pdf=True,
+                                                     figs_externalize=False)
             else:
                 raise ValueError('Eval nr ' + str(ev) + ' does not exist')
     elif test_name == 'refinement_ba_stereo':
