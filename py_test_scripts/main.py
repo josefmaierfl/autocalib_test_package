@@ -1475,7 +1475,7 @@ def main():
         if not os.path.exists(message_retry):
             raise ValueError('Directory ' + message_retry + ' does not exist.')
 
-    enable_messaging()
+    # enable_messaging()
     enable_logging(args.message_path)
 
     if args.crt_sc_dirs_file and args.crt_sc_cmds_file:

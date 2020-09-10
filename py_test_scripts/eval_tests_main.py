@@ -2558,7 +2558,7 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                               no_tex=False,
                                               cat_sort=False)
             elif ev == 10:
-                fig_title_pre_str = 'Absolute Execution Times for Comparison of '
+                fig_title_pre_str = 'Absolute Model Estimation Execution Times for Comparison of '
                 eval_columns = ['robEstimationAndRef_us']
                 units = [('robEstimationAndRef_us', '/$\\mu s$')]
                 it_parameters = ['matchesFilter_refineGMS',
