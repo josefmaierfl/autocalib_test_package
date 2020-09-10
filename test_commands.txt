@@ -31,4 +31,18 @@ python main.py --nrCPUs -72 --zip_new_folders --shutdown_afterwards --skip_gen_s
 
 ./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --skipInit --nrCPUs -16 --orb -r 0.8 -lre 0.00001 --nfeaturesMult -1 --noAndSideinfo --epochs_e2e 300 --skipTest --multmodels /app/results_train/conversion_results/training_results/weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo.net /app/results_train/conversion_results/training_results/weights_e2e_E_orb_r1.00_nfeat-1_noSideInfo.net
 
-./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --skipInit --nrCPUs -8 --orb -r 1.0 -lre 0.00001 --nfeatures -1 -bs 1 -sid pretrained --epochs_e2e 300 --skipTest --model /app/results_train/conversion_results/training_results/weights_e2e_E_orb_r1.00_.net
+./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --skipInit --nrCPUs -8 --orb -r 1.0 -lre 0.00001 --resblocks 24 --nfeatures -1 -bs 1 -sid pretrained --epochs_e2e 300 --skipTest --model /app/results_train/conversion_results/training_results/weights_e2e_E_orb_r1.00_.net
+
+./run_docker_base.sh live
+python ngransac_test.py --orb -bm -r 1.0 --nfeatures -1 -bs 1 --nosideinfo --session nfeat-1_noSideInfo --model models/weights_e2e_E_orb_r1.00_nfeat-1_noSideInfo.net
+python ngransac_test.py --orb -bm -r 0.8 --nfeatures -1 -bs 1 --session nfeat-1_withSideInfo --model models/weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo.net
+python ngransac_test.py --orb -bm -r 1.0 --nfeatures -1 -bs 1 --nosideinfo --model models/weights_e2e_E_orb_r1.00_.net
+python ngransac_test.py --orb -bm -r 0.8 --nfeatures -1 -bs 1 --model models/weights_e2e_E_orb_r0.80_.net
+python show_mean.py --orb -r 1.0 --session nfeat-1_noSideInfo
+python show_mean.py --orb -r 0.8 --session nfeat-1_withSideInfo
+python show_mean.py --orb -r 1.0
+python show_mean.py --orb -r 0.8
+
+./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --nrCPUs -8 --resblocks 24 --orb -r 0.8 -lri 0.0001 -lre 0.00001 --nfeaturesMult -1 --noAndSideinfo --epochsInit 300 --epochs_e2e 300 --skipTest --multsessions nfeat-1_withSideInfo_resblocks24 nfeat-1_noSideInfo_resblocks24 --multmodels /app/results_train/conversion_results/training_results/weights_init_E_orb_r0.80_nfeat-1_withSideInfo_resblocks24.net /app/results_train/conversion_results/training_results/weights_init_E_orb_r1.00_nfeat-1_noSideInfo_resblocks24.net
+
+./run_docker_base.sh live fullp RESDIR /home/maierj/work/results/results_train_new_folders_000 EXE train --nrCPUs -8 --resblocks 18 --orb -r 0.8 -lri 0.001 -lre 0.00001 --nfeaturesMult -1 --noAndSideinfo --epochsInit 300 --epochs_e2e 300 --skipTest --multsessions nfeat-1_withSideInfo_resblocks18_hi nfeat-1_noSideInfo_resblocks18_hi
