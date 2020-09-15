@@ -486,7 +486,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                         inlrat = inl_cnt / float(len(pts1))
                         max_tn = max(int(round(float(len(pts1)) / minInlRat, 0)) - len(pts1), 0)
                         if inlrat < 0.6:
-                            print('Frame to frame correspondences for cam1 are corrupt', sys.stderr)
+                            print('Frame to frame correspondences for cam1 include too many dynamic objects', sys.stderr)
                         else:
                             #Get TN
                             minlen = min(len(idx3D1), len(idx3D2)) - len(pts1)
@@ -630,7 +630,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                         inlrat = inl_cnt / float(len(pts1))
                         max_tn = max(int(round(float(len(pts1)) / minInlRat, 0)) - len(pts1), 0)
                         if inlrat < 0.6:
-                            print('Frame to frame correspondences for cam2 are corrupt', sys.stderr)
+                            print('Frame to frame correspondences for cam2 include too many dynamic objects', sys.stderr)
                         else:
                             # Get TN
                             minlen = min(len(idx3D1), len(idx3D2)) - len(pts1)
