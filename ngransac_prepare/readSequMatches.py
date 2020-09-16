@@ -317,6 +317,7 @@ def estimate_available_cpus(nr_tasks, nr_cpus=-1, mult_proc=True):
 
 
 def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, minInlRat):
+    cnt_tv = 0
     for elem in sequ_dirs2:
         fs = os.listdir(elem['sequDir'])
         ending = '.yaml'
@@ -371,7 +372,6 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
             if len(match_data_full1) != sequ_len:
                 raise ValueError("Number of frames with 3D information and matches are not consistent")
             match_data_full.append(match_data_full1)
-        cnt_tv = 0
         for match in match_data_full:
             for i in range(0, sequ_len):
                 # Get stereo correspondences
