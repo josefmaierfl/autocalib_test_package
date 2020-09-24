@@ -157,7 +157,7 @@ def main():
     parser.add_argument('--model', '-m', default='',
                         help='load a model to contuinue training or leave empty to create a new model')
 
-    parser.add_argument('--hyps_e2e', '-hypse', type=int, default=16,
+    parser.add_argument('--hyps_e2e', '-hypse', type=int, default=20,
                         help='number of hypotheses, i.e. number of RANSAC iterations')
 
     parser.add_argument('--samplecount', '-ss', type=int, default=4,
