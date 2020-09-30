@@ -576,6 +576,11 @@ private:
     std::unordered_map<cv::Point2f, int, KeyHasher, EqualTo> kpMap;
 };
 
+inline StereoSequParameters& changeErrDistr(StereoSequParameters &pars3D_, GenMatchSequParameters &parsMtch_){
+    pars3D_.TNErrDistr = std::make_pair(std::max(parsMtch_.keypErrDistr.first, 0.0), std::max(parsMtch_.keypErrDistr.second, 10.0));
+    return pars3D_;
+}
+
 class GENERATEVIRTUALSEQUENCELIB_API genMatchSequ : genStereoSequ {
 public:
     genMatchSequ(cv::Size &imgSize_,
@@ -588,7 +593,8 @@ public:
                  bool filter_occluded_points_,
                  uint32_t verbose_ = 0,
                  const std::string &writeIntermRes_path_ = "") :
-            genStereoSequ(imgSize_, K1_, K2_, R_, t_, pars3D_, filter_occluded_points_, verbose_, writeIntermRes_path_),
+            genStereoSequ(imgSize_, K1_, K2_, R_, t_, changeErrDistr(pars3D_, parsMtch_),
+                          filter_occluded_points_, verbose_, writeIntermRes_path_),
             parsMtch(parsMtch_),
             pars3D(pars3D_),
             imgSize(imgSize_),
