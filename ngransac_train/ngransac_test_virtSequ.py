@@ -7,7 +7,7 @@ import torch
 import ngransac
 import time
 
-from network import CNNet
+from network_virtSequ import CNNet
 from dataset_virtSequ import SparseDataset
 import util_virtSequ
 
@@ -59,7 +59,7 @@ else:
 		print("No model file specified. Inferring pre-trained model from given parameters:")
 		print(model_file)
 
-	model = CNNet(opt.resblocks)
+	model = CNNet(opt.resblocks, opt.netsize)
 	model.load_state_dict(torch.load(model_file))
 	model = model.cuda()
 	model.eval()

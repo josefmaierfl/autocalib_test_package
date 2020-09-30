@@ -7,7 +7,7 @@ from dataset_notorch_virtSequ import SparseDataset
 import util_virtSequ
 
 parser = util_virtSequ.create_parser(
-	description = "Copy correspondences with a higher inlier ratio than 0.49 to a different folder.")
+	description = "Copy correspondences with a higher inlier ratio than minInlRat to a different folder.")
 
 parser.add_argument('--path', '-p',
 	required=True,

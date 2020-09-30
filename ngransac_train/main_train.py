@@ -49,10 +49,11 @@ class MyPool(multiprocessing.pool.Pool):
 
 def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsInit, fmat, orb, rootsift,
                      ratio, session, path, hyps_e2e, learningrate_e2e, epochs_e2e, samplecount, loss, refine_e2e,
-                     variantTest, hypsTest, evalbinsize, refineTest, nfeatures, threshold, resblocks, batchsize,
-                     nosideinfo, nrCPUs, skipInit, skipTest, skipTraining):
+                     variantTest, hypsTest, evalbinsize, refineTest, nfeatures, threshold, resblocks, netsize,
+                     batchsize, nosideinfo, nrCPUs, skipInit, skipTest, skipTraining):
     cmdline1 = ['--path', path, '--nfeatures', str(nfeatures), '--ratio', str(ratio), '--nrCPUs', str(nrCPUs),
-                '--threshold', str(threshold), '--resblocks', str(resblocks), '--batchsize', str(batchsize)]
+                '--threshold', str(threshold), '--resblocks', str(resblocks), '--netsize', str(netsize),
+                '--batchsize', str(batchsize)]
     if fmat:
         cmdline1.append('--fmat')
     if rootsift:
@@ -64,6 +65,7 @@ def perform_training(pyfilepath, model, variant_train, learningrateInit, epochsI
     if session:
         cmdline1 += ['--session', session]
 
+    ret = 0
     if not skipInit:
         # Initialize weights
         pyfilename = os.path.join(pyfilepath, 'ngransac_train_init_virtSequ.py')
@@ -264,7 +266,7 @@ def main():
                                opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.session, opt.path, opt.hyps_e2e,
                                opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                                opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, opt.nfeatures,
-                               opt.threshold, opt.resblocks, opt.batchsize, opt.nosideinfo, opt.nrCPUs,
+                               opt.threshold, opt.resblocks, opt.netsize, opt.batchsize, opt.nosideinfo, opt.nrCPUs,
                                opt.skipInit, opt.skipTest, opt.skipTraining)
     else:
         if not opt.nfeaturesMult:
@@ -329,14 +331,14 @@ def main():
                              opt.fmat, opt.orb, opt.rootsift, ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                              opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
-                             opt.threshold, opt.resblocks, batchsize, opt.nosideinfo, cpu_part,
+                             opt.threshold, opt.resblocks, opt.netsize, batchsize, opt.nosideinfo, cpu_part,
                              opt.skipInit, opt.skipTest, opt.skipTraining))
             else:
                 cmds.append((pyfilepath, opt.multmodels[cnt], opt.variant_train, opt.learningrateInit, opt.epochsInit,
                              opt.fmat, opt.orb, opt.rootsift, opt.ratio, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                              opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
-                             opt.threshold, opt.resblocks, batchsize, False, cpu_part,
+                             opt.threshold, opt.resblocks, opt.netsize, batchsize, False, cpu_part,
                              opt.skipInit, opt.skipTest, opt.skipTraining))
                 cnt += 1
                 # if features == 3000:
@@ -346,7 +348,7 @@ def main():
                              opt.fmat, opt.orb, opt.rootsift, 1.0, opt.multsessions[cnt], opt.path, opt.hyps_e2e,
                              opt.learningrate_e2e, opt.epochs_e2e, opt.samplecount, opt.loss, opt.refine_e2e,
                              opt.variantTest, opt.hypsTest, opt.evalbinsize, opt.refineTest, features,
-                             opt.threshold, opt.resblocks, batchsize, True, cpu_part,
+                             opt.threshold, opt.resblocks, opt.netsize, batchsize, True, cpu_part,
                              opt.skipInit, opt.skipTest, opt.skipTraining))
             cnt += 1
         res = 0

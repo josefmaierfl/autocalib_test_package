@@ -205,6 +205,9 @@ def create_parser(description):
 	parser.add_argument('--resblocks', '-rb', type=int, default=12, 
 		help='number of res blocks of the network')
 
+	parser.add_argument('--netsize', '-ns', type=int, default=128,
+						help='size of the network (every block)')
+
 	parser.add_argument('--batchsize', '-bs', type=int, default=32, help='batch size')
 
 	parser.add_argument('--session', '-sid', default='',

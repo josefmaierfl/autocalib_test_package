@@ -6,7 +6,7 @@ import torch
 import torch.optim as optim
 import ngransac
 
-from network import CNNet
+from network_virtSequ import CNNet
 from dataset_virtSequ import SparseDataset
 import util_virtSequ, sys
 
@@ -81,7 +81,7 @@ if nr_img_pairs > 20000:
 	store_interm = 10000
 
 # create or load model
-model = CNNet(opt.resblocks)
+model = CNNet(opt.resblocks, opt.netsize)
 if len(opt.model) > 0:
 	print('Loading model :', opt.model)
 	model.load_state_dict(torch.load(opt.model))
