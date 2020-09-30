@@ -1,1 +1,15 @@
 images/
+thirdparty/
+.git/
+.idea
+py_test_scripts/__pycache__
+matchinglib_poselib/cmake-build-debug
+matchinglib_poselib/source/poselib/thirdparty/ngransac/__pycache__
+matchinglib_poselib/source/poselib/thirdparty/ngransac/ngransac/ngransac.cpython-36m-x86_64-linux-gnu.so
+matchinglib_poselib/source/poselib/thirdparty/ngransac/ngransac/build
+matchinglib_poselib/source/poselib/thirdparty/ngransac/ngransac/dist
+matchinglib_poselib/source/poselib/thirdparty/ngransac/ngransac/ngransac.egg-info
+generateVirtualSequence/cmake-build-debug
+generateVirtualSequence/cmake-build-release
+generateVirtualSequence/cmake-build-relwithdebinfo
+generateVirtualSequence/build
