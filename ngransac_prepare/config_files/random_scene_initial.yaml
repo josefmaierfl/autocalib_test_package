@@ -196,7 +196,7 @@ imageOverlap: 7.0000000000000004e-01
 #
 # Inlier ratio range for all stereo frames.
 inlRatRange:
-   first: 5.0000000000000002e-02
+   first: 4.0000000000000002e-01
    second: 9.4999999999999996e-01
 # Inlier ratio change rate from pair to pair.
 # If 0, the inlier ratio within the given range is always the same for every image pair (it is selected within the given inlier range in the beginning).
@@ -206,7 +206,7 @@ inlRatRange:
 inlRatChanges: 100.
 # Number of true positives (TP) range for all stereo frames.
 truePosRange:
-   first: 20
+   first: 100
    second: 1000
 # True positives change rate from pair to pair.
 # If 0, the true positives within the given range are always the same for every image pair (it is selected within the given TP range in the beginning).
@@ -349,8 +349,8 @@ startPosMovObjs: !!opencv-matrix
 # As moving objects are always put into the foreground it is advisable too use small relative area ranges depending on the number of
 # demanded moving objects to allow static elements to be visible in the image.
 relAreaRangeMovObjs:
-   first: 5.0000000000000003e-02
-   second: 1.e-01
+   first: 2.e-02
+   second: 5.e-02
 # Depths of moving objects. Moving objects are always visible and not covered by other static objects.
 # If the number of given depths is 1, this depth is used for every object.
 # If the number of given depths is equal "nrMovObjs", the corresponding depth is used for every moving object.
@@ -389,7 +389,7 @@ minMovObjCorrPortion: 2.0000000000000001e-01
 # Relative portion of correspondences on moving object (relative to the full number of correspondences of a stereo frame).
 # The number of correspondences is limited by the size of objects visible in the images and the minimal distance between correspondences.
 # Value range: >0, <1.0
-CorrMovObjPort: 3.0e-01
+CorrMovObjPort: 1.0e-01
 # Minimum number of moving objects over the whole track.
 # If the number of moving obects drops below this number during camera movement, as many new moving objects are inserted until "nrMovObjs" is reached.
 # If 0, no new moving objects are inserted if every preceding moving object is out of sight.
@@ -488,14 +488,14 @@ checkDescriptorDist: 1
 # A random value is selected in the given range. If both values are equal, the specified value is used.
 # Repeated patterns are not completely equal but perturbed by intensity noise (see option imgIntNoise).
 repeatPatternPortStereo:
-   first: 5.0000000000000003e-02
-   second: 3.5000000000000001e-01
+   first: 1.0000000000000003e-02
+   second: 1.000000000000001e-01
 # Minimal and maximal percentage (0 to 1.0) of repeated patterns (image patches) from frame to frame.
 # A random value is selected in the given range. If both values are equal, the specified value is used.
 # Repeated patterns are not completely equal but perturbed by intensity noise (see option imgIntNoise).
 repeatPatternPortFToF:
-   first: 5.0000000000000003e-02
-   second: 2.0000000000000001e-01
+   first: 1.0000000000000003e-02
+   second: 1.0000000000000001e-01
 # Enables/disables distorting a tracked image patch in the first stereo image.
 # This is useful e.g. for testing mono cam SLAM algorithms to get non-zero descriptor distances for matching features in the first stereo frame.
 distortPatchCam1: 1
@@ -538,11 +538,11 @@ kittiGTMportion: 0.3
 # Tracked GTM features are warped (seperately for both correspondences).
 megadepthGTMportion: 0.5
 # If multiple GT datasets (Oxford, KITTI, MegaDepth) are used, this portion (0 - 1.0) specifies the overall ratio of used GT datasets compared to warped patch feature matches.
-GTMportion: 0.5
+GTMportion: 0.75
 # Portion (0 - 1.0) of TN that should be drawn from warped image patches (and not from GTM). This value only has an effect if parameter 'portionGrossTN' is non-zero.
-WarpedPortionTN: 0.5
+WarpedPortionTN: 0.35
 # Portion (0 - 1.0) of TN that should be from GTM or from different image patches (first <-> second stereo camera).
-portionGrossTN: 0.5
+portionGrossTN: 0.65
 # Number of CPUs used by CERES for relative pose refinement of MegaDepth data.
 # A value of -1 indicates to use all available CPUs.
 CeresCPUcnt: -1
