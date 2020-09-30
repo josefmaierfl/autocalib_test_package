@@ -5145,8 +5145,10 @@ int32_t genStereoSequ::genTrueNegCorrs(int32_t nrTN,
 {
     int32_t kSi = csurr.rows;
     int32_t posadd = (kSi - 1) / 2;
-    std::normal_distribution<double> distributionNX2(0, max(imgSize.width / 48, 10));
-    std::normal_distribution<double> distributionNY2(0, max(imgSize.width / 48, 10));
+    double minDistr = abs(pars.TNErrDistr.first) + pars.TNErrDistr.second;
+    minDistr = nearZero(minDistr - 10.0) ? 15.0:max((3.5 * minDistr), 15.0);
+    std::normal_distribution<double> distributionNX2(0, max(static_cast<double>(imgSize.width) / 48., minDistr));
+    std::normal_distribution<double> distributionNY2(0, max(static_cast<double>(imgSize.height) / 48., minDistr));
     int maxSelect2 = 75;
     int maxSelect3 = max(3 * nrTN, 500);
     Point pt;

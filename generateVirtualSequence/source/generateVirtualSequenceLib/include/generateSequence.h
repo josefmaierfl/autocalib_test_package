@@ -170,6 +170,7 @@ struct GENERATEVIRTUALSEQUENCELIB_API StereoSequParameters
             startPosMovObjs = startPosMovObjs_.getMat();
         if(!movObjDir_.empty())
             movObjDir = movObjDir_.getMat();
+        TNErrDistr = std::make_pair(0, 10.0);
 	}
 
     StereoSequParameters():
@@ -198,7 +199,8 @@ struct GENERATEVIRTUALSEQUENCELIB_API StereoSequParameters
         CorrMovObjPort(0.25),
         minNrMovObjs(0),
         parsAreValid(false),
-		distortCamMat(std::make_pair(0, 0)){}
+		distortCamMat(std::make_pair(0, 0)),
+        TNErrDistr(std::make_pair(0, 10.0)){}
 
     StereoSequParameters(const StereoSequParameters& ssp):
             nFramesPerCamConf(ssp.nFramesPerCamConf),
@@ -226,7 +228,8 @@ struct GENERATEVIRTUALSEQUENCELIB_API StereoSequParameters
             CorrMovObjPort(ssp.CorrMovObjPort),
             minNrMovObjs(ssp.minNrMovObjs),
             parsAreValid(ssp.parsAreValid),
-            distortCamMat(ssp.distortCamMat){}
+            distortCamMat(ssp.distortCamMat),
+            TNErrDistr(ssp.TNErrDistr){}
 
 	bool checkParameters(){
         if(nFramesPerCamConf == 0){
@@ -420,6 +423,7 @@ struct GENERATEVIRTUALSEQUENCELIB_API StereoSequParameters
 	bool parsAreValid;//Indicates, if the parameters of this struct are valid (because of the used constructor)
 
 	std::pair<double, double> distortCamMat;//Minimal and maximal percentage (0 to 1.0) of random distortion of the camera matrices K1 & K2 based on their initial values (only the focal lengths and image centers are randomly distorted)
+    std::pair<double, double> TNErrDistr;//TN minimum error distribution (mean, std) for near TP correspondences
 };
 
 struct Poses
