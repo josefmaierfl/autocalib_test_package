@@ -49,11 +49,11 @@ def gen_configs(input_file_name, img_overlap_range, kp_min_dist_range, kpAccRang
              'scene_exists': [], 'load_path': [], 'parSetNr': []}
     cnt = 0
     if len(img_overlap_range) == 1 or img_overlap_range[1] == 0:
-        imr = np.arange(img_overlap_range[0], 0.2, img_overlap_range[0] + 0.1)
+        imr = np.arange(img_overlap_range[0], img_overlap_range[0] + 0.1, 0.2)
     else:
         imr = np.arange(img_overlap_range[0], img_overlap_range[1] + img_overlap_range[2] / 2, img_overlap_range[2])
     if len(kp_min_dist_range) == 1 or kp_min_dist_range[1] == 0:
-        kdr = np.arange(kp_min_dist_range[0], 0.2, kp_min_dist_range[0] + 0.1)
+        kdr = np.arange(kp_min_dist_range[0], kp_min_dist_range[0] + 0.1, 0.2)
     else:
         kdr = np.arange(kp_min_dist_range[0], kp_min_dist_range[1] + kp_min_dist_range[2] / 2, kp_min_dist_range[2])
     if len(kpAccRange) == 1 or kpAccRange[1] == 0:
@@ -62,11 +62,11 @@ def gen_configs(input_file_name, img_overlap_range, kp_min_dist_range, kpAccRang
         kar = np.arange(kpAccRange[0], kpAccRange[1] + kpAccRange[2] / 2, kpAccRange[2])
     if imgIntNoiseMeanRange is not None and imgIntNoiseStdRange is not None:
         if len(imgIntNoiseMeanRange) == 1 or imgIntNoiseMeanRange[1] == 0:
-            inmr = np.arange(imgIntNoiseMeanRange[0], 0.2, imgIntNoiseMeanRange[0] + 0.1)
+            inmr = np.arange(imgIntNoiseMeanRange[0], imgIntNoiseMeanRange[0] + 0.1, 0.2)
         else:
             inmr = np.arange(imgIntNoiseMeanRange[0], imgIntNoiseMeanRange[1] + imgIntNoiseMeanRange[2] / 2, imgIntNoiseMeanRange[2])
         if len(imgIntNoiseStdRange) == 1 or imgIntNoiseStdRange[1] == 0:
-            insr = np.arange(imgIntNoiseStdRange[0], 0.2, imgIntNoiseStdRange[0] + 0.1)
+            insr = np.arange(imgIntNoiseStdRange[0], imgIntNoiseStdRange[0] + 0.1, 0.2)
         else:
             insr = np.arange(imgIntNoiseStdRange[0], imgIntNoiseStdRange[1] + imgIntNoiseStdRange[2] / 2,
                              imgIntNoiseStdRange[2])

@@ -48,11 +48,11 @@ def gen_configs(input_path, path_confs_out, img_overlap_range, kp_min_dist_range
         raise ValueError('No files including _init found.')
     if len(files) < 4:
         if len(img_overlap_range) == 1 or img_overlap_range[1] == 0:
-            imr = np.arange(img_overlap_range[0], 0.2, img_overlap_range[0] + 0.1)
+            imr = np.arange(img_overlap_range[0], img_overlap_range[0] + 0.1, 0.2)
         else:
             imr = np.arange(img_overlap_range[0], img_overlap_range[1] + img_overlap_range[2] / 2, img_overlap_range[2])
         if len(kp_min_dist_range) == 1 or kp_min_dist_range[1] == 0:
-            kdr = np.arange(kp_min_dist_range[0], 0.2, kp_min_dist_range[0] + 0.1)
+            kdr = np.arange(kp_min_dist_range[0], kp_min_dist_range[0] + 0.1, 0.2)
         else:
             kdr = np.arange(kp_min_dist_range[0], kp_min_dist_range[1] + kp_min_dist_range[2] / 2, kp_min_dist_range[2])
     else:
