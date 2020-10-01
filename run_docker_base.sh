@@ -19,9 +19,19 @@ else
   exit 1
 fi
 
+USE_FULL_PATH=0
+if [ "$2" == "fullp" ]; then
+  USE_FULL_PATH=1
+  shift 1
+fi
+
 SECOND_ARG="$2"
 if [ "${SECOND_ARG}" == "RESDIR" ]; then
-  RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/$3"
+  if [ ${USE_FULL_PATH} -eq 0 ]; then
+    RES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )/$3"
+  else
+    RES_DIR="$3"
+  fi
   if [ -d ${RES_DIR} ]; then
     shift 2
   else
