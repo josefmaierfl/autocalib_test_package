@@ -5204,15 +5204,15 @@ int32_t genStereoSequ::genTrueNegCorrs(int32_t nrTN,
                     do {
                         do {
                             ptd.x = distributionNX2(rand_gen);
-                        }while(nearZero(ptd.x));
+                        }while(nearZero(ptd.x, 1.0));
                         ptd.x += 0.75 * ptd.x / abs(ptd.x);
                         ptd.x *= 1.5;
                         do {
                             ptd.y = distributionNY2(rand_gen);
-                        }while(nearZero(ptd.y));
+                        }while(nearZero(ptd.y, 1.0));
                         ptd.y += 0.75 * ptd.y / abs(ptd.y);
                         ptd.y *= 1.5;
-                    } while ((abs(ptd.x) < 1.5) && (abs(ptd.y) < 1.5));
+                    } while ((abs(ptd.x) < 3.0) && (abs(ptd.y) < 3.0));
                     pt2 += ptd;
                     maxAtBorder--;
                 } while (((pt2.x < 0) || (pt2.x > (double) (imgSize.width - 1)) ||
