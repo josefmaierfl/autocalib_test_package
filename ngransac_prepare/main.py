@@ -31,11 +31,11 @@ import shutil, zipfile, math
 
 
 def get_config_file_parameters():
-    parameters = {'img_overlap_range': [0.3, 0.7, 0.2],
+    parameters = {'img_overlap_range': [0.2, 0.8, 0.2],
                   'kp_min_dist_range': [1, 5, 4],
                   'both_kp_err_types': True,
                   'kpAccRange': [0.5, 3.5, 1.0],
-                  'imgIntNoiseMeanRange': [10, 30, 10],
+                  'imgIntNoiseMeanRange': [15, 25, 10],
                   'imgIntNoiseStdRange': [15, 20, 5]}
     return parameters
 
