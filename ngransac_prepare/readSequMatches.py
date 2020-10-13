@@ -316,7 +316,7 @@ def estimate_available_cpus(nr_tasks, nr_cpus=-1, mult_proc=True):
     return cpu_use
 
 
-def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, minInlRat):
+def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, minInlRat, matching=False):
     cnt_tv = 0
     for elem in sequ_dirs2:
         fs = os.listdir(elem['sequDir'])
@@ -388,8 +388,11 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                     descr1.append(match[i]['descr1'][m[0]])
                     descr2.append(match[i]['descr2'][m[1]])
                     dists.append(m[3])
-                ratios = calcRatios(descr1, descr2, dists)
                 isInt = descr_is_int(descr1)
+                if matching:
+                    pts1, pts2, ratios = perform_matching(pts1, pts2, descr1, descr2, isInt)
+                else:
+                    ratios = calcRatios(descr1, descr2, dists)
                 pts1 = np.array([pts1])
                 pts2 = np.array([pts2])
                 ratios = np.array([ratios])
@@ -408,7 +411,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                     gt_inliers = (gt_res < 10)
                     inl_cnt = float(gt_inliers.sum())
                     inlrat = inl_cnt / float(pts1.shape[1])
-                    if inlrat < 0.6 * elem['inlRat'][i]:
+                    if inlrat < 0.6 * elem['inlRat'][i] and not matching:
                         print('Stereo correspondences are corrupt', sys.stderr)
                     elif inlrat > minInlRat:
                         name = name0 + 'pair_%d-1_%d-2.npy' % (i, i)
@@ -489,6 +492,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                             print('Frame to frame correspondences for cam1 include too many dynamic objects', sys.stderr)
                         else:
                             #Get TN
+                            inlrat = 1.0
                             minlen = min(len(idx3D1), len(idx3D2)) - len(pts1)
                             tnidx1 = []
                             for j in range(0, len(idx3D1)):
@@ -506,67 +510,80 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                                 descr1tn = []
                                 descr2tn = []
                                 minlen = min(minlen, max_tn)
-                                for j in range(0, minlen):
-                                    kp1tn.append(match[i - 1]['kp1'][tnidx1[j]])
-                                    kp2tn.append(match[i]['kp1'][tnidx2[j]])
-                                    descr1tn.append(match[i - 1]['descr1'][tnidx1[j]])
-                                    descr2tn.append(match[i]['descr1'][tnidx2[j]])
-                                bf = cv2.BFMatcher()
-                                if isInt:
-                                    tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
-                                                            np.array(descr2tn).astype(np.uint8), k=2)
+                                if matching:
+                                    for j in range(0, minlen):
+                                        pts1.append(match[i - 1]['kp1'][tnidx1[j]][:2])
+                                        pts2.append(match[i]['kp1'][tnidx2[j]][:2])
+                                        descr1.append(match[i - 1]['descr1'][tnidx1[j]])
+                                        descr2.append(match[i]['descr1'][tnidx2[j]])
+                                    pts1, pts2, ratios = perform_matching(pts1, pts2, descr1, descr2, isInt)
+                                    gt_res = epipolar_error(np.array([pts1]), np.array([pts2]), gt_F)
+                                    gt_inliers = (gt_res < 10)
+                                    inl_cnt = float(gt_inliers.sum())
+                                    inlrat = inl_cnt / float(len(pts1))
                                 else:
-                                    tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
-                                                            np.array(descr2tn).astype(float), k=2)
-                                if len(tnmatches) > 5:
-                                    dellist = []
-                                    for midx, m in enumerate(tnmatches):
-                                        if len(m) != 2:
-                                            dellist.append(midx)
-                                    if dellist:
-                                        dellist.sort(reverse=True)
-                                        for dl in dellist:
-                                            del tnmatches[dl]
+                                    for j in range(0, minlen):
+                                        kp1tn.append(match[i - 1]['kp1'][tnidx1[j]])
+                                        kp2tn.append(match[i]['kp1'][tnidx2[j]])
+                                        descr1tn.append(match[i - 1]['descr1'][tnidx1[j]])
+                                        descr2tn.append(match[i]['descr1'][tnidx2[j]])
+                                    bf = cv2.BFMatcher()
+                                    if isInt:
+                                        tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
+                                                                np.array(descr2tn).astype(np.uint8), k=2)
+                                    else:
+                                        tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
+                                                                np.array(descr2tn).astype(float), k=2)
                                     if len(tnmatches) > 5:
-                                        for (m, n) in tnmatches:
-                                            pts2.append(kp2tn[m.trainIdx][:2])
-                                            pts1.append(kp1tn[m.queryIdx][:2])
-                                            ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
+                                        dellist = []
+                                        for midx, m in enumerate(tnmatches):
+                                            if len(m) != 2:
+                                                dellist.append(midx)
+                                        if dellist:
+                                            dellist.sort(reverse=True)
+                                            for dl in dellist:
+                                                del tnmatches[dl]
+                                        if len(tnmatches) > 5:
+                                            for (m, n) in tnmatches:
+                                                pts2.append(kp2tn[m.trainIdx][:2])
+                                                pts1.append(kp1tn[m.queryIdx][:2])
+                                                ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
 
-                            shlist = list(range(0, len(pts1)))
-                            np.random.shuffle(shlist)
-                            shlist = list(shlist)
-                            pts1_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts1)]
-                            pts2_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts2)]
-                            ratios_ = [[r_idx, r] for r_idx, r in zip(shlist, ratios)]
-                            pts1_.sort(key=lambda k: k[0])
-                            pts2_.sort(key=lambda k: k[0])
-                            ratios_.sort(key=lambda k: k[0])
-                            pts1 = [pt[1] for pt in pts1_]
-                            pts2 = [pt[1] for pt in pts2_]
-                            ratios = [pt[1] for pt in ratios_]
-                            pts1 = np.array([pts1])
-                            pts2 = np.array([pts2])
-                            ratios = np.array([ratios])
-                            ratios = np.expand_dims(ratios, 2)
+                            if inlrat > 0.75 * minInlRat:
+                                shlist = list(range(0, len(pts1)))
+                                np.random.shuffle(shlist)
+                                shlist = list(shlist)
+                                pts1_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts1)]
+                                pts2_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts2)]
+                                ratios_ = [[r_idx, r] for r_idx, r in zip(shlist, ratios)]
+                                pts1_.sort(key=lambda k: k[0])
+                                pts2_.sort(key=lambda k: k[0])
+                                ratios_.sort(key=lambda k: k[0])
+                                pts1 = [pt[1] for pt in pts1_]
+                                pts2 = [pt[1] for pt in pts2_]
+                                ratios = [pt[1] for pt in ratios_]
+                                pts1 = np.array([pts1])
+                                pts2 = np.array([pts2])
+                                ratios = np.array([ratios])
+                                ratios = np.expand_dims(ratios, 2)
 
-                            name = name0 + 'pair_%d-1_%d-1.npy' % (i - 1, i)
-                            if cnt_tv < nr_train:
-                                file = os.path.join(output_path_train, name)
-                            else:
-                                file = os.path.join(output_path_validate, name)
-                            np.save(file, [
-                                pts1.astype(np.float32),
-                                pts2.astype(np.float32),
-                                ratios.astype(np.float32),
-                                elem['imgSize'],
-                                elem['imgSize'],
-                                K1.astype(np.float32),
-                                K2.astype(np.float32),
-                                GT_R_Rel.astype(np.float32),
-                                GT_t_Rel.astype(np.float32)
-                            ])
-                            cnt_tv += 1
+                                name = name0 + 'pair_%d-1_%d-1.npy' % (i - 1, i)
+                                if cnt_tv < nr_train:
+                                    file = os.path.join(output_path_train, name)
+                                else:
+                                    file = os.path.join(output_path_validate, name)
+                                np.save(file, [
+                                    pts1.astype(np.float32),
+                                    pts2.astype(np.float32),
+                                    ratios.astype(np.float32),
+                                    elem['imgSize'],
+                                    elem['imgSize'],
+                                    K1.astype(np.float32),
+                                    K2.astype(np.float32),
+                                    GT_R_Rel.astype(np.float32),
+                                    GT_t_Rel.astype(np.float32)
+                                ])
+                                cnt_tv += 1
 
 
                     # Get frame to frame correspondences for cam2
@@ -633,6 +650,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                             print('Frame to frame correspondences for cam2 include too many dynamic objects', sys.stderr)
                         else:
                             # Get TN
+                            inlrat = 1.0
                             minlen = min(len(idx3D1), len(idx3D2)) - len(pts1)
                             tnidx1 = []
                             for j in range(0, len(idx3D1)):
@@ -651,67 +669,80 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                             descr1tn = []
                             descr2tn = []
                             minlen = min(minlen, max_tn)
-                            for j in range(0, minlen):
-                                kp1tn.append(match[i - 1]['kp2'][tnidx1[j]])
-                                kp2tn.append(match[i]['kp2'][tnidx2[j]])
-                                descr1tn.append(match[i - 1]['descr2'][tnidx1[j]])
-                                descr2tn.append(match[i]['descr2'][tnidx2[j]])
-                            bf = cv2.BFMatcher()
-                            if isInt:
-                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
-                                                        np.array(descr2tn).astype(np.uint8), k=2)
+                            if matching:
+                                for j in range(0, minlen):
+                                    pts1.append(match[i - 1]['kp2'][tnidx1[j]][:2])
+                                    pts2.append(match[i]['kp2'][tnidx2[j]][:2])
+                                    descr1.append(match[i - 1]['descr2'][tnidx1[j]])
+                                    descr2.append(match[i]['descr2'][tnidx2[j]])
+                                pts1, pts2, ratios = perform_matching(pts1, pts2, descr1, descr2, isInt)
+                                gt_res = epipolar_error(np.array([pts1]), np.array([pts2]), gt_F)
+                                gt_inliers = (gt_res < 10)
+                                inl_cnt = float(gt_inliers.sum())
+                                inlrat = inl_cnt / float(len(pts1))
                             else:
-                                tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
-                                                        np.array(descr2tn).astype(float), k=2)
-                            if len(tnmatches) > 5:
-                                dellist = []
-                                for midx, m in enumerate(tnmatches):
-                                    if len(m) != 2:
-                                        dellist.append(midx)
-                                if dellist:
-                                    dellist.sort(reverse=True)
-                                    for dl in dellist:
-                                        del tnmatches[dl]
+                                for j in range(0, minlen):
+                                    kp1tn.append(match[i - 1]['kp2'][tnidx1[j]])
+                                    kp2tn.append(match[i]['kp2'][tnidx2[j]])
+                                    descr1tn.append(match[i - 1]['descr2'][tnidx1[j]])
+                                    descr2tn.append(match[i]['descr2'][tnidx2[j]])
+                                bf = cv2.BFMatcher()
+                                if isInt:
+                                    tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
+                                                            np.array(descr2tn).astype(np.uint8), k=2)
+                                else:
+                                    tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
+                                                            np.array(descr2tn).astype(float), k=2)
                                 if len(tnmatches) > 5:
-                                    for (m, n) in tnmatches:
-                                        pts2.append(kp2tn[m.trainIdx][:2])
-                                        pts1.append(kp1tn[m.queryIdx][:2])
-                                        ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
+                                    dellist = []
+                                    for midx, m in enumerate(tnmatches):
+                                        if len(m) != 2:
+                                            dellist.append(midx)
+                                    if dellist:
+                                        dellist.sort(reverse=True)
+                                        for dl in dellist:
+                                            del tnmatches[dl]
+                                    if len(tnmatches) > 5:
+                                        for (m, n) in tnmatches:
+                                            pts2.append(kp2tn[m.trainIdx][:2])
+                                            pts1.append(kp1tn[m.queryIdx][:2])
+                                            ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
 
-                            shlist = list(range(0, len(pts1)))
-                            np.random.shuffle(shlist)
-                            shlist = list(shlist)
-                            pts1_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts1)]
-                            pts2_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts2)]
-                            ratios_ = [[r_idx, r] for r_idx, r in zip(shlist, ratios)]
-                            pts1_.sort(key=lambda k: k[0])
-                            pts2_.sort(key=lambda k: k[0])
-                            ratios_.sort(key=lambda k: k[0])
-                            pts1 = [pt[1] for pt in pts1_]
-                            pts2 = [pt[1] for pt in pts2_]
-                            ratios = [pt[1] for pt in ratios_]
-                            pts1 = np.array([pts1])
-                            pts2 = np.array([pts2])
-                            ratios = np.array([ratios])
-                            ratios = np.expand_dims(ratios, 2)
+                            if inlrat > 0.75 * minInlRat:
+                                shlist = list(range(0, len(pts1)))
+                                np.random.shuffle(shlist)
+                                shlist = list(shlist)
+                                pts1_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts1)]
+                                pts2_ = [[pt_idx, pt] for pt_idx, pt in zip(shlist, pts2)]
+                                ratios_ = [[r_idx, r] for r_idx, r in zip(shlist, ratios)]
+                                pts1_.sort(key=lambda k: k[0])
+                                pts2_.sort(key=lambda k: k[0])
+                                ratios_.sort(key=lambda k: k[0])
+                                pts1 = [pt[1] for pt in pts1_]
+                                pts2 = [pt[1] for pt in pts2_]
+                                ratios = [pt[1] for pt in ratios_]
+                                pts1 = np.array([pts1])
+                                pts2 = np.array([pts2])
+                                ratios = np.array([ratios])
+                                ratios = np.expand_dims(ratios, 2)
 
-                            name = name0 + 'pair_%d-2_%d-2.npy' % (i - 1, i)
-                            if cnt_tv < nr_train:
-                                file = os.path.join(output_path_train, name)
-                            else:
-                                file = os.path.join(output_path_validate, name)
-                            np.save(file, [
-                                pts1.astype(np.float32),
-                                pts2.astype(np.float32),
-                                ratios.astype(np.float32),
-                                elem['imgSize'],
-                                elem['imgSize'],
-                                K1.astype(np.float32),
-                                K2.astype(np.float32),
-                                GT_R_Rel.astype(np.float32),
-                                GT_t_Rel.astype(np.float32)
-                            ])
-                            cnt_tv += 1
+                                name = name0 + 'pair_%d-2_%d-2.npy' % (i - 1, i)
+                                if cnt_tv < nr_train:
+                                    file = os.path.join(output_path_train, name)
+                                else:
+                                    file = os.path.join(output_path_validate, name)
+                                np.save(file, [
+                                    pts1.astype(np.float32),
+                                    pts2.astype(np.float32),
+                                    ratios.astype(np.float32),
+                                    elem['imgSize'],
+                                    elem['imgSize'],
+                                    K1.astype(np.float32),
+                                    K2.astype(np.float32),
+                                    GT_R_Rel.astype(np.float32),
+                                    GT_t_Rel.astype(np.float32)
+                                ])
+                                cnt_tv += 1
     return True
 
 
@@ -783,6 +814,34 @@ def getDescriptorDist(descr1, descr2, isInt):
         return cv2.norm(descr1.astype(float), descr2.astype(float), normType=cv2.NORM_L2)
 
 
+def perform_matching(pts1, pts2, descr1, descr2, isInt):
+    bf = cv2.BFMatcher()
+    if isInt:
+        matches = bf.knnMatch(np.array(descr1).astype(np.uint8),
+                                np.array(descr2).astype(np.uint8), k=2)
+    else:
+        matches = bf.knnMatch(np.array(descr1).astype(float),
+                                np.array(descr2).astype(float), k=2)
+    dellist = []
+    for midx, m in enumerate(matches):
+        if len(m) != 2:
+            dellist.append(midx)
+    if dellist:
+        dellist.sort(reverse=True)
+        for dl in dellist:
+            del matches[dl]
+    pts11 = []
+    pts21 = []
+    ratios = []
+    if matches:
+        for (m, n) in matches:
+            pts21.append(pts2[m.trainIdx])
+            pts11.append(pts1[m.queryIdx])
+            ratios.append((m.distance + 1e-8) / (n.distance + 1e-8))
+
+    return pts11, pts21, ratios
+
+
 def main():
     parser = argparse.ArgumentParser(description='Generate configuration files and overview files for scenes by '
                                                  'varying the used inlier ratio and keypoint accuracy')
@@ -798,6 +857,8 @@ def main():
                         help='Number of CPU cores for parallel processing. If a negative value is provided, '
                              'the program tries to find the number of available CPUs on the system - if it fails, '
                              'the absolute value of nrCPUs is used. Default: 4')
+    parser.add_argument('--matching', '-m', type=bool, nargs='?', const=True, default=False, required=False,
+                        help='Performs nearest neighbor matching (knn=2) on all read correspondences (no use of GT matches)')
     args = parser.parse_args()
     if not os.path.exists(args.path):
         raise ValueError('Directory ' + args.path + ' does not exist')
@@ -916,7 +977,7 @@ def main():
     max_procs = min(nr_dirs, cpu_use)
     if max_procs == 1:
         try:
-            read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, args.minInlRat)
+            read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, args.minInlRat, args.matching)
         except:
             e = sys.exc_info()
             print('Exception: ' + str(e))
@@ -931,13 +992,13 @@ def main():
             cnt = sum(cnts[il:i])
             nr_validate = int(round(args.validatePort * cnt))
             nr_train = cnt - nr_validate
-            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:i], nr_train, args.minInlRat))
+            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:i], nr_train, args.minInlRat, args.matching))
             il = i
         if il < nr_dirs:
             cnt = sum(cnts[il:nr_dirs])
             nr_validate = int(round(args.validatePort * cnt))
             nr_train = cnt - nr_validate
-            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:nr_dirs], nr_train, args.minInlRat))
+            cmds.append((output_path_train, output_path_validate, sequ_dirs2[il:nr_dirs], nr_train, args.minInlRat, args.matching))
         cmd_fails = []
         with MyPool(processes=max_procs) as pool:
             # results = pool.map(processDir, work_items)
