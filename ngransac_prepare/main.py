@@ -42,7 +42,7 @@ def get_config_file_parameters():
 
 def start_testing(path, path_confs_out, skip_gen_sc_conf, skip_crt_sc,
                   img_path, store_path_sequ, load_path, cpu_use,
-                  exec_sequ, message_path, log_new_folders, path_converted_out):
+                  exec_sequ, message_path, log_new_folders, path_converted_out, matching):
     # Generate configuration files
     if not skip_gen_sc_conf:
         ret = gen_config_files(path, path_confs_out, img_path, store_path_sequ, load_path, log_new_folders)
@@ -65,7 +65,7 @@ def start_testing(path, path_confs_out, skip_gen_sc_conf, skip_crt_sc,
         pco = path_confs_out
     else:
         pco = path
-    ret = convertSequences(pco, path_converted_out, cpu_use, log_new_folders)
+    ret = convertSequences(pco, path_converted_out, cpu_use, log_new_folders, matching)
     if ret == 0:
         print('Testing finished without errors')
     return ret
@@ -141,7 +141,7 @@ def gen_config_files(path_init_confs, path_confs_out, img_path, store_path_sequ,
     return ret
 
 
-def convertSequences(gen_dirs_config_f, path_out, cpu_use, log_new_folders):
+def convertSequences(gen_dirs_config_f, path_out, cpu_use, log_new_folders, matching):
     conf = os.path.join(gen_dirs_config_f, 'generated_dirs_config.txt')
     if not os.path.exists(conf):
         print('File ' + conf + 'does not exist', sys.stderr)
@@ -170,6 +170,8 @@ def convertSequences(gen_dirs_config_f, path_out, cpu_use, log_new_folders):
     for p in dirsc:
         cmdline = ['python', pyfilename, '--path', p, '--nrCPUs', str(cpu_use),
                    '--path_out', path_out]
+        if matching:
+            cmdline.append('--matching')
         try:
             ret += sp.run(cmdline, shell=False, stdout=sys.stdout, stderr=sys.stderr,
                           check=True, timeout=172800).returncode
@@ -488,6 +490,8 @@ def main():
                              'are compressed and stored in the parent directory of the results folder. If a zipped '
                              'file exists, a new filename is created. Furthermore, a main test name can be provided'
                              'to take only folders created within this main test (only used when creating sequences).')
+    parser.add_argument('--matching', '-m', type=bool, nargs='?', const=True, default=False, required=False,
+                        help='Performs nearest neighbor matching (knn=2) on all read correspondences (no use of GT matches)')
     args = parser.parse_args()
     if args.path and not os.path.exists(args.path):
         raise ValueError('Directory ' + args.path + ' holding directories with template scene '
@@ -622,7 +626,8 @@ def main():
     try:
         ret = start_testing(args.path, args.path_confs_out, args.skip_gen_sc_conf, args.skip_crt_sc,
                             args.img_path, args.store_path_sequ, args.load_path, cpu_use,
-                            args.exec_sequ, args.message_path, log_new_folders, args.store_path_converted)
+                            args.exec_sequ, args.message_path, log_new_folders, args.store_path_converted,
+                            args.matching)
     except Exception:
         logging.error('Error in main file', exc_info=True)
         ret = 99
