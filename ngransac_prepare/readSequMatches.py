@@ -431,6 +431,10 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                             GT_t_Rel.astype(np.float32)
                         ])
                         cnt_tv += 1
+                    else:
+                        print('Inlier ratio of stereo pair', i, 'too small:', inlrat)
+                else:
+                    print('Too less correspondences (', pts1.shape[1], ') left of stereo pair', i)
 
                 #Get frame to frame correspondences for cam1
                 if i > 0:
@@ -527,11 +531,12 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                                         kp2tn.append(match[i]['kp1'][tnidx2[j]])
                                         descr1tn.append(match[i - 1]['descr1'][tnidx1[j]])
                                         descr2tn.append(match[i]['descr1'][tnidx2[j]])
-                                    bf = cv2.BFMatcher()
                                     if isInt:
+                                        bf = cv2.BFMatcher(normType=cv2.NORM_HAMMING)
                                         tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
                                                                 np.array(descr2tn).astype(np.uint8), k=2)
                                     else:
+                                        bf = cv2.BFMatcher(normType=cv2.NORM_L2)
                                         tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
                                                                 np.array(descr2tn).astype(float), k=2)
                                     if len(tnmatches) > 5:
@@ -686,11 +691,12 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                                     kp2tn.append(match[i]['kp2'][tnidx2[j]])
                                     descr1tn.append(match[i - 1]['descr2'][tnidx1[j]])
                                     descr2tn.append(match[i]['descr2'][tnidx2[j]])
-                                bf = cv2.BFMatcher()
                                 if isInt:
+                                    bf = cv2.BFMatcher(normType=cv2.NORM_HAMMING)
                                     tnmatches = bf.knnMatch(np.array(descr1tn).astype(np.uint8),
                                                             np.array(descr2tn).astype(np.uint8), k=2)
                                 else:
+                                    bf = cv2.BFMatcher(normType=cv2.NORM_L2)
                                     tnmatches = bf.knnMatch(np.array(descr1tn).astype(float),
                                                             np.array(descr2tn).astype(float), k=2)
                                 if len(tnmatches) > 5:
@@ -815,11 +821,12 @@ def getDescriptorDist(descr1, descr2, isInt):
 
 
 def perform_matching(pts1, pts2, descr1, descr2, isInt):
-    bf = cv2.BFMatcher()
     if isInt:
+        bf = cv2.BFMatcher(normType=cv2.NORM_HAMMING)
         matches = bf.knnMatch(np.array(descr1).astype(np.uint8),
                                 np.array(descr2).astype(np.uint8), k=2)
     else:
+        bf = cv2.BFMatcher(normType=cv2.NORM_L2)
         matches = bf.knnMatch(np.array(descr1).astype(float),
                                 np.array(descr2).astype(float), k=2)
     dellist = []
