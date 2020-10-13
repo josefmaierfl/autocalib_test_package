@@ -169,7 +169,7 @@ def convertSequences(gen_dirs_config_f, path_out, cpu_use, log_new_folders, matc
     log_new_folders.append(path_out)
     for p in dirsc:
         cmdline = ['python', pyfilename, '--path', p, '--nrCPUs', str(cpu_use),
-                   '--path_out', path_out, '--minInlRat', minInlRat]
+                   '--path_out', path_out, '--minInlRat', str(minInlRat)]
         if matching:
             cmdline.append('--matching')
         try:
