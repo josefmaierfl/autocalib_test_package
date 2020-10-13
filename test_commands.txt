@@ -53,9 +53,9 @@ python show_mean.py --orb -r 0.8 --session nfeat-1_withSideInfo_pretrained
 python ngransac_test.py --orb -bm -r 1.0 --nfeatures -1 -bs 1 --nosideinfo --session nfeat-1_noSideInfo_pretrained --model models/weights_e2e_E_orb_r1.00_nfeat-1_noSideInfo_pretrained.net
 python show_mean.py --orb -r 1.0 --session nfeat-1_noSideInfo_pretrained
 
-python ngransac_test.py --orb -bm -r 0.8 --nfeatures -1 -bs 1 --session nfeat-1_withSideInfo_resblocks15_192 --model models/weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo_resblocks15_192.net
+python ngransac_test_orig.py -ns 192 -rb 15 --orb -bm -r 0.8 --nfeatures -1 -bs 1 --session nfeat-1_withSideInfo_resblocks15_192 --model models/weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo_resblocks15_192.net
 python show_mean.py --orb -r 0.8 --session nfeat-1_withSideInfo_resblocks15_192
-python ngransac_test.py --orb -bm -r 1.0 --nfeatures -1 -bs 1 --nosideinfo --session nfeat-1_noSideInfo_resblocks15_192 --model models/weights_e2e_E_orb_r1.00_nfeat-1_noSideInfo_resblocks15_192.net
+python ngransac_test_orig.py -ns 192 -rb 15 --orb -bm -r 1.0 --nfeatures -1 -bs 1 --nosideinfo --session nfeat-1_noSideInfo_resblocks15_192 --model models/weights_e2e_E_orb_r1.00_nfeat-1_noSideInfo_resblocks15_192.net
 python show_mean.py --orb -r 1.0 --session nfeat-1_noSideInfo_resblocks15_192
 
 /home/maierj/work/results/training_data2/conversion_results/training_results/weights_e2e_E_orb_r0.80_nfeat-1_withSideInfo_resblocks15_192.net
