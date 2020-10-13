@@ -849,7 +849,7 @@ def main():
                         help='Directory holding sequences and file sequInfos.yaml/yml/xml')
     parser.add_argument('--path_out', type=str, required=False,
                         help='Directory for storing converted data')
-    parser.add_argument('--validatePort', type=float, required=False, default=0.2,
+    parser.add_argument('--validatePort', type=float, required=False, default=0,
                         help='Data portion that should be used for testing')
     parser.add_argument('--minInlRat', type=float, required=False, default=0.19,
                         help='Minimum inlier ratio')
