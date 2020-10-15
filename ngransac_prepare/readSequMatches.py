@@ -34,6 +34,7 @@ from xml.etree import cElementTree as ElementTree
 import multiprocessing
 import multiprocessing.pool
 import threading
+from copy import deepcopy
 
 
 class NoDaemonProcess(multiprocessing.Process):
@@ -391,6 +392,9 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                 isInt = descr_is_int(descr1)
                 if matching:
                     pts1, pts2, ratios = perform_matching(pts1, pts2, descr1, descr2, isInt)
+                    pts1_ = deepcopy(pts1)
+                    pts2_ = deepcopy(pts2)
+                    ratios_ = deepcopy(ratios)
                 else:
                     ratios = calcRatios(descr1, descr2, dists)
                 pts1 = np.array([pts1])
@@ -413,7 +417,7 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                     inlrat = inl_cnt / float(pts1.shape[1])
                     if inlrat < 0.6 * elem['inlRat'][i] and not matching:
                         print('Stereo correspondences are corrupt', sys.stderr)
-                    elif inlrat > minInlRat:
+                    elif inlrat >= minInlRat:
                         name = name0 + 'pair_%d-1_%d-2.npy' % (i, i)
                         if cnt_tv < nr_train:
                             file = os.path.join(output_path_train, name)
@@ -431,6 +435,46 @@ def read_matches(output_path_train, output_path_validate, sequ_dirs2, nr_train, 
                             GT_t_Rel.astype(np.float32)
                         ])
                         cnt_tv += 1
+                    elif matching and inl_cnt > 10:
+                        tnlist =[tnidx for tnidx, a in enumerate(gt_inliers) if not a]
+                        np.random.shuffle(tnlist)
+                        tnlist = list(tnlist)
+                        nr_tn = int(math.ceil(inl_cnt / minInlRat - inl_cnt))
+                        nr_tn = min(nr_tn, len(tnlist))
+                        tnlist = tnlist[:nr_tn]
+                        tnuse = [False] * len(gt_inliers)
+                        for utn in tnlist:
+                            tnuse[utn] = True
+                        pts1 = []
+                        pts2 = []
+                        ratios = []
+                        for j in range(0, len(gt_inliers)):
+                            if gt_inliers[j] or tnuse[j]:
+                                pts1.append(pts1_[j])
+                                pts2.append(pts2_[j])
+                                ratios.append(ratios_[j])
+                        pts1 = np.array([pts1])
+                        pts2 = np.array([pts2])
+                        ratios = np.array([ratios])
+                        ratios = np.expand_dims(ratios, 2)
+                        if pts1.shape[1] > 15:
+                            name = name0 + 'pair_%d-1_%d-2.npy' % (i, i)
+                            if cnt_tv < nr_train:
+                                file = os.path.join(output_path_train, name)
+                            else:
+                                file = os.path.join(output_path_validate, name)
+                            np.save(file, [
+                                pts1.astype(np.float32),
+                                pts2.astype(np.float32),
+                                ratios.astype(np.float32),
+                                elem['imgSize'],
+                                elem['imgSize'],
+                                K1.astype(np.float32),
+                                K2.astype(np.float32),
+                                GT_R_Rel.astype(np.float32),
+                                GT_t_Rel.astype(np.float32)
+                            ])
+                            cnt_tv += 1
                     else:
                         print('Inlier ratio of stereo pair', i, 'too small:', inlrat)
                 else:
