@@ -149,7 +149,6 @@ target_include_directories(${target}
 
     ${CMAKE_CURRENT_SOURCE_DIR}/include/${target}
     ${CMAKE_CURRENT_BINARY_DIR}/include
-    ${EIGEN3_INCLUDE_DIR}
     ${Nanoflann_INCLUDE_DIR}
 	#${GMS_INCLUDE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/gms-1.0/include
@@ -159,7 +158,7 @@ target_include_directories(${target}
     #${FLANN_INCLUDE_DIRS}
     #${FLANN_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
-    #${EIGEN3_INCLUDE_DIR}
+	${EIGEN_INCLUDE_DIR}
 
     INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -181,7 +180,7 @@ target_link_libraries(${target}
     ${DEFAULT_LIBRARIES}
     #${FLANN_LIBRARIES}
     ${OpenCV_LIBS}
-    Eigen
+#    Eigen
 
     INTERFACE
 )

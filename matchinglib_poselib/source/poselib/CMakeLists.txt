@@ -197,6 +197,7 @@ target_include_directories(${target}
 
     PUBLIC
     ${DEFAULT_INCLUDE_DIRECTORIES}
+    ${EIGEN_INCLUDE_DIR}
     #${FLANN_INCLUDE_DIRS}
     #${Nanoflann_INCLUDE_DIR}
     #${FLANN_INCLUDE_DIRS}
