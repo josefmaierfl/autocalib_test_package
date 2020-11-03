@@ -77,7 +77,15 @@ export(TARGETS ${target} NAMESPACE ${META_PROJECT_NAME}:: FILE ${PROJECT_BINARY_
 
 # file(GLOB SOURCE_FILES "src/*.cpp" "include/*.h")
 
-include_directories(include ${OpenCV_INCLUDE_DIRS})
+#include_directories(include ${OpenCV_INCLUDE_DIRS})
+target_include_directories(${target}
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+
+        PUBLIC
+        ${DEFAULT_INCLUDE_DIRECTORIES}
+        ${OpenCV_INCLUDE_DIRS}
+        )
 
 # add_executable(gms-feature-matching ${SOURCE_FILES})
 

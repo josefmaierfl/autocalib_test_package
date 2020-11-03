@@ -55,13 +55,15 @@ ENDIF()
 # get eigen (under windows)
 IF(WIN32)
   find_package(Eigen REQUIRED)
-  set(ADDITIONAL_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR}
-      ${EIGEN3_INCLUDE_DIR}/unsupported )
+  set(ADDITIONAL_INCLUDE_DIRS
+          ${EIGEN_INCLUDE_DIR}
+          ${EIGEN_INCLUDE_DIR}/unsupported )
 ELSE()
-#  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/modules/")
+  #  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/modules/")
   find_package(Eigen REQUIRED)
-  set(ADDITIONAL_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR}
-      ${EIGEN3_INCLUDE_DIR}/unsupported )
+  set(ADDITIONAL_INCLUDE_DIRS
+          ${EIGEN_INCLUDE_DIR}
+          ${EIGEN_INCLUDE_DIR}/unsupported )
 ENDIF()
 
 # compile with /bigobj under Windows
