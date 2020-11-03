@@ -200,7 +200,7 @@ ELSE()
   add_library( random_generators STATIC test/random_generators.cpp test/random_generators.hpp test/experiment_helpers.cpp test/experiment_helpers.hpp test/time_measurement.cpp test/time_measurement.hpp )
   target_link_libraries(random_generators opengv)
 ENDIF()
-target_link_libraries(opengv Eigen)
+#target_link_libraries(opengv Eigen)
 
 
 IF (BUILD_TESTS)
