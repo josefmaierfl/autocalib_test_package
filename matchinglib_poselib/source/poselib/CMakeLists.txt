@@ -197,11 +197,11 @@ target_include_directories(${target}
 
     PUBLIC
     ${DEFAULT_INCLUDE_DIRECTORIES}
-    ${EIGEN_INCLUDE_DIR}
     #${FLANN_INCLUDE_DIRS}
     #${Nanoflann_INCLUDE_DIR}
     #${FLANN_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
+        ${EIGEN_INCLUDE_DIR}
     ${CLAPACK_INCLUDE_DIR}
     ${SBA_INCLUDE_DIR}
     #${OPENGV_INCLUDE_DIR}
