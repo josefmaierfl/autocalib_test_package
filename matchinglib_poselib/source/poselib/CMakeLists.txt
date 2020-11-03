@@ -231,7 +231,7 @@ target_link_libraries(${target}
     ${SBA_LIBRARIES}
     ${CLAPACK_LIBRARIES}
     #${OPENGV_LIBRARIES}
-    Eigen
+#    Eigen
 
     INTERFACE
 )
