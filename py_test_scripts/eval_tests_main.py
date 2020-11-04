@@ -5864,7 +5864,9 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 it_parameters = ['stereoRef']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'],
                                     'filter_scene': 'nv',
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')
@@ -5913,7 +5915,9 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 it_parameters = ['stereoRef']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'],
                                     'filter_scene': 'nv',
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')
@@ -5962,7 +5966,9 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 it_parameters = ['stereoRef']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'],
                                     'filter_scene': 'nv',
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')
@@ -6014,7 +6020,9 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 partitions = ['inlratMin']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'],
                                     'filter_scene': 'nv',
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')
@@ -6065,7 +6073,10 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 partitions = ['inlratMin', 'rt_change_type']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'
+                                                        ],
                                     'filter_scene': ['crt', 'jrt'],
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')
@@ -6111,7 +6122,10 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 it_parameters = ['stereoRef']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'
+                                                        ],
                                     'filter_scene': 'nv',
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_execT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')
@@ -6156,7 +6170,10 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 it_parameters = ['stereoRef']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'
+                                                        ],
                                     'filter_scene': 'nv',
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_execT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')
@@ -6201,7 +6218,10 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                 it_parameters = ['stereoRef']
                 filter_func_args = {'data_seperators': ['inlratMin',
                                                         'kpAccSd',
-                                                        'depthDistr'],
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'
+                                                        ],
                                     'filter_scene': 'nv',
                                     'data_file': os.path.join(output_path, 'df_usacVScalib_execT_' +
                                                               str(test_nr) + '_' + str(ev) + '.gz')

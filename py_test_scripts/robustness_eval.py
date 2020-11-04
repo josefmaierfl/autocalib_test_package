@@ -211,6 +211,10 @@ def get_rt_change_type(**keywords):
                                         txc = False
                                         tyc = False
                                         tzc = True
+                                elif rxc and ryc and rzc:
+                                    txc = True
+                                    tyc = True
+                                    tzc = True
                                 else:
                                     txc = False
                                     tyc = False
@@ -235,7 +239,7 @@ def get_rt_change_type(**keywords):
                                     rxc = False
                                     ryc = False
                                     rzc = False
-                            elif (txc or tyc or tzc) and rxc and ryc and rzc:
+                            elif (txc or tyc or tzc) and not (txc and tyc and tzc) and rxc and ryc and rzc:
                                 txc = False
                                 tyc = False
                                 tzc = False
@@ -498,7 +502,7 @@ def get_rt_change_type(**keywords):
                                     rxc = False
                                     ryc = False
                                     rzc = False
-                            elif (txc or tyc or tzc) and rxc and ryc and rzc:
+                            elif (txc or tyc or tzc) and not (txc and tyc and tzc) and rxc and ryc and rzc:
                                 txc = False
                                 tyc = False
                                 tzc = False
