@@ -1860,6 +1860,35 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                          figs_externalize=True,
                                                          no_tex=False,
                                                          cat_sort=None)
+            elif ev == 11:
+                fig_title_pre_str = 'Values of R\\&t Differences for Comparison of '
+                eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
+                                't_angDiff_deg']
+                units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
+                         ('R_diff_pitch_deg', '/\\textdegree'), ('R_diff_yaw_deg', '/\\textdegree'),
+                         ('t_angDiff_deg', '/\\textdegree')]
+                it_parameters = ['RobMethod']
+                ret += calcSatisticAndPlot_3D(data=data,
+                                              store_path=output_path,
+                                              tex_file_pre_str='plots_USAC_vs_RANSAC_',
+                                              fig_title_pre_str=fig_title_pre_str,
+                                              eval_description_path='RT-stats',
+                                              eval_columns=eval_columns,
+                                              units=units,
+                                              it_parameters=it_parameters,
+                                              xy_axis_columns=['th', 'kpAccSd'],
+                                              filter_func=None,
+                                              filter_func_args=None,
+                                              special_calcs_func=None,
+                                              special_calcs_args=None,
+                                              calc_func=None,
+                                              calc_func_args=None,
+                                              fig_type='surface',
+                                              use_marks=False,
+                                              ctrl_fig_size=False,
+                                              make_fig_index=True,
+                                              build_pdf=True,
+                                              figs_externalize=True)
             else:
                 raise ValueError('Eval nr ' + str(ev) + ' does not exist')
     elif test_name == 'refinement_ba':

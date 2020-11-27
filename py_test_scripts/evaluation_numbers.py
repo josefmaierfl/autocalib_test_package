@@ -33,7 +33,7 @@ def get_available_evals():
                        'refinement_ba_stereo', 'correspondence_pool', 'robustness', 'usac_vs_autocalib']
     sub_test_numbers = [2, 1, 2, 1, 2, 3, 6, 1]
     sub_sub_test_nr = [[list(range(1, 7)) + list(range(37, 40)), list(range(7, 15)) + [36] + list(range(40, 43))],
-                       [list(range(1, 11))],
+                       [list(range(1, 12))],
                        [list(range(1, 6)), list(range(1, 5))],
                        [list(range(1, 10))],
                        [list(range(1, 4)), list(range(1, 5))],
