@@ -30,3 +30,7 @@ rsync -P -e "ssh -i /home/maierj/work/aws/ait_calib_frankfurt.pem" ubuntu@ec2-18
 rsync -P -e "ssh -i /home/maierj/work/aws/ait_calib_frankfurt.pem" /media/maierj/Elements/work/images/KITTI.zip ubuntu@ec2-18-184-17-178.eu-central-1.compute.amazonaws.com:/data/work/autocalib_test_package/images
 rsync -P -e "ssh -i /home/maierj/work/aws/ait_calib_frankfurt.pem" /media/maierj/Elements/work/images/MegaDepth_reduced/MegaDepth.zip ubuntu@ec2-18-184-17-178.eu-central-1.compute.amazonaws.com:/data/work/autocalib_test_package/images
 rsync -P -e "ssh -i /home/maierj/work/aws/ait_calib_frankfurt.pem" /media/maierj/Elements/work/results/testing_results/optimal_autocalib_pars.yml ubuntu@ec2-18-197-210-102.eu-central-1.compute.amazonaws.com:/data/work/results/testing_results
+
+./run_docker_base.sh live fullp RESDIR /media/maierj/Elements/work/results --nrCPUs 6 --pickle_df --skip_tests usac-testing usac_vs_ransac refinement_ba vfc_gms_sof refinement_ba_stereo correspondence_pool robustness
+
+./run_docker_base.sh live fullp RESDIR /media/maierj/Elements/work/results --nrCPUs 6 --pickle_df --skip_gen_sc_conf usac_vs_autocalib --skip_crt_sc usac_vs_autocalib --skip_use_test_name_nr usac_vs_autocalib --skip_use_eval_name_nr use+ usac_vs_autocalib r6-8 --skip_tests usac-testing usac_vs_ransac refinement_ba vfc_gms_sof refinement_ba_stereo correspondence_pool robustness
