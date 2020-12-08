@@ -49,6 +49,11 @@ def filter_nr_kps_calc_t_all(**vars):
     tmp['linRef_BA_sac_us'] = linref + ba + sac
     return tmp
 
+
+def filter_ba_intr(**vars):
+    return vars['data'].loc[vars['data']['BART'] == 'extr_intr']
+
+
 def get_best_comb_scenes_1(**keywords):
     if 'res_par_name' not in keywords:
         raise ValueError('Missing parameter res_par_name')

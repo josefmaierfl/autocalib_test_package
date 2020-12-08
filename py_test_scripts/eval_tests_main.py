@@ -2119,6 +2119,46 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                          make_fig_index=True,
                                                          build_pdf=True,
                                                          figs_externalize=False)
+                elif ev == 6:
+                    fig_title_pre_str = 'Statistics on Focal Length and Principal Point Differences ' \
+                                        'after Bundle Adjustment (BA) Including Intrinsics and ' \
+                                        'Structure Using GT Camera Matrices for Different '
+                    eval_columns = ['K1_cxyfxfyNorm', 'K2_cxyfxfyNorm', 'K1_cxyDiffNorm', 'K2_cxyDiffNorm',
+                                    'K1_fxyDiffNorm', 'K2_fxyDiffNorm', 'K1_fxDiff', 'K2_fxDiff', 'K1_fyDiff',
+                                    'K2_fyDiff', 'K1_cxDiff', 'K2_cxDiff', 'K1_cyDiff', 'K2_cyDiff']
+                    units = [('K1_cxyfxfyNorm', '/pixel'), ('K2_cxyfxfyNorm', '/pixel'),
+                             ('K1_cxyDiffNorm', '/pixel'), ('K2_cxyDiffNorm', '/pixel'),
+                             ('K1_fxyDiffNorm', '/pixel'), ('K2_fxyDiffNorm', '/pixel'), ('K1_fxDiff', '/pixel'),
+                             ('K2_fxDiff', '/pixel'), ('K1_fyDiff', '/pixel'), ('K2_fyDiff', '/pixel'),
+                             ('K1_cxDiff', '/pixel'), ('K2_cxDiff', '/pixel'), ('K1_cyDiff', '/pixel'),
+                             ('K2_cyDiff', '/pixel')]
+                    it_parameters = ['refineMethod_algorithm',
+                                     'refineMethod_costFunction',
+                                     'BART']
+                    from refinement_eval import filter_ba_intr
+                    ret += calcSatisticAndPlot_2D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_refineRT_BA_opts_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='K-stats',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  x_axis_column=['kpAccSd'],
+                                                  pdfsplitentry=['K1_fxyDiffNorm', 'K1_fyDiff'],
+                                                  filter_func=filter_ba_intr,
+                                                  filter_func_args=None,
+                                                  special_calcs_func=None,
+                                                  special_calcs_args=None,
+                                                  calc_func=None,
+                                                  calc_func_args=None,
+                                                  compare_source=None,
+                                                  fig_type='smooth',
+                                                  use_marks=True,
+                                                  ctrl_fig_size=True,
+                                                  make_fig_index=True,
+                                                  build_pdf=True,
+                                                  figs_externalize=True)
                 else:
                     raise ValueError('Eval nr ' + str(ev) + ' does not exist')
         elif test_nr == 2:
