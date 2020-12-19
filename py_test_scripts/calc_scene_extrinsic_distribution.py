@@ -101,9 +101,47 @@ def read_single_extrinsics(store_path, parSetNr):
     return df
 
 
-def calc_single_extr_stats(out_path, store_path, parSetNr):
-    df = read_single_extrinsics(store_path, parSetNr)
-    stats = df.describe()
+def calc_single_extr_stats(out_path, store_path, path_contains, parSetNr):
+    if parSetNr < 0:
+        parSetNr = 0
+    folders = []
+    if path_contains:
+        folders_all = os.listdir(store_path)
+        for i in folders_all:
+            if path_contains in i:
+                t_tmp = os.path.join(store_path, i)
+                if len(os.listdir(t_tmp)) != 0:
+                    folders.append(t_tmp)
+        if len(folders) == 0:
+            raise ValueError("No folders found")
+    else:
+        folders = [store_path]
+    if len(folders) == 1:
+        df = read_single_extrinsics(store_path, parSetNr)
+        stats = df.describe()
+    else:
+        df_list = []
+        stats_list = []
+        for folder in folders:
+            df_list.append(read_single_extrinsics(folder, parSetNr))
+            stats_list.append(df_list[-1].describe())
+        df = pd.concat(df_list, ignore_index=True)
+        stats = df.describe()
+
+        file_name = 'rt_stats_multiple_parSetNr' + str(parSetNr)
+        file_path = os.path.join(out_path, file_name + '.csv')
+        cnt = 1
+        file_name_init = file_name
+        while os.path.exists(file_path):
+            file_name = file_name_init + '_' + str(int(cnt))
+            file_path = os.path.join(out_path, file_name + '.csv')
+            cnt += 1
+        with open(file_path, 'a') as f:
+            f.write('# Statistics for multiple stereo intrinsics' + '\n')
+            for fn, stat in zip(folders, stats_list):
+                f.write('\n# Folder name: ' + os.path.basename(fn) + '\n')
+                stat.to_csv(index=True, sep=';', path_or_buf=f, header=True, na_rep='nan')
+
     file_name = 'rt_stats_parSetNr' + str(parSetNr)
     file_path = os.path.join(out_path, file_name + '.csv')
     cnt = 1
@@ -122,7 +160,9 @@ def main():
                         help='Directory for writing statistics')
     parser.add_argument('--in_path', type=str, required=True,
                         help='Storing path for generated scenes and matches')
-    parser.add_argument('--parSetNr', type=int, required=True,
+    parser.add_argument('--path_contains', type=str, required=False, default="",
+                        help='Uses all sub-folders of generated scenes and matches containing this string')
+    parser.add_argument('--parSetNr', type=int, required=False, default=-1,
                         help='Specify a specific parSetNr for extracting R&t only from this dataset')
     args = parser.parse_args()
     if not os.path.exists(args.path_out):
@@ -131,7 +171,7 @@ def main():
         raise ValueError("Path of stored sequences does not exist")
     if len(os.listdir(args.in_path)) == 0:
         raise ValueError("Path with stored sequences is empty")
-    calc_single_extr_stats(args.path_out, args.in_path, args.parSetNr)
+    calc_single_extr_stats(args.path_out, args.in_path, args.path_contains, args.parSetNr)
 
 
 if __name__ == "__main__":
