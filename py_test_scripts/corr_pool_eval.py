@@ -65,6 +65,10 @@ def filter_max_pool_size(**vars):
     return vars['data'].loc[vars['data']['stereoParameters_maxPoolCorrespondences'] == 30000]
 
 
+def filter_5000_pool_size(**vars):
+    return vars['data'].loc[vars['data']['stereoParameters_maxPoolCorrespondences'] == 5000]
+
+
 def calc_rt_diff_frame_to_frame(**vars):
     if 'partitions' not in vars:
         raise ValueError('Partitions are necessary.')
@@ -1453,6 +1457,10 @@ def calc_rt_diff_n_matches(**keywords):
     if 'data_separators' in keywords:
         needed_columns += keywords['data_separators']
         needed_columns = list(dict.fromkeys(needed_columns))
+    if 'nr_bins' in keywords:
+        nr_bins = keywords['nr_bins']
+    else:
+        nr_bins = 'auto'
     data = keywords['data'].loc[:, needed_columns].copy(deep=True)
     if 'partitions' in keywords:
         data = data.groupby(keywords['partitions'])
@@ -1460,25 +1468,25 @@ def calc_rt_diff_n_matches(**keywords):
         grp_list = []
         for grp in grp_keys:
             tmp = data.get_group(grp)
-            bin_edges = np.histogram_bin_edges(tmp['poolSize'].values, bins='auto')
+            bin_edges = np.histogram_bin_edges(tmp['poolSize'].values, bins=nr_bins)
             first = None
             for be in np.nditer(bin_edges):
                 if not first:
                     first = be
                 else:
-                    mean = round((be - first) / 2, 0)
+                    mean = round(first + (float(be) - first) / 2, 0)
                     tmp.loc[((tmp['poolSize'] > first) & (tmp['poolSize'] <= be)), 'poolSize'] = mean
                     first = be
             grp_list.append(tmp)
         df = pd.concat(grp_list, ignore_index=True)
     else:
-        bin_edges = np.histogram_bin_edges(data['poolSize'].values, bins='auto')
+        bin_edges = np.histogram_bin_edges(data['poolSize'].values, bins=nr_bins)
         first = None
         for be in np.nditer(bin_edges):
-            if not first:
+            if first is None:
                 first = float(be)
             else:
-                mean = round(first + (be - first) / 2, 0)
+                mean = round(first + (float(be) - first) / 2, 0)
                 data.loc[((data['poolSize'] > first) & (data['poolSize'] <= be)), 'poolSize'] = mean
                 first = float(be)
         df = data

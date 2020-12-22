@@ -3485,6 +3485,42 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              build_pdf=False,
                                                              figs_externalize=True,
                                                              no_tex=True)
+                elif ev == 17:
+                    fig_title_pre_str = 'Statistics on R\\&t Differences from Frame to Frame with a Maximum ' \
+                                        'Correspondence Pool Size of $\\hat{n}_{cp}=5000$ Features for Different '
+                    eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
+                                    't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz']
+                    units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
+                             ('R_diff_pitch_deg', '/\\textdegree'), ('R_diff_yaw_deg', '/\\textdegree'),
+                             ('t_angDiff_deg', '/\\textdegree'), ('t_distDiff', ''), ('t_diff_tx', ''),
+                             ('t_diff_ty', ''), ('t_diff_tz', '')]
+                    calc_func_args = {'eval_on': ['poolSize'], 'nr_bins': 50}
+                    it_parameters = ['stereoParameters_minPtsDistance']
+                    from corr_pool_eval import filter_5000_pool_size, \
+                        calc_rt_diff_n_matches
+                    ret += calcSatisticAndPlot_2D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_corrPool_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='RT-diff',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  x_axis_column=['poolSize'],
+                                                  pdfsplitentry=['t_distDiff'],
+                                                  filter_func=filter_5000_pool_size,
+                                                  filter_func_args=None,
+                                                  special_calcs_func=None,
+                                                  special_calcs_args=None,
+                                                  calc_func=calc_rt_diff_n_matches,
+                                                  calc_func_args=calc_func_args,
+                                                  compare_source=None,
+                                                  fig_type='smooth',
+                                                  use_marks=False,
+                                                  ctrl_fig_size=True,
+                                                  make_fig_index=True,
+                                                  build_pdf=True,
+                                                  figs_externalize=True)
                 else:
                     raise ValueError('Eval nr ' + str(ev) + ' does not exist')
         elif test_nr == 2:
