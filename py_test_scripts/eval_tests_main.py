@@ -4558,6 +4558,63 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                   figs_externalize=True,
                                                   no_tex=False,
                                                   cat_sort='depthDistr')
+                elif ev == 39:
+                    fig_title_pre_str = 'Statistics on R\\&t Differences for Different '
+                    eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
+                                    't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz',
+                                    'R_mostLikely_diffAll', 'R_mostLikely_diff_roll_deg',
+                                    'R_mostLikely_diff_pitch_deg', 'R_mostLikely_diff_yaw_deg',
+                                    't_mostLikely_angDiff_deg', 't_mostLikely_distDiff',
+                                    't_mostLikely_diff_tx', 't_mostLikely_diff_ty', 't_mostLikely_diff_tz']
+                    units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
+                             ('R_diff_pitch_deg', '/\\textdegree'), ('R_diff_yaw_deg', '/\\textdegree'),
+                             ('t_angDiff_deg', '/\\textdegree'), ('t_distDiff', ''), ('t_diff_tx', ''),
+                             ('t_diff_ty', ''), ('t_diff_tz', ''),
+                             ('R_mostLikely_diffAll', '/\\textdegree'),
+                             ('R_mostLikely_diff_roll_deg', '/\\textdegree'),
+                             ('R_mostLikely_diff_pitch_deg', '/\\textdegree'),
+                             ('R_mostLikely_diff_yaw_deg', '/\\textdegree'),
+                             ('t_mostLikely_angDiff_deg', '/\\textdegree'),
+                             ('t_mostLikely_distDiff', ''), ('t_mostLikely_diff_tx', ''),
+                             ('t_mostLikely_diff_ty', ''), ('t_mostLikely_diff_tz', '')]
+                    it_parameters = ['rt_change_type']
+                    pdfsplitentry = ['t_distDiff', 'R_mostLikely_diffAll', 't_mostLikely_distDiff']
+                    special_calcs_args = {'build_pdf': (True, True),
+                                          'use_marks': False,
+                                          'data_partitions': ['rt_change_type', 'kpAccSd']}
+                    filter_func_args = {'data_seperators': ['inlratCRate',
+                                                            'kpAccSd',
+                                                            'depthDistr'],
+                                        'filter_mostLikely': True,
+                                        'data_file': os.path.join(output_path, 'df_robustness_diffRT_' +
+                                                                  str(test_nr) + '_' + str(ev) + '.gz')
+                                        }
+                    from robustness_eval import get_rt_change_type, get_ml_acc
+                    ret += calcSatisticAndPlot_2D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_robustness_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='RT-stats',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  x_axis_column=['kpAccSd'],
+                                                  pdfsplitentry=pdfsplitentry,
+                                                  filter_func=get_rt_change_type,
+                                                  filter_func_args=filter_func_args,
+                                                  special_calcs_func=get_ml_acc,
+                                                  special_calcs_args=special_calcs_args,
+                                                  calc_func=None,
+                                                  calc_func_args=None,
+                                                  compare_source=None,
+                                                  fig_type='smooth',
+                                                  use_marks=True,
+                                                  ctrl_fig_size=True,
+                                                  make_fig_index=True,
+                                                  build_pdf=True,
+                                                  figs_externalize=False,
+                                                  no_tex=False,
+                                                  cat_sort=True)
                 else:
                     raise ValueError('Eval nr ' + str(ev) + ' does not exist')
         elif test_nr == 4:
@@ -5223,6 +5280,62 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              figs_externalize=True,
                                                              no_tex=False,
                                                              cat_sort='depthDistr')
+                if ev == 40:
+                    fig_title_pre_str = 'Values of Stable Pose Detections ' \
+                                        'for Different '
+                    eval_columns = ['R_diffAll', 't_angDiff_deg', 'R_mostLikely_diffAll', 't_mostLikely_angDiff_deg']
+                    units = [('R_diffAll', '/\\textdegree'), ('t_angDiff_deg', '/\\textdegree'),
+                             ('R_mostLikely_diffAll', '/\\textdegree'), ('t_mostLikely_angDiff_deg', '/\\textdegree')]
+                    it_parameters = ['stereoParameters_minContStablePoses',
+                                     'stereoParameters_minNormDistStable',
+                                     'stereoParameters_absThRankingStable']
+                    partitions = ['rt_change_type']
+                    calc_func_args = {'data_separators': ['stereoParameters_minContStablePoses',
+                                                          'stereoParameters_minNormDistStable',
+                                                          'stereoParameters_absThRankingStable',
+                                                          'rt_change_type',
+                                                          'depthDistr',
+                                                          'kpAccSd',
+                                                          'inlratCRate'],
+                                      'stable_type': 'poseIsStable',
+                                      'remove_partitions': ['depthDistr', 'kpAccSd']}
+                    filter_func_args = {'data_seperators': ['stereoParameters_minContStablePoses',
+                                                            'stereoParameters_minNormDistStable',
+                                                            'stereoParameters_absThRankingStable',
+                                                            'inlratCRate',
+                                                            'kpAccSd',
+                                                            'depthDistr'],
+                                        'filter_mostLikely': True,
+                                        'filter_poseIsStable': True,
+                                        'data_file': os.path.join(output_path, 'df_robustness_diffRT_stable_' +
+                                                                  str(test_nr) + '_' + str(ev) + '.gz')
+                                        }
+                    from robustness_eval import get_rt_change_type, calc_pose_stable_ratio
+                    ret += calcSatisticAndPlot_2D_partitions(data=data,
+                                                             store_path=output_path,
+                                                             tex_file_pre_str='plots_robustness_',
+                                                             fig_title_pre_str=fig_title_pre_str,
+                                                             eval_description_path='RT-stabi',
+                                                             eval_columns=eval_columns,
+                                                             units=units,
+                                                             it_parameters=it_parameters,
+                                                             partitions=partitions,
+                                                             x_axis_column=['inlratCRate'],
+                                                             filter_func=get_rt_change_type,
+                                                             filter_func_args=filter_func_args,
+                                                             special_calcs_func=None,
+                                                             special_calcs_args=None,
+                                                             calc_func=calc_pose_stable_ratio,
+                                                             calc_func_args=calc_func_args,
+                                                             compare_source=None,
+                                                             fig_type='smooth',
+                                                             use_marks=True,
+                                                             ctrl_fig_size=True,
+                                                             make_fig_index=True,
+                                                             build_pdf=True,
+                                                             figs_externalize=True,
+                                                             no_tex=False,
+                                                             cat_sort=False)
                 else:
                     raise ValueError('Eval nr ' + str(ev) + ' does not exist')
         elif test_nr == 5:
@@ -5973,6 +6086,52 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                              figs_externalize=True,
                                                              no_tex=True,
                                                              cat_sort=False)
+                if ev == 41:
+                    fig_title_pre_str = 'Statistics on R\\&t Differences for Combinations of Different '
+                    eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
+                                    't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz']
+                    units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
+                             ('R_diff_pitch_deg', '/\\textdegree'), ('R_diff_yaw_deg', '/\\textdegree'),
+                             ('t_angDiff_deg', '/\\textdegree'), ('t_distDiff', ''), ('t_diff_tx', ''),
+                             ('t_diff_ty', ''), ('t_diff_tz', '')]
+                    it_parameters = ['rt_change_type']
+                    pdfsplitentry = ['t_distDiff']
+                    special_calcs_args = {'build_pdf': (True, True),
+                                          'use_marks': True,
+                                          'fig_type': 'smooth',
+                                          'data_separators': ['rt_change_type']}
+                    filter_func_args = {'data_seperators': ['inlratCRate',
+                                                            'kpAccSd',
+                                                            'depthDistr'],
+                                        'data_file': os.path.join(output_path, 'df_robustness_diffRT_' +
+                                                                  str(test_nr) + '_' + str(29) + '.gz')
+                                        }
+                    from robustness_eval import get_rt_change_type, get_cRT_stats
+                    ret += calcSatisticAndPlot_2D(data=data,
+                                                  store_path=output_path,
+                                                  tex_file_pre_str='plots_robustness_',
+                                                  fig_title_pre_str=fig_title_pre_str,
+                                                  eval_description_path='RT-stats',
+                                                  eval_columns=eval_columns,
+                                                  units=units,
+                                                  it_parameters=it_parameters,
+                                                  x_axis_column=['kpAccSd'],
+                                                  pdfsplitentry=pdfsplitentry,
+                                                  filter_func=get_rt_change_type,
+                                                  filter_func_args=filter_func_args,
+                                                  special_calcs_func=get_cRT_stats,
+                                                  special_calcs_args=special_calcs_args,
+                                                  calc_func=None,
+                                                  calc_func_args=None,
+                                                  compare_source=None,
+                                                  fig_type='smooth',
+                                                  use_marks=True,
+                                                  ctrl_fig_size=True,
+                                                  make_fig_index=True,
+                                                  build_pdf=True,
+                                                  figs_externalize=False,
+                                                  no_tex=False,
+                                                  cat_sort=False)
                 else:
                     raise ValueError('Eval nr ' + str(ev) + ' does not exist')
         else:
@@ -6389,6 +6548,69 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                                      make_fig_index=True,
                                                      build_pdf=True,
                                                      figs_externalize=False)
+            elif ev == 9:
+                fig_title_pre_str = 'Statistics on R\\&t Differences Including Most Likely Poses for Different '
+                eval_columns = ['R_diffAll', 'R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
+                                't_angDiff_deg', 't_distDiff', 't_diff_tx', 't_diff_ty', 't_diff_tz',
+                                'R_mostLikely_diffAll', 'R_mostLikely_diff_roll_deg',
+                                'R_mostLikely_diff_pitch_deg', 'R_mostLikely_diff_yaw_deg',
+                                't_mostLikely_angDiff_deg', 't_mostLikely_distDiff',
+                                't_mostLikely_diff_tx', 't_mostLikely_diff_ty', 't_mostLikely_diff_tz']
+                units = [('R_diffAll', '/\\textdegree'), ('R_diff_roll_deg', '/\\textdegree'),
+                         ('R_diff_pitch_deg', '/\\textdegree'), ('R_diff_yaw_deg', '/\\textdegree'),
+                         ('t_angDiff_deg', '/\\textdegree'), ('t_distDiff', ''), ('t_diff_tx', ''),
+                         ('t_diff_ty', ''), ('t_diff_tz', ''),
+                         ('R_mostLikely_diffAll', '/\\textdegree'),
+                         ('R_mostLikely_diff_roll_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_pitch_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_yaw_deg', '/\\textdegree'),
+                         ('t_mostLikely_angDiff_deg', '/\\textdegree'),
+                         ('t_mostLikely_distDiff', ''), ('t_mostLikely_diff_tx', ''),
+                         ('t_mostLikely_diff_ty', ''), ('t_mostLikely_diff_tz', '')]
+
+                pdfsplitentry = ['t_distDiff', 'R_mostLikely_diffAll', 't_mostLikely_distDiff']
+                special_calcs_args = {'build_pdf': (True, True),
+                                      'use_marks': False,
+                                      'data_partitions': ['kpAccSd']}
+                it_parameters = ['stereoRef']
+                filter_func_args = {'data_seperators': ['inlratMin',
+                                                        'kpAccSd',
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'],
+                                    'filter_scene': 'nv',
+                                    'filter_mostLikely': True,
+                                    'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
+                                                              str(test_nr) + '_' + str(ev) + '.gz')
+                                    }
+                # calc_func_args = {'data_separators': ['depthDistr', 'kpAccSd', 'inlratMin']}
+                # from usac_vs_autocalib_eval import get_accum_corrs_sequs
+                from robustness_eval import get_rt_change_type, get_ml_acc
+                ret += calcSatisticAndPlot_2D(data=data,
+                                              store_path=output_path,
+                                              tex_file_pre_str='plots_robustness_',
+                                              fig_title_pre_str=fig_title_pre_str,
+                                              eval_description_path='RT-stats',
+                                              eval_columns=eval_columns,
+                                              units=units,
+                                              it_parameters=it_parameters,
+                                              x_axis_column=['kpAccSd'],
+                                              pdfsplitentry=pdfsplitentry,
+                                              filter_func=get_rt_change_type,
+                                              filter_func_args=filter_func_args,
+                                              special_calcs_func=get_ml_acc,
+                                              special_calcs_args=special_calcs_args,
+                                              calc_func=None,
+                                              calc_func_args=None,
+                                              compare_source=None,
+                                              fig_type='smooth',
+                                              use_marks=True,
+                                              ctrl_fig_size=True,
+                                              make_fig_index=True,
+                                              build_pdf=True,
+                                              figs_externalize=False,
+                                              no_tex=False,
+                                              cat_sort=True)
             else:
                 raise ValueError('Eval nr ' + str(ev) + ' does not exist')
     else:

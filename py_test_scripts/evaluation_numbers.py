@@ -38,9 +38,9 @@ def get_available_evals():
                        [list(range(1, 12))],
                        [list(range(1, 4)), list(range(1, 5))],
                        [list(range(1, 11)) + [16, 17], list(range(11, 14)), list(range(14, 16))],
-                       [list(range(1, 6)), list(range(6, 11)), list(range(11, 15)), list(range(15, 25)),
-                        list(range(25, 29)), list(range(29, 38))],
-                       [list(range(1, 9))]]
+                       [list(range(1, 6)), list(range(6, 11)), list(range(11, 15)) + [39], list(range(15, 25)) + [40],
+                        list(range(25, 29)), list(range(29, 38)) + [41]],
+                       [list(range(1, 10))]]
     return main_test_names, sub_test_numbers, sub_sub_test_nr
 
 
@@ -377,7 +377,15 @@ def get_used_eval_cols(test_name, test_nr):
                                        'R_GT_n_diff_yaw_deg', 't_GT_n_elemDiff_tx', 't_GT_n_elemDiff_ty',
                                        't_GT_n_elemDiff_tz', 'Nr', 'linRefinement_us', 'bundleAdjust_us',
                                        'robEstimationAndRef_us', 'stereoRefine_us', 'kpDistr', 'accumCorrs',
-                                       'nrCorrs_GT']}
+                                       'nrCorrs_GT',
+                                       'R_mostLikely_diffAll', 'R_mostLikely_diff_roll_deg',
+                                       'R_mostLikely_diff_pitch_deg', 'R_mostLikely_diff_yaw_deg',
+                                       't_mostLikely_angDiff_deg', 't_mostLikely_distDiff', 't_mostLikely_diff_tx',
+                                       't_mostLikely_diff_ty', 't_mostLikely_diff_tz',
+                                       'R_mostLikely(0,0)', 'R_mostLikely(0,1)', 'R_mostLikely(0,2)',
+                                       'R_mostLikely(1,0)', 'R_mostLikely(1,1)', 'R_mostLikely(1,2)',
+                                       'R_mostLikely(2,0)', 'R_mostLikely(2,1)', 'R_mostLikely(2,2)'
+                                       ]}
     cols_sel = test_cols[test_name]
     if test_nr is not None:
         return cols_sel[str(test_nr)]
