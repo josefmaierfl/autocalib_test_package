@@ -133,7 +133,7 @@ def inspect_dir(path, includes):
         content = os.listdir(path)
         for i in content:
             i_folder = os.path.join(path, i)
-            folders, ign, cnt = inspect_dir(i_folder)
+            folders, ign, cnt = inspect_dir(i_folder, includes)
             is_dir = os.path.isdir(i_folder)
             if (is_dir and cnt == len(os.listdir(i_folder))) or (not is_dir and cnt):
                 ign_cnt += 1
