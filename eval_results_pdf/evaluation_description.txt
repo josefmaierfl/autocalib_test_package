@@ -1,0 +1,53 @@
+Folder structure of performed evaluations:
+
+All evaluations were performed on various scene sequences with different properties like depth distributions, keypoint accuracies, inlier ratios, and spatial keypoint distributions in the image plane.
+
+The evaluation is splitted into 8 main categories with following folder names:
+  - usac-testing: Evaluations on the USAC algorithm using different algorithm settings (like enabling/disabling correspondence prevalidation), estimation methods (like Nister, Stewenius, ...), refinement algorithms, cost functions, thresholds, and methods for initializing SPRT epsilon and delta in addition to PROSAC beta. Every setting was tested on
+  - usac_vs_ransac: Comparison of USAC (Universal Sample Consensus), RANSAC, and NGRANSAC (Neural-Guided RANSAC) using multiple thresholds
+  - refinement_ba: Evaluations on different linear refinement algorithms and cost functions with/without bundle adjustment based on the estimated models of USAC
+  - vfc_gms_sof: Comparison of algorithms (Vector Field Consensus (VFC), Grid-based Motion Statistics (GMS), and Statistical Optical Flow (SOF)) for filtering correspondences before estimating a model
+  - refinement_ba_stereo: Evaluations on different linear refinement algorithms and cost functions with/without bundle adjustment (BA) based on valid correspondences aggregated over multiple stereo frames
+  - correspondence_pool: Evaluations on different settings for accumulating correspondences over time like minimum spatial distance between keypoints, maximum number of aggregated correspondences, ratio of correspondences emerged from far 3D points, and different settings for the maximum allowed depth of 3D points
+  - robustness: Evaluations on various settings of robustness parameters of the online calibration tool performed on datasets with different changes in the GT extrinsics over time
+  - usac_vs_autocalib: Comparison of the presented stereo calibration framework to a simple correspondence aggregation over multiple stereo frames using USAC
+
+Some of the 8 main categories are further splitted into sub-categories labeled by numbers. Each sub-category evaluates different parameter sets or scene configurations.
+
+Each main/sub-category holds various evaluations (folders) which in turn contain pdf files representing results.
+Naming conventions: evaluationType_testParameters_vs_comparisonParameters(_for_dataPartitionSplits)
+
+evaluationType:
+  - evals_function: Results based on results of some evaluations
+  - RT-stats: Statistics on extrinsic (R & t) errors (rotational and translation vector errors compared to GT)
+  - time: Evaluations on execution times (parameters and scores of n'th degree polynomials fitted on the execution times)
+  - time-agg: Statistics on absolute execution times
+  - inlRat-diff: Comparison of estimated and GT inlier ratio
+  - K-stats: Statistics on focal length and principal point differences compared to GT (wrong intrinsics are provided to the calibration framework)
+  - RT-diff: Differences of R & t differences from frame to frame using scenes with GT changes in R and/or t
+  - RT-stats-last-frames: Statistics on extrinsic (R & t) errors over the last few stereo frames of a sequence
+  - RT-frameErr: Statistics on extrinsic (R & t) errors on a per stereo frame basis for different types of GT extrinsic changes within single scenes
+  - RT-diffRTMl: Differences of R & t differences from frame to frame of extrinisics marked as most likely accurate by the online calibration framework using scenes with GT changes in R & t
+  - RT-diffTMl: Differences of R & t differences from frame to frame of extrinisics marked as most likely accurate by the online calibration framework using scenes with GT changes of translation vector t only
+  - RT-diffRMl: Differences of R & t differences from frame to frame of extrinisics marked as most likely accurate by the online calibration framework using scenes with GT changes in rotation R only
+  - RT-diffRT: Differences of R & t differences from frame to frame using scenes with GT changes in R & t
+  - RT-diffT: Differences of R & t differences from frame to frame using scenes with GT changes of translation vector t only
+  - RT-diffR: Differences of R & t differences from frame to frame using scenes with GT changes in rotation R only
+  - RT-stabiMl: Comparison of statistics on R & t differences of standard pose estimation outputs and poses marked as stable and most likely accurate by the online calibration framework using scenes with GT changes in R and/or t
+  - RT-stabiRatMl: Statistics on the relative ratio of poses marked as stable/unstable and most likely accurate by the online calibration framework using scenes with GT changes in R and/or t
+  - RT-stabi: Statistics on R & t differences of standard pose estimation outputs and poses marked as stable by the online calibration framework
+  - RT-stabiRat: Statistics on the relative ratio of poses marked as stable/unstable by the online calibration framework using scenes with GT changes in R and/or t
+
+testParameters:
+String of one or more abbreviated test parameters. The full name/description of used parameters can be found in the title of the pdf documents. A detailed description of parameters can be found under 'List of Abbreviations' within pdf documents.
+
+comparisonParameters:
+  - kpAccSd: Keypoint accuracy standard deviations
+  - kpDistr: Spatial distributions of keypoints in the image plane (like only in 1 corner or on one half of image plane)
+  - inlratMin: Inlier ratios
+  - depthDistr: Distributions of 3D point's depths of used correspondences (like near, medium, far, and combinations of these)
+  - inlratCRate: Maximal change rates of inlier ratios from frame to frame
+  - Additional descriptions can be found in corresponding pdf documents
+
+dataPartitionSplits:
+For some evaluations, the data is split into chunks with specific parameters to analyze the algorithms behavior for specific scene types. Most of the time, parameters for splitting are the same as for comparisonParameters.
