@@ -6611,6 +6611,154 @@ def eval_test_exec(data, output_path, test_name, test_nr, eval_nr, comp_path, co
                                               figs_externalize=False,
                                               no_tex=False,
                                               cat_sort=True)
+            elif ev == 10:
+                fig_title_pre_str = 'Coordinates on the unit sphere of Scenes with Stable Stereo Poses ' \
+                                    'using Most Likely Poses for Comparison of '
+                eval_columns = ['R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
+                                'R_mostLikely_diff_roll_deg', 'R_mostLikely_diff_pitch_deg',
+                                'R_mostLikely_diff_yaw_deg',
+                                't_diff_tx', 't_diff_ty', 't_diff_tz',
+                                't_mostLikely_diff_tx', 't_mostLikely_diff_ty',
+                                't_mostLikely_diff_tz']
+                units = [('R_diff_roll_deg', '/\\textdegree'),
+                         ('R_diff_pitch_deg', '/\\textdegree'), ('R_diff_yaw_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_roll_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_pitch_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_yaw_deg', '/\\textdegree'),
+                         ('t_diff_tx', ''), ('t_diff_ty', ''), ('t_diff_tz', ''),
+                         ('t_mostLikely_diff_tx', ''), ('t_mostLikely_diff_ty', ''), ('t_mostLikely_diff_tz', '')]
+                it_parameters = ['stereoRef']
+                filter_func_args = {'data_seperators': ['inlratMin',
+                                                        'kpAccSd',
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'],
+                                    'filter_scene': 'nv',
+                                    'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
+                                                              str(test_nr) + '_' + str(ev) + '.gz')
+                                    }
+                calc_func_args = {'data_separators': ['depthDistr', 'kpAccSd', 'inlratMin'],
+                                  'addit_cols': [#'R_GT(0,0)', 'R_GT(0,1)', 'R_GT(0,2)',
+                                                 #'R_GT(1,0)', 'R_GT(1,1)', 'R_GT(1,2)',
+                                                 #'R_GT(2,0)', 'R_GT(2,1)', 'R_GT(2,2)',
+                                                 'R_mostLikely(0,0)', 'R_mostLikely(0,1)', 'R_mostLikely(0,2)',
+                                                 'R_mostLikely(1,0)', 'R_mostLikely(1,1)', 'R_mostLikely(1,2)',
+                                                 'R_mostLikely(2,0)', 'R_mostLikely(2,1)', 'R_mostLikely(2,2)',
+                                                 #'R_out(0,0)', 'R_out(0,1)', 'R_out(0,2)',
+                                                 #'R_out(1,0)', 'R_out(1,1)', 'R_out(1,2)',
+                                                 #'R_out(2,0)', 'R_out(2,1)', 'R_out(2,2)'
+                                                ],
+                                  'R_cols': [#'R_GT(0,0)', 'R_GT(0,1)', 'R_GT(0,2)',
+                                             #'R_GT(1,0)', 'R_GT(1,1)', 'R_GT(1,2)',
+                                             #'R_GT(2,0)', 'R_GT(2,1)', 'R_GT(2,2)',
+                                             'R_mostLikely(0,0)', 'R_mostLikely(0,1)', 'R_mostLikely(0,2)',
+                                             'R_mostLikely(1,0)', 'R_mostLikely(1,1)', 'R_mostLikely(1,2)',
+                                             'R_mostLikely(2,0)', 'R_mostLikely(2,1)', 'R_mostLikely(2,2)',
+                                             #'R_out(0,0)', 'R_out(0,1)', 'R_out(0,2)',
+                                             #'R_out(1,0)', 'R_out(1,1)', 'R_out(1,2)',
+                                             #'R_out(2,0)', 'R_out(2,1)', 'R_out(2,2)'
+                                            ],
+                                  'use_mostLikely': True,
+                                  'filter_accum_corrs': 1}
+                from robustness_eval import get_rt_change_type
+                from usac_vs_autocalib_eval import get_filter_accum_corrs_sequs_and_calc
+                ret += calcFromFuncAndPlot_3D(data=data,
+                                              store_path=output_path,
+                                              tex_file_pre_str='csv_usacVsAuto_',
+                                              fig_title_pre_str=fig_title_pre_str,
+                                              eval_description_path='unit_sphere',
+                                              eval_columns=eval_columns,
+                                              units=units,
+                                              it_parameters=it_parameters,
+                                              xy_axis_columns=['inlratMin', 'kpAccSd'],
+                                              filter_func=get_rt_change_type,
+                                              filter_func_args=filter_func_args,
+                                              special_calcs_func=None,
+                                              special_calcs_args=None,
+                                              calc_func=get_filter_accum_corrs_sequs_and_calc,
+                                              calc_func_args=calc_func_args,
+                                              fig_type='scatter',
+                                              use_marks=True,
+                                              ctrl_fig_size=False,
+                                              make_fig_index=False,
+                                              build_pdf=False,
+                                              figs_externalize=False,
+                                              no_tex=True,
+                                              cat_sort=None)
+            elif ev == 11:
+                fig_title_pre_str = 'Coordinates on the unit sphere of Scenes with Stable Stereo Poses ' \
+                                    'using Standard Poses for Comparison of '
+                eval_columns = ['R_diff_roll_deg', 'R_diff_pitch_deg', 'R_diff_yaw_deg',
+                                'R_mostLikely_diff_roll_deg', 'R_mostLikely_diff_pitch_deg',
+                                'R_mostLikely_diff_yaw_deg',
+                                't_diff_tx', 't_diff_ty', 't_diff_tz',
+                                't_mostLikely_diff_tx', 't_mostLikely_diff_ty',
+                                't_mostLikely_diff_tz']
+                units = [('R_diff_roll_deg', '/\\textdegree'),
+                         ('R_diff_pitch_deg', '/\\textdegree'), ('R_diff_yaw_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_roll_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_pitch_deg', '/\\textdegree'),
+                         ('R_mostLikely_diff_yaw_deg', '/\\textdegree'),
+                         ('t_diff_tx', ''), ('t_diff_ty', ''), ('t_diff_tz', ''),
+                         ('t_mostLikely_diff_tx', ''), ('t_mostLikely_diff_ty', ''), ('t_mostLikely_diff_tz', '')]
+                it_parameters = ['stereoRef']
+                filter_func_args = {'data_seperators': ['inlratMin',
+                                                        'kpAccSd',
+                                                        'depthDistr',
+                                                        'accumCorrs',
+                                                        'stereoRef'],
+                                    'filter_scene': 'nv',
+                                    'data_file': os.path.join(output_path, 'df_usacVScalib_diffRT_' +
+                                                              str(test_nr) + '_' + str(ev) + '.gz')
+                                    }
+                calc_func_args = {'data_separators': ['depthDistr', 'kpAccSd', 'inlratMin'],
+                                  'addit_cols': [#'R_GT(0,0)', 'R_GT(0,1)', 'R_GT(0,2)',
+                                                 #'R_GT(1,0)', 'R_GT(1,1)', 'R_GT(1,2)',
+                                                 #'R_GT(2,0)', 'R_GT(2,1)', 'R_GT(2,2)',
+                                                 'R_mostLikely(0,0)', 'R_mostLikely(0,1)', 'R_mostLikely(0,2)',
+                                                 'R_mostLikely(1,0)', 'R_mostLikely(1,1)', 'R_mostLikely(1,2)',
+                                                 'R_mostLikely(2,0)', 'R_mostLikely(2,1)', 'R_mostLikely(2,2)',
+                                                 #'R_out(0,0)', 'R_out(0,1)', 'R_out(0,2)',
+                                                 #'R_out(1,0)', 'R_out(1,1)', 'R_out(1,2)',
+                                                 #'R_out(2,0)', 'R_out(2,1)', 'R_out(2,2)'
+                                                ],
+                                  'R_cols': [#'R_GT(0,0)', 'R_GT(0,1)', 'R_GT(0,2)',
+                                             #'R_GT(1,0)', 'R_GT(1,1)', 'R_GT(1,2)',
+                                             #'R_GT(2,0)', 'R_GT(2,1)', 'R_GT(2,2)',
+                                             'R_mostLikely(0,0)', 'R_mostLikely(0,1)', 'R_mostLikely(0,2)',
+                                             'R_mostLikely(1,0)', 'R_mostLikely(1,1)', 'R_mostLikely(1,2)',
+                                             'R_mostLikely(2,0)', 'R_mostLikely(2,1)', 'R_mostLikely(2,2)',
+                                             #'R_out(0,0)', 'R_out(0,1)', 'R_out(0,2)',
+                                             #'R_out(1,0)', 'R_out(1,1)', 'R_out(1,2)',
+                                             #'R_out(2,0)', 'R_out(2,1)', 'R_out(2,2)'
+                                            ],
+                                  'use_mostLikely': False,
+                                  'filter_accum_corrs': 1}
+                from robustness_eval import get_rt_change_type
+                from usac_vs_autocalib_eval import get_filter_accum_corrs_sequs_and_calc
+                ret += calcFromFuncAndPlot_3D(data=data,
+                                              store_path=output_path,
+                                              tex_file_pre_str='csv_usacVsAuto_',
+                                              fig_title_pre_str=fig_title_pre_str,
+                                              eval_description_path='unit_sphere',
+                                              eval_columns=eval_columns,
+                                              units=units,
+                                              it_parameters=it_parameters,
+                                              xy_axis_columns=['inlratMin', 'kpAccSd'],
+                                              filter_func=get_rt_change_type,
+                                              filter_func_args=filter_func_args,
+                                              special_calcs_func=None,
+                                              special_calcs_args=None,
+                                              calc_func=get_filter_accum_corrs_sequs_and_calc,
+                                              calc_func_args=calc_func_args,
+                                              fig_type='scatter',
+                                              use_marks=True,
+                                              ctrl_fig_size=False,
+                                              make_fig_index=False,
+                                              build_pdf=False,
+                                              figs_externalize=False,
+                                              no_tex=True,
+                                              cat_sort=None)
             else:
                 raise ValueError('Eval nr ' + str(ev) + ' does not exist')
     else:

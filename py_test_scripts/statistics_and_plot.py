@@ -2606,6 +2606,7 @@ def calcFromFuncAndPlot_3D(data,
     #     raise ValueError('Only 2 columns are allowed to be selected for the x and y axis')
     fig_types = ['scatter', 'mesh', 'mesh-scatter', 'mesh', 'surf', 'surf-scatter', 'surf-interior',
                  'surface', 'contour', 'surface-contour']
+    mesh_needed = fig_type is not 'scatter'
     if not fig_type in fig_types:
         raise ValueError('Unknown figure type.')
     if filter_func is not None:
@@ -2793,7 +2794,7 @@ def calcFromFuncAndPlot_3D(data,
         tmp = df.get_group(grp)
         tmp = tmp.drop(it_parameters, axis=1)
         # nr_equal_ss = int(tmp.groupby(xy_axis_columns[0]).size().array[0])
-        env_3d_info, tmp = get_3d_tex_info(tmp, xy_axis_columns, cat_sort)
+        env_3d_info, tmp = get_3d_tex_info(tmp, xy_axis_columns, cat_sort, mesh_needed)
         fdataf_name = check_file_exists_rename(fdataf_name)
         dataf_name = os.path.basename(fdataf_name)
         with open(fdataf_name, 'a') as f:
@@ -5324,15 +5325,21 @@ def check_missing_data_block_length_3D(df, xy_axis_columns):
     return df
 
 
-def get_3d_tex_info(df, xy_axis_columns, cat_sort):
+def get_3d_tex_info(df, xy_axis_columns, cat_sort, mesh_needed=True):
     is_numericx = check_if_numeric(df, xy_axis_columns[0])
     is_numericy = check_if_numeric(df, xy_axis_columns[1])
     if cat_sort:
         categorical_sort_3d(df, cat_sort, not is_numericx, not is_numericy, xy_axis_columns)
-    df = check_missing_data_block_length_3D(df, xy_axis_columns)
+    if mesh_needed:
+        df = check_missing_data_block_length_3D(df, xy_axis_columns)
     colname_x = gen_3D_number_rep_for_string(df, xy_axis_columns[0], True, is_numericx)
     colname_y = gen_3D_number_rep_for_string(df, xy_axis_columns[1], False, is_numericy)
-    nr_equal_ss, tick_dist, lbl_xy = get_block_length_3D(df, xy_axis_columns, is_numericx, is_numericy)
+    if mesh_needed:
+        nr_equal_ss, tick_dist, lbl_xy = get_block_length_3D(df, xy_axis_columns, is_numericx, is_numericy)
+    else:
+        nr_equal_ss = 1
+        lbl_xy = xy_axis_columns
+        tick_dist = 1
     lbl_col_nr = -1
     for i, (it, it1) in enumerate(zip(lbl_xy, xy_axis_columns)):
         if it != it1:

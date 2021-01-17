@@ -40,7 +40,7 @@ def get_available_evals():
                        [list(range(1, 11)) + [16, 17], list(range(11, 14)), list(range(14, 16))],
                        [list(range(1, 6)), list(range(6, 11)), list(range(11, 15)) + [39], list(range(15, 25)) + [40],
                         list(range(25, 29)), list(range(29, 38)) + [41]],
-                       [list(range(1, 10))]]
+                       [list(range(1, 12))]]
     return main_test_names, sub_test_numbers, sub_sub_test_nr
 
 
@@ -384,7 +384,13 @@ def get_used_eval_cols(test_name, test_nr):
                                        't_mostLikely_diff_ty', 't_mostLikely_diff_tz',
                                        'R_mostLikely(0,0)', 'R_mostLikely(0,1)', 'R_mostLikely(0,2)',
                                        'R_mostLikely(1,0)', 'R_mostLikely(1,1)', 'R_mostLikely(1,2)',
-                                       'R_mostLikely(2,0)', 'R_mostLikely(2,1)', 'R_mostLikely(2,2)'
+                                       'R_mostLikely(2,0)', 'R_mostLikely(2,1)', 'R_mostLikely(2,2)',
+                                       'R_out(0,0)', 'R_out(0,1)', 'R_out(0,2)',
+                                       'R_out(1,0)', 'R_out(1,1)', 'R_out(1,2)',
+                                       'R_out(2,0)', 'R_out(2,1)', 'R_out(2,2)',
+                                       'R_GT(0,0)', 'R_GT(0,1)', 'R_GT(0,2)',
+                                       'R_GT(1,0)', 'R_GT(1,1)', 'R_GT(1,2)',
+                                       'R_GT(2,0)', 'R_GT(2,1)', 'R_GT(2,2)'
                                        ]}
     cols_sel = test_cols[test_name]
     if test_nr is not None:

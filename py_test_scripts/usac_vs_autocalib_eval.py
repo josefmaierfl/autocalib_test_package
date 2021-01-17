@@ -56,6 +56,8 @@ def get_accum_corrs_sequs(**keywords):
         raise ValueError('data_separators missing!')
     needed_cols = list(dict.fromkeys(individual_grps + keywords['data_separators'] +
                                      ['Nr', 'accumCorrs'] + keywords['eval_columns']))
+    if 'R_cols' in keywords and keywords['R_cols']:
+        needed_cols = list(dict.fromkeys(needed_cols + keywords['R_cols']))
     if 'addit_cols' in keywords and keywords['addit_cols']:
         drop_cols = [a for a in needed_cols if a not in individual_grps and
                      a not in keywords['eval_columns'] and
@@ -537,3 +539,123 @@ def accum_corrs_sequs_time_model(**keywords):
     from usac_eval import calc_Time_Model
     keywords = calc_Time_Model(**keywords)
     return keywords
+
+
+def get_filter_accum_corrs_sequs_and_calc(**keywords):
+    data_all = get_accum_corrs_sequs(**keywords)
+    tmp = data_all['data'].loc[data_all['data']['accumCorrs_max'] == keywords['filter_accum_corrs']]
+    z = np.array([0, 0, 1.0])
+    r_unit = {'ru_x': [], 'ru_y': [], 'ru_z': [], 'tu_x': [], 'tu_y': [], 'tu_z': []}
+    for index, row in tmp.iterrows():
+        # R_GT = np.array([[row['R_GT(0,0)'], row['R_GT(0,1)'], row['R_GT(0,2)']],
+        #                 [row['R_GT(1,0)'], row['R_GT(1,1)'], row['R_GT(1,2)']],
+        #                 [row['R_GT(2,0)'], row['R_GT(2,1)'], row['R_GT(2,2)']]])
+        if keywords['use_mostLikely'] is False or (row['R_mostLikely(0,0)'] == 0 and
+                                                   (row['R_mostLikely(0,1)'] == 0) and
+                                                   (row['R_mostLikely(0,2)'] == 0) and
+                                                   (row['R_mostLikely(1,0)'] == 0) and
+                                                   (row['R_mostLikely(1,1)'] == 0) and
+                                                   (row['R_mostLikely(1,2)'] == 0) and
+                                                   (row['R_mostLikely(2,0)'] == 0) and
+                                                   (row['R_mostLikely(2,1)'] == 0) and
+                                                   (row['R_mostLikely(2,2)'] == 0)):
+            # R_est = np.array([[row['R_out(0,0)'], row['R_out(0,1)'], row['R_out(0,2)']],
+            #                   [row['R_out(1,0)'], row['R_out(1,1)'], row['R_out(1,2)']],
+            #                   [row['R_out(2,0)'], row['R_out(2,1)'], row['R_out(2,2)']]])
+            td = np.array([row['t_diff_tx'], row['t_diff_ty'], row['t_diff_tz']])
+            ru = np.array([row['R_diff_roll_deg'], row['R_diff_pitch_deg'], row['R_diff_yaw_deg']])
+        else:
+            # R_est = np.array([[row['R_mostLikely(0,0)'], row['R_mostLikely(0,1)'], row['R_mostLikely(0,2)']],
+            #                   [row['R_mostLikely(1,0)'], row['R_mostLikely(1,1)'], row['R_mostLikely(1,2)']],
+            #                   [row['R_mostLikely(2,0)'], row['R_mostLikely(2,1)'], row['R_mostLikely(2,2)']]])
+            td = np.array([row['t_mostLikely_diff_tx'], row['t_mostLikely_diff_ty'], row['t_mostLikely_diff_tz']])
+            ru = np.array([row['R_mostLikely_diff_roll_deg'],
+                           row['R_mostLikely_diff_pitch_deg'],
+                           row['R_mostLikely_diff_yaw_deg']])
+        # R = R_est @ R_GT.T
+        # ru = R @ z
+        # ru = np.cos(ru * np.pi / 180.0)
+        # ru /= np.linalg.norm(ru)
+        r_unit['ru_x'].append(ru[0])
+        r_unit['ru_y'].append(ru[1])
+        r_unit['ru_z'].append(ru[2])
+        r_unit['tu_x'].append(td[0])
+        r_unit['tu_y'].append(td[1])
+        r_unit['tu_z'].append(td[2])
+    tmp2 = pd.DataFrame(r_unit)
+    if 'R_cols' in keywords and keywords['R_cols']:
+        tmp.drop(keywords['R_cols'], axis=1, inplace=True)
+    tmp.reset_index(drop=True, inplace=True)
+    data = pd.concat([tmp, tmp2], axis=1)
+
+    df_grp = data.groupby(data_all['it_parameters'])
+    grp_keys = df_grp.groups.keys()
+    df_list = []
+    for grp in grp_keys:
+        tmp = df_grp.get_group(grp)
+        tmp['all'] = tmp.loc[:, ['ru_x', 'ru_y', 'ru_z', 'tu_x', 'tu_y', 'tu_z']].sum(axis=1)
+        indices = get_del_idx(tmp, 'all')
+        tmp = tmp.loc[indices, :]
+        tmp.drop('all', axis=1, inplace=True)
+        df_list.append(tmp)
+    data = pd.concat(df_list, axis=0)
+
+    data_all['data'] = data
+    data_all['eval_cols_lname'] = data_all['eval_columns']
+    data_all['eval_cols_log_scaling'] = [False] * len(data_all['eval_columns'])
+    data_all['eval_init_input'] = None
+    data_all['eval_columns'] = ['ru_x', 'ru_y', 'ru_z', 'tu_x', 'tu_y', 'tu_z']
+    data_all['units'] = [('ru_x', ''), ('ru_y', ''), ('ru_z', ''), ('tu_x', ''), ('tu_y', ''), ('tu_z', '')]
+    return data_all
+
+
+def get_del_idx(df, entry):
+    entr_series = df[entry]
+    hist, bin_edges = np.histogram(entr_series.values, bins='auto', density=False)
+    hist_pos = np.ma.masked_equal(hist, 0)
+    hist_pos = hist_pos.compressed()
+    mean_val = np.mean(hist_pos) * hist_pos.size
+    max_nr = 1000
+    redu = max_nr / mean_val
+    hist2 = np.round(hist_pos * redu)
+    hist3 = np.ma.masked_equal(hist2, 0)
+    hist3 = hist3.compressed()
+    hist3 /= redu
+    mean_val = np.mean(hist3) * hist3.size
+    redu = max_nr / mean_val
+    hist_redu = np.round(redu * hist).astype(int)
+    th = hist_redu < 11
+    th2 = hist_redu > 0
+    th3 = np.logical_and(th, th2)
+    hist_redu[th3] = 10
+    hist_redu[th3] = np.minimum(hist_redu[th3], hist[th3])
+    idx_list = np.array([])
+    nr_entries = bin_edges.size - 2
+    for idx, x in np.ndenumerate(bin_edges):
+        if idx[0] < nr_entries:
+            if hist_redu[idx[0]] == 0:
+                if hist[idx[0]] == 0:
+                    continue
+                tmp = entr_series.loc[(entr_series >= x) & (entr_series < bin_edges[idx[0] + 1])]
+                idx_list = np.append(idx_list, tmp.index.values)
+                continue
+            tmp = entr_series.loc[(entr_series >= x) & (entr_series < bin_edges[idx[0] + 1])]
+            indices = deepcopy(tmp.index.values)
+            np.random.shuffle(indices)
+            idx_list = np.append(idx_list, indices[:hist_redu[idx[0]]])
+            # tmp = tmp.loc[indices]
+            # df_list.append(tmp)
+        else:
+            if hist_redu[idx[0]] == 0:
+                if hist[idx[0]] == 0:
+                    break
+                tmp = entr_series.loc[(entr_series >= x) & (entr_series <= bin_edges[idx[0] + 1])]
+                idx_list = np.append(idx_list, tmp.index.values)
+                break
+            tmp = entr_series.loc[(entr_series >= x) & (entr_series <= bin_edges[idx[0] + 1])]
+            diff = tmp.shape[0] - hist_redu[idx[0]]
+            indices = deepcopy(tmp.index.values)
+            np.random.shuffle(indices)
+            idx_list = np.append(idx_list, indices[:diff])
+            break
+    return idx_list.astype(int)

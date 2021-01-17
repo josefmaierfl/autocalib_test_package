@@ -112,18 +112,76 @@ def get_rt_change_type(**keywords):
 
         for first, last in zip(indexes['first'], indexes['last']):
             tmp1 = tmp.iloc[((tmp.index >= first) & (tmp.index < last))].copy(deep=True)
-            hlp = (tmp1['R_GT_n_diffAll'] + tmp1['t_GT_n_elemDiff_tx'] + tmp1['t_GT_n_elemDiff_ty'] +
-                   tmp1['t_GT_n_elemDiff_tz']).fillna(0)#.round(decimals=4)
+            hlp = (tmp1['R_GT_n_diffAll'] + tmp1['t_GT_n_elemDiff_tx'].abs() + tmp1['t_GT_n_elemDiff_ty'].abs() +
+                   tmp1['t_GT_n_elemDiff_tz'].abs() + tmp1['t_GT_n_angDiff']).fillna(0)#.round(decimals=4)
             hlp_max = hlp.max()
             hlp_min = hlp.min()
+            idx_max = hlp.idxmax()
             cnt1 = float(hlp.loc[hlp > hlp_max / 3].shape[0])
             th_cnt = hlp_min + 0.5 * (hlp_max - hlp_min)
             cnt2 = float(hlp.loc[hlp > th_cnt].shape[0])
             frac1 = cnt1 / float(tmp1.shape[0])
             frac2 = cnt2 / float(tmp1.shape[0])
+            hlp_tx = abs(tmp1['t_GT_n_elemDiff_tx'].drop(labels=idx_max).fillna(0).sum())
+            hlp_ty = abs(tmp1['t_GT_n_elemDiff_ty'].drop(labels=idx_max).fillna(0).sum())
+            hlp_tz = abs(tmp1['t_GT_n_elemDiff_tz'].drop(labels=idx_max).fillna(0).sum())
+            hlp_rx = abs(tmp1['R_GT_n_diff_roll_deg'].drop(labels=idx_max).fillna(0).sum())
+            hlp_ry = abs(tmp1['R_GT_n_diff_pitch_deg'].drop(labels=idx_max).fillna(0).sum())
+            hlp_rz = abs(tmp1['R_GT_n_diff_yaw_deg'].drop(labels=idx_max).fillna(0).sum())
+            hlp_tall = abs(tmp1['t_GT_n_angDiff'].drop(labels=idx_max).fillna(0).sum())
+            hlp_rall = abs(tmp1['R_GT_n_diffAll'].drop(labels=idx_max).fillna(0).sum())
+            t_th = 0.002
+            t_th2 = 0.2
+            r_th = 0.5
+            if 0.9 > frac1 > 0.4 and 0.8 > frac2 > 0.3:
+                if ((hlp_tx < t_th and hlp_ty < t_th and hlp_tz < t_th) or hlp_tall < t_th2) and \
+                        ((hlp_rx < r_th and hlp_ry < r_th and hlp_rz < r_th) or hlp_rall < r_th):
+                    frac1 = 0
+            elif frac1 <= 0.4 or frac2 <= 0.3:
+                if (hlp_tx > t_th or hlp_ty > t_th or hlp_tz > t_th or hlp_tall > t_th2) or \
+                        (hlp_rx > r_th or hlp_ry > r_th or hlp_rz > r_th or hlp_rall > r_th):
+                    frac1 = 0.5
+                    frac2 = 0.5
+            hlp_tx = abs(tmp1['t_GT_n_elemDiff_tx'].fillna(0).sum())
+            hlp_ty = abs(tmp1['t_GT_n_elemDiff_ty'].fillna(0).sum())
+            hlp_tz = abs(tmp1['t_GT_n_elemDiff_tz'].fillna(0).sum())
+            hlp_rx = abs(tmp1['R_GT_n_diff_roll_deg'].fillna(0).sum())
+            hlp_ry = abs(tmp1['R_GT_n_diff_pitch_deg'].fillna(0).sum())
+            hlp_rz = abs(tmp1['R_GT_n_diff_yaw_deg'].sum())
+            hlp_tall = abs(tmp1['t_GT_n_angDiff'].fillna(0).sum())
+            hlp_rall = abs(tmp1['R_GT_n_diffAll'].fillna(0).sum())
+            hlp2_all = hlp_tx + hlp_ty + hlp_tz + hlp_rx + hlp_ry + hlp_rz + hlp_tall + hlp_rall
             # cnt = float(np.count_nonzero(hlp.to_numpy()))
             # frac = cnt / float(tmp1.shape[0])
-            if frac1 > 0.4 and frac2 > 0.3:
+            if hlp2_all < 1.0:
+                if tmp1['Nr'].iloc[-1] - tmp1['Nr'].iloc[0] > tmp1.shape[0]:
+                    missings = []
+                    tmp1_it = tmp1['Nr'].iteritems()
+                    _, nr_prev = next(tmp1_it)
+                    for _, nr in tmp1_it:
+                        dist = nr - nr_prev
+                        if dist != 1:
+                            missings += list(range(nr_prev + 1, nr))
+                        nr_prev = nr
+                    if len(missings) > 0:
+                        if len(change_pos) == 0:
+                            ml_change_pos = (tmp1['Nr'].iloc[-1] + 1) / 2
+                        elif len(change_pos) < 3:
+                            ml_change_pos = change_pos[0]
+                        else:
+                            change_pos.sort()
+                            cl = len(change_pos)
+                            if cl % 2 == 0:
+                                ml_change_pos = change_pos[int(round(cl / 2))]
+                            else:
+                                ml_change_pos = change_pos[int(round((cl - 1) / 2))]
+                        for mn in missings:
+                            if (ml_change_pos - 5) < mn < (ml_change_pos + 5):
+                                frac1 = 0.05
+                                frac2 = 0.05
+                                hlp2_all = 2.0
+                                break
+            if frac1 > 0.4 and frac2 > 0.3 and hlp2_all > 1.0:
                 rxcc = tmp1['R_GT_n_diff_roll_deg'].fillna(0).abs()
                 rycc = tmp1['R_GT_n_diff_pitch_deg'].fillna(0).abs()
                 rzcc = tmp1['R_GT_n_diff_yaw_deg'].fillna(0).abs()
@@ -312,9 +370,9 @@ def get_rt_change_type(**keywords):
                 elif tzc:
                     tmp1['rt_change_type'] = ['ctz'] * int(tmp1.shape[0])
                 else:
-                    tmp1['rt_change_type'] = ['nv'] * int(tmp1.shape[0])# no variation
+                    tmp1['rt_change_type'] = ['na'] * int(tmp1.shape[0])# no variation
                 tmp1['rt_change_pos'] = [0] * int(tmp1.shape[0])
-            else:
+            elif hlp2_all > 1.0:
                 rxcc = tmp1['R_GT_n_diff_roll_deg'].fillna(0).abs()
                 rycc = tmp1['R_GT_n_diff_pitch_deg'].fillna(0).abs()
                 rzcc = tmp1['R_GT_n_diff_yaw_deg'].fillna(0).abs()
@@ -631,7 +689,7 @@ def get_rt_change_type(**keywords):
                     change_pos.append(change_positions[-1])
                 else:
                     change_j_occ1 = deepcopy(change_j_occ)
-                    min_key = 'nv'
+                    min_key = 'na'
                     del_list = []
                     for k, v in change_j_occ1.items():
                         if v == 0:
@@ -648,12 +706,12 @@ def get_rt_change_type(**keywords):
                                 change_j_occ[min_key] += 1
                     # max_val = change_j_occ[max(change_j_occ, key=(lambda key: change_j_occ[key]))]
                     # min_val = max_val
-                    # min_key = 'nv'
+                    # min_key = 'na'
                     # for key, value in change_j_occ.items():
                     #     if value > 0 and value < min_val:
                     #         min_key = key
                     #     elif value > 0 and value == min_val:
-                    #         min_key = 'nv'
+                    #         min_key = 'na'
                     tmp1['rt_change_type'] = [min_key] * int(tmp1.shape[0])# no variation
                     if len(change_pos) == 0:
                         change_positions.append(0)
@@ -675,6 +733,9 @@ def get_rt_change_type(**keywords):
                         tmp1['rt_change_pos'] = [change_positions[int(round(cl / 2))]] * int(tmp1.shape[0])
                     else:
                         tmp1['rt_change_pos'] = [change_positions[int(round((cl - 1) / 2))]] * int(tmp1.shape[0])
+            else:
+                tmp1['rt_change_type'] = ['nv'] * int(tmp1.shape[0])  # no variation
+                tmp1['rt_change_pos'] = [0] * int(tmp1.shape[0])
             df_list.append(tmp1)
     df_new = pd.concat(df_list, axis=0, ignore_index=False)
     if 'filter_scene' in keywords:
